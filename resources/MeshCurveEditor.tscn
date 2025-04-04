@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://6uswl72erfba"]
+
+[ext_resource type="Curve3D" uid="uid://c6avem4lbyumt" path="res://resources/BasicMeshCurvePath.tres" id="1_cvn64"]
+
+[node name="MeshCurveEditor" type="Path3D"]
+curve = ExtResource("1_cvn64")

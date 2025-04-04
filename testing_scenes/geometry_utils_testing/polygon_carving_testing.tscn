@@ -1,0 +1,26 @@
+[gd_scene load_steps=2 format=3 uid="uid://bbvcg1pcvubi7"]
+
+[ext_resource type="Script" uid="uid://bseilh8ytarsg" path="res://testing_scenes/geometry_utils_testing/PolygonCarvingTesting.cs" id="1_fw7mf"]
+
+[node name="PolygonCarvingTesting" type="Node2D"]
+script = ExtResource("1_fw7mf")
+
+[node name="base" type="Polygon2D" parent="."]
+color = Color(0.32549, 1, 1, 1)
+polygon = PackedVector2Array(85, 55.5, 80, 195.5, 221, 217.5, 291, 114.5, 142, 35.5)
+uv = PackedVector2Array(-418, -163.5, -423, -23.5, -282, -1.5, -212, -104.5, -361, -183.5)
+
+[node name="base2" type="Polygon2D" parent="."]
+scale = Vector2(1.03603, 1.18158)
+color = Color(0.351563, 0.351563, 0.351563, 1)
+polygon = PackedVector2Array(351, 79.5, 424, 150.5, 346, 218.5, 294, 166.5, 340, 140.5, 371, 148.5, 330, 105.5, 258, 69.5, 340, -0.5, 374, 51.5)
+uv = PackedVector2Array(-346, -117.5, -273, -46.5, -351, 21.5, -403, -30.5, -357, -56.5, -326, -48.5, -367, -91.5, -439, -127.5, -357, -197.5, -323, -145.5)
+
+[node name="clip2" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(123.721, 135.399, 130.407, 167.997, 243, 156.5, 212, 92.5, 127.064, 78.5613)
+uv = PackedVector2Array(-442, -83.5, -440, -32.5, -374, -41.5, -381, -82.5, -423, -99.5)
+
+[node name="clip" type="Polygon2D" parent="."]
+color = Color(1, 0.317647, 1, 1)
+polygon = PackedVector2Array(38, 161.5, 123, 55.5, 330, 88.5, 481, 113.5, 470, 189.5, 263, 184.5, 163, 154.5, 84, 141.5)
+uv = PackedVector2Array(-474, -36.5, -389, -142.5, -182, -109.5, -31, -84.5, -42, -8.5, -249, -13.5, -349, -43.5, -428, -56.5)

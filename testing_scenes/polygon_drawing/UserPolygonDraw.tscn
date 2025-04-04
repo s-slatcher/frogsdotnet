@@ -1,0 +1,111 @@
+[gd_scene load_steps=14 format=3 uid="uid://bd0dxpp0exx7u"]
+
+[ext_resource type="Script" uid="uid://cxcci8xjeir7d" path="res://testing_scenes/polygon_drawing/UserPolygonDraw.cs" id="1_0du0f"]
+[ext_resource type="Texture2D" uid="uid://dbvtgpi1chj65" path="res://GiYjTk2WMAAnxvd.jpg" id="2_kobiu"]
+[ext_resource type="PackedScene" uid="uid://c77dty7c7b82o" path="res://testing_scenes/polygon_drawing/physicsDrawing.tscn" id="2_mmtm0"]
+[ext_resource type="Material" uid="uid://mdk7d5ikdddq" path="res://resources/ToonDirtMaterial.tres" id="3_oh8f7"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_fmoi8"]
+sky_curve = 0.0215379
+ground_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+
+[sub_resource type="Sky" id="Sky_42aw6"]
+sky_material = SubResource("ProceduralSkyMaterial_fmoi8")
+
+[sub_resource type="Environment" id="Environment_0du0f"]
+background_mode = 1
+background_color = Color(0.33818, 0.441011, 0.529754, 1)
+sky = SubResource("Sky_42aw6")
+tonemap_mode = 2
+glow_enabled = true
+glow_blend_mode = 0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0du0f"]
+albedo_color = Color(0, 0, 0, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_kobiu"]
+radius = 0.125
+height = 0.25
+
+[sub_resource type="BoxMesh" id="BoxMesh_ldadx"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kobiu"]
+albedo_texture = ExtResource("2_kobiu")
+metallic_specular = 0.43
+roughness = 0.0
+emission_energy_multiplier = 0.26
+uv1_scale = Vector3(5.265, 1.92, 5.265)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_mmtm0"]
+size = Vector2(67.125, 31.085)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mmtm0"]
+size = Vector3(65.3078, 1, 35.05)
+
+[node name="UserPolygonDraw" type="Node3D" node_paths=PackedStringArray("MainCamera", "PointPreview", "PolyContainer", "FinishButton", "ClearButton")]
+script = ExtResource("1_0du0f")
+MainCamera = NodePath("Camera3D")
+PointPreview = NodePath("PointPreview")
+PolyContainer = NodePath("PolygonContainer")
+FinishButton = NodePath("CanvasLayer/Finish")
+ClearButton = NodePath("CanvasLayer/Clear")
+RigidBodyDrawing = ExtResource("2_mmtm0")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_0du0f")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0193915, 0, 19.6151)
+
+[node name="PointPreview" type="MeshInstance3D" parent="."]
+visible = false
+material_override = SubResource("StandardMaterial3D_0du0f")
+mesh = SubResource("SphereMesh_kobiu")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Finish" type="Button" parent="CanvasLayer"]
+offset_left = 158.0
+offset_top = 163.0
+offset_right = 272.0
+offset_bottom = 194.0
+size_flags_horizontal = 0
+size_flags_vertical = 0
+theme_override_font_sizes/font_size = 32
+text = "FINISH SHAPE"
+
+[node name="Clear" type="Button" parent="CanvasLayer"]
+offset_left = 158.0
+offset_top = 238.0
+offset_right = 378.0
+offset_bottom = 291.0
+size_flags_horizontal = 0
+size_flags_vertical = 0
+theme_override_font_sizes/font_size = 32
+text = "CLEAR SHAPE"
+
+[node name="PolygonContainer" type="MeshInstance3D" parent="."]
+visible = false
+material_override = ExtResource("3_oh8f7")
+mesh = SubResource("BoxMesh_ldadx")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="."]
+
+[node name="Floor" type="MeshInstance3D" parent="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -14.3357, 0)
+material_override = SubResource("StandardMaterial3D_kobiu")
+mesh = SubResource("PlaneMesh_mmtm0")
+skeleton = NodePath("../..")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.799301, -14.8321, 0)
+shape = SubResource("BoxShape3D_mmtm0")
+
+[node name="SpotLight3D" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.39518, -8.16051, 5.33895)
+light_energy = 16.0
+spot_range = 7.22034
