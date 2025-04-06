@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://dbo541ckd0etq"]
+
+[ext_resource type="Script" uid="uid://u08lwav48gub" path="res://testing_scenes/polygon_drawing/OffsetPolygonTest.cs" id="1_j3jq6"]
+
+[sub_resource type="Curve2D" id="Curve2D_hsa66"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, 104, 333, 5.04767, -142.445, -5.04767, 142.445, 263, 71, -72.7273, -97.5207, 72.7273, 97.5207, 558, 138, 212.974, -82.0623, -212.974, 82.0623, 649, 433, 268.285, -20.417, -268.285, 20.417, 563, 577, 188.937, -195.201, -188.937, 195.201, 326, 536, -2.47934, 76.0331, 2.47934, -76.0331, 159, 480, 51.2397, 42.9752, -51.2397, -42.9752, 311, 310, 0, 0, 0, 0, 220, 296)
+}
+point_count = 9
+
+[node name="OffsetPolygonTest" type="Node2D"]
+script = ExtResource("1_j3jq6")
+
+[node name="Path2D" type="Path2D" parent="."]
+curve = SubResource("Curve2D_hsa66")

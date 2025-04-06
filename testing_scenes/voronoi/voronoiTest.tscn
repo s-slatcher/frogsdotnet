@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://bbpqorxutssut"]
+
+[ext_resource type="Script" uid="uid://d2hjrqxgop8da" path="res://testing_scenes/voronoi/voronoi_test.gd" id="1_ykkpw"]
+
+[node name="VoronoiTest" type="Node2D"]
+script = ExtResource("1_ykkpw")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(152, 431, 95, 380, 88, 295, 127, 158, 207, 102, 326, 105, 491, 196, 583, 309, 526, 369, 530, 461, 423, 427, 451, 511, 529, 602, 344, 648, 139, 558, 96, 455)

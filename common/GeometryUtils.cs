@@ -215,6 +215,17 @@ public partial class GeometryUtils : GodotObject
 
     }
 
+    public double ShortestDistanceBetweenSegmentAndRect(Rect2 rect, LineSegment lineSegment)
+    {
+        var closestDistance = double.MaxValue;
+        foreach ( var rectSeg in LineSegmentsFromPolygon(PolygonFromRect(rect)))
+        {
+            var dist = ShortestDistanceBetweenLineSegments(lineSegment, rectSeg);
+            closestDistance = Math.Min(closestDistance, dist);
+        }
+        return closestDistance;
+    }
+
     public List<LineSegment> SortLineSegmentsByDistanceToRect(Rect2 rect, List<LineSegment> lineSegments, float maxDistance)
     {
         List<LineSegment> reducedLineSegList = new();
@@ -229,25 +240,23 @@ public partial class GeometryUtils : GodotObject
             if (rect.HasPoint(lineSeg.Start) || rect.HasPoint(lineSeg.End))
             {
                 nearestEdgeDistance = 0;
+                lineSegDistances[lineSeg] = 0;
             }
             else
             {
-                foreach (var rectSeg in rectLineSegments)
-                {
-                    var distance = ShortestDistanceBetweenLineSegments(lineSeg, rectSeg);
-                    nearestEdgeDistance = Math.Min(nearestEdgeDistance, distance);
-                }  
+                nearestEdgeDistance = ShortestDistanceBetweenSegmentAndRect(rect, lineSeg);
             }
 
             if (nearestEdgeDistance < maxDistance) 
             {
                reducedLineSegList.Add(lineSeg);
-               lineSegDistances[lineSeg] = 0;
+               lineSegDistances[lineSeg] = (float)nearestEdgeDistance;
+               
             } 
 
         }
-
-        return reducedLineSegList;
+        
+        return reducedLineSegList.OrderBy(el => lineSegDistances[el]).ToList();
 
     }
 
