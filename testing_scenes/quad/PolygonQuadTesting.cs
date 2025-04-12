@@ -13,7 +13,7 @@ public partial class PolygonQuadTesting : Node2D
     {
         var time = Time.GetTicksMsec();
         var polygon = GetNode<Polygon2D>("Polygon2D").Polygon;
-        ExtrudedMesh em = new(polygon, 4, 24);
+        ExtrudedMesh em = new(polygon, 4, 24, 1);
         
 
         

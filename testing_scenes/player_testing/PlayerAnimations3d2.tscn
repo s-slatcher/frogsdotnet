@@ -1,0 +1,255 @@
+[gd_scene load_steps=13 format=3 uid="uid://cbmxky5fvtdi8"]
+
+[ext_resource type="Material" uid="uid://b1nhhd6oigwks" path="res://testing_scenes/player_testing/frog_skin_mat.tres" id="1_4hjdf"]
+[ext_resource type="PackedScene" uid="uid://bbl7dlg501xb0" path="res://testing_scenes/player_testing/frog_limb.tscn" id="2_yetns"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_oawen"]
+height = 1.7
+
+[sub_resource type="SphereMesh" id="SphereMesh_4hjdf"]
+radius = 0.435
+height = 0.765
+
+[sub_resource type="SphereMesh" id="SphereMesh_oawen"]
+radius = 0.11
+height = 0.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4hjdf"]
+albedo_color = Color(0, 0, 0, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_kerps"]
+radius = 0.05
+height = 0.1
+
+[sub_resource type="SphereMesh" id="SphereMesh_yetns"]
+radius = 0.1
+height = 0.2
+
+[sub_resource type="Animation" id="Animation_oawen"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("TorsoContainer:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("TorsoContainer/HeadContainer:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0.488692)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("TorsoContainer/LegContainer:rotation")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, -1.3439, 2.28638)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("TorsoContainer/LegContainer/CalfContainer:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, -2.19039)]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("TorsoContainer/LegContainer/CalfContainer/FootContainer:rotation")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(2.59594e-08, -3.63938e-08, 2.19039)]
+}
+
+[sub_resource type="Animation" id="Animation_yetns"]
+resource_name = "sit"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("TorsoContainer:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(),
+"transitions": PackedFloat32Array(),
+"update": 0,
+"values": []
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("TorsoContainer:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, -0.942478)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("TorsoContainer/HeadContainer:rotation")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0.488692)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("TorsoContainer/LegContainer:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, -1.3439, 2.28638)]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("TorsoContainer/LegContainer/CalfContainer:rotation")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, -2.19039)]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("TorsoContainer/LegContainer/CalfContainer/FootContainer:rotation")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(2.59594e-08, -3.63938e-08, 2.19039)]
+}
+
+[sub_resource type="Animation" id="Animation_4hjdf"]
+resource_name = "tpose"
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_yetns"]
+_data = {
+&"RESET": SubResource("Animation_oawen"),
+&"sit": SubResource("Animation_yetns"),
+&"tpose": SubResource("Animation_4hjdf")
+}
+
+[node name="PlayerAnimations3d2" type="Node3D"]
+
+[node name="TorsoContainer" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18733, 0)
+
+[node name="torsoMesh" type="MeshInstance3D" parent="TorsoContainer"]
+transform = Transform3D(0.6, 0, 0, 0, 0.755, 0, 0, 0, 0.51, 0, 0.47, 0)
+material_override = ExtResource("1_4hjdf")
+mesh = SubResource("CapsuleMesh_oawen")
+
+[node name="LegContainer" type="Node3D" parent="TorsoContainer"]
+transform = Transform3D(-0.167507, -0.192695, -1.10591, 0.856596, -0.744626, 0, -0.72554, -0.834641, 0.255324, 0, 0, 0.1914)
+
+[node name="ThighLimb" parent="TorsoContainer/LegContainer" instance=ExtResource("2_yetns")]
+transform = Transform3D(0.855, 0, 0, 0, -0.7, -1.29101e-07, 0, 1.05697e-07, -0.855, 0, -0.232126, 0)
+
+[node name="CalfContainer" type="Node3D" parent="TorsoContainer/LegContainer"]
+transform = Transform3D(-0.580705, 0.814115, 0, -0.814115, -0.580705, 0, 0, 0, 1, -0.0129744, -0.442603, 0.00752699)
+
+[node name="CalfLimb" parent="TorsoContainer/LegContainer/CalfContainer" instance=ExtResource("2_yetns")]
+transform = Transform3D(0.57, 0, 0, 0, 0.515, 0, 0, 0, 0.69, 0, -0.269896, 0)
+
+[node name="FootContainer" type="Node3D" parent="TorsoContainer/LegContainer/CalfContainer"]
+transform = Transform3D(-0.580705, -0.814115, -3.63938e-08, 0.814115, -0.580705, -2.59594e-08, -1.22569e-13, -4.47035e-08, 1, -0.037309, -0.438133, -0.0210331)
+
+[node name="FrogLimb" parent="TorsoContainer/LegContainer/CalfContainer/FootContainer" instance=ExtResource("2_yetns")]
+transform = Transform3D(-8.08661e-09, 0.39, 0, -0.185, -1.70474e-08, 0, 0, 0, 0.56, 0.152934, -0.0401364, -0.00272417)
+
+[node name="HeadContainer" type="Node3D" parent="TorsoContainer"]
+transform = Transform3D(0.816727, -0.434261, 0, 0.434261, 0.816727, 0, 0, 0, 0.925, 0, 0.996748, 0)
+
+[node name="head" type="MeshInstance3D" parent="TorsoContainer/HeadContainer"]
+transform = Transform3D(0.92, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.11235, -0.0125326)
+material_override = ExtResource("1_4hjdf")
+mesh = SubResource("SphereMesh_4hjdf")
+
+[node name="EyeContainer" type="Node3D" parent="TorsoContainer/HeadContainer"]
+transform = Transform3D(1.135, 0, 0, 0, 1.135, 0, 0, 0, 1.135, 0, 0.349303, 0)
+
+[node name="eye" type="MeshInstance3D" parent="TorsoContainer/HeadContainer/EyeContainer"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0907481, 0.199381)
+material_override = ExtResource("1_4hjdf")
+mesh = SubResource("SphereMesh_oawen")
+skeleton = NodePath("../..")
+
+[node name="eye2" type="MeshInstance3D" parent="TorsoContainer/HeadContainer/EyeContainer"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0821608, 0.104347, 0.199381)
+material_override = SubResource("StandardMaterial3D_4hjdf")
+mesh = SubResource("SphereMesh_kerps")
+skeleton = NodePath("../..")
+
+[node name="eye3" type="MeshInstance3D" parent="TorsoContainer/HeadContainer/EyeContainer"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0273976, 0.0848305, 0.199381)
+mesh = SubResource("SphereMesh_yetns")
+skeleton = NodePath("../..")
+
+[node name="EyeContainer2" type="Node3D" parent="TorsoContainer/HeadContainer"]
+transform = Transform3D(1.135, 0, 0, 0, 1.135, 0, 0, 0, 1.135, 0, 0.368624, -0.472441)
+
+[node name="eye" type="MeshInstance3D" parent="TorsoContainer/HeadContainer/EyeContainer2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0847901, 0.199381)
+material_override = ExtResource("1_4hjdf")
+mesh = SubResource("SphereMesh_oawen")
+skeleton = NodePath("../../../..")
+
+[node name="eye2" type="MeshInstance3D" parent="TorsoContainer/HeadContainer/EyeContainer2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0821608, 0.098389, 0.199381)
+material_override = SubResource("StandardMaterial3D_4hjdf")
+mesh = SubResource("SphereMesh_kerps")
+skeleton = NodePath("../../../..")
+
+[node name="eye3" type="MeshInstance3D" parent="TorsoContainer/HeadContainer/EyeContainer2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0273976, 0.0788724, 0.199381)
+mesh = SubResource("SphereMesh_yetns")
+skeleton = NodePath("../../../..")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_yetns")
+}

@@ -1,0 +1,470 @@
+[gd_scene load_steps=21 format=3 uid="uid://ctb0kxuami7es"]
+
+[ext_resource type="Script" uid="uid://d1qe6uggdh02b" path="res://testing_scenes/player_testing/PlayerAnimations3d.cs" id="1_4ednd"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_msj0t"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_4ednd"]
+radius = 0.31
+height = 0.56
+
+[sub_resource type="SphereMesh" id="SphereMesh_fqp5b"]
+radius = 0.1
+height = 0.2
+
+[sub_resource type="TorusMesh" id="TorusMesh_71jkh"]
+inner_radius = 0.107
+outer_radius = 0.219
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_jl2rx"]
+radius = 0.066
+height = 0.282
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_ypo10"]
+radius = 0.055
+height = 0.237
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_ehp64"]
+radius = 0.05
+height = 0.132
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_vsdui"]
+radius = 0.015
+height = 0.085
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1j30m"]
+radius = 0.075
+height = 0.437
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_nyvi2"]
+radius = 0.066
+height = 0.347
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_3dgl2"]
+radius = 0.041
+height = 0.132
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_kp0oi"]
+radius = 0.015
+height = 0.085
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_pb85k"]
+radius = 0.015
+height = 0.085
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_ey6fh"]
+radius = 0.015
+height = 0.085
+
+[sub_resource type="Animation" id="Animation_fqp5b"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("torso:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, -0.872665)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("torso/leg:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0.853466, 0, 3.14159)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("torso/leg/calf:rotation")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(-0.701622, -3.14159, 3.14159)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("torso/leg/calf/foot:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(-1.42197e-08, -1.63579e-08, -2.28638)]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("torso/arm:rotation")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 1.38754)]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("torso/arm/forearm:rotation")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0.724312)]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("torso/arm/forearm/hand:rotation")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, 0.932006)]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("torso:position")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0.47434, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_msj0t"]
+resource_name = "base"
+
+[sub_resource type="Animation" id="Animation_71jkh"]
+resource_name = "leap"
+length = 0.537
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("torso:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(8.9407e-08, 0.133334, 0.25, 0.3, 0.533333),
+"transitions": PackedFloat32Array(0.5, 1, -2, 1, 0.5),
+"update": 0,
+"values": [Vector3(0, 0, -1.44339), Vector3(0, 0, -0.818559), Vector3(0, 0, -1.53414), Vector3(0, 0, -2.01411), Vector3(0, 0, -1.53414)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("torso/leg:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(8.9407e-08, 0.133334, 0.233333, 0.4, 0.466667),
+"transitions": PackedFloat32Array(0.5, 1, -2, 1, 0.5),
+"update": 0,
+"values": [Vector3(0.731293, 0, 3.25329), Vector3(2.05425, 0.352556, 2.16944), Vector3(2.5604, -0.977384, 2.28638), Vector3(2.88328, -0.733038, 2.89027), Vector3(0.731293, 0, 3.25329)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("torso/leg/calf:rotation")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(8.9407e-08, 0.13332, 0.233333, 0.4, 0.466667),
+"transitions": PackedFloat32Array(0.5, 1, -2, 1, 0.5),
+"update": 0,
+"values": [Vector3(-0.820305, -3.37721, 3.14159), Vector3(-2.27591, -3.84671, 3.56047), Vector3(-1.93732, -2.2794, 3.00197), Vector3(-2.30383, -2.2794, 3.12239), Vector3(-0.820305, -4.08232, 3.14159)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("torso/leg/calf/foot:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(8.9407e-08, 0.13332, 0.233333, 0.466667),
+"transitions": PackedFloat32Array(1, 1, -2, 1),
+"update": 0,
+"values": [Vector3(0.116937, -6.51562e-10, -2.77333), Vector3(0.225147, -0.623083, -1.74009), Vector3(0.225147, -0.623083, -0.631809), Vector3(0.705113, -0.588176, -2.42426)]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("torso/arm:rotation")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(8.9407e-08, 0.133334, 0.233333, 0.3, 0.466667),
+"transitions": PackedFloat32Array(1, 1, -2, 1, 1),
+"update": 0,
+"values": [Vector3(-0.42237, -0.469494, 0.47473), Vector3(-0.647383, -0.356718, 0.47473), Vector3(-1.15366, -0.102974, 0.47473), Vector3(-1.88496, -0.172788, 0.715585), Vector3(-0.647517, -0.356047, 1.9251)]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("torso/arm/forearm:rotation")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(8.9407e-08, 0.133334, 0.233333, 0.3, 0.466667),
+"transitions": PackedFloat32Array(1, 1, -2, 1, 1),
+"update": 0,
+"values": [Vector3(0.853466, 0.488692, 0.677188), Vector3(1.04142, 0.4511, 1.38337), Vector3(1.46433, 0.366519, 2.9723), Vector3(1.95302, -0.244346, 2.9723), Vector3(1.04142, 0.4511, 1.38337)]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("torso/arm/forearm/hand:rotation")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(8.9407e-08, 0.133334, 0.466667),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.476475, 0.459022, 2.01062), Vector3(-0.476475, 0.459022, 0.198968), Vector3(-0.476475, 0.459022, 0.198968)]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("torso:position")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(8.9407e-08, 0.133334, 0.233333, 0.466667),
+"transitions": PackedFloat32Array(0.5, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0.355787, 0), Vector3(0, 1.034, 0), Vector3(0, 1.119, 0), Vector3(0, 0.334, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_4ednd"]
+resource_name = "sit"
+length = 0.1015
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("torso:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0, -1.16763)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("torso/leg:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0.731293, 0, 3.25329)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("torso/leg/calf:rotation")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(-0.820305, -3.37721, 3.14159)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("torso/leg/calf/foot:rotation")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0.116937, 0, -2.4103)]
+}
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("torso/arm:rotation")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(-0.178024, -0.469494, 0.837758)]
+}
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("torso/arm/forearm:rotation")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(1.09781, 0, 0.361283)]
+}
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("torso/arm/forearm/hand:rotation")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(-0.476475, -0.0296706, 1.64759)]
+}
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("torso:position")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector3(0, 0.355787, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_4ednd"]
+_data = {
+&"RESET": SubResource("Animation_fqp5b"),
+&"base": SubResource("Animation_msj0t"),
+&"leap": SubResource("Animation_71jkh"),
+&"sit": SubResource("Animation_4ednd")
+}
+
+[node name="PlayerAnimations3d" type="Node3D"]
+script = ExtResource("1_4ednd")
+
+[node name="torso" type="Node3D" parent="."]
+transform = Transform3D(0.642787, 0.766045, 0, -0.766045, 0.642787, 0, 0, 0, 1, 0, 0.47434, 0)
+
+[node name="torsoMesh" type="MeshInstance3D" parent="torso"]
+transform = Transform3D(0.61, 0, 0, 0, 1.005, 0, 0, 0, 0.89, 0.00646067, -0.0394626, 0)
+mesh = SubResource("SphereMesh_msj0t")
+
+[node name="head" type="Node3D" parent="torso"]
+transform = Transform3D(0.84, 0, 0, 0, 0.935, 0, 0, 0, 1, -0.095376, -0.138133, 0.0148263)
+
+[node name="headMesh" type="MeshInstance3D" parent="torso/head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1.175, 0, 0.55, 0)
+mesh = SubResource("SphereMesh_4ednd")
+
+[node name="eyeMesh" type="MeshInstance3D" parent="torso/head"]
+transform = Transform3D(1, -2.98023e-08, 0, 0, 1, 0, 0, 0, 1, -0.165889, 0.639353, 0.237675)
+mesh = SubResource("SphereMesh_fqp5b")
+
+[node name="eyeMesh2" type="MeshInstance3D" parent="torso/head"]
+transform = Transform3D(1, -2.98023e-08, 0, 0, 1, 0, 0, 0, 1, -0.208155, 0.649317, -0.212912)
+mesh = SubResource("SphereMesh_fqp5b")
+
+[node name="mouthMesh" type="MeshInstance3D" parent="torso/head"]
+transform = Transform3D(0.187381, -0.982287, 0, 0.982287, 0.187381, 0, 0, 0, 1.65, 0.0344052, 0.625585, -0.00598592)
+mesh = SubResource("TorusMesh_71jkh")
+
+[node name="arm" type="Node3D" parent="torso"]
+transform = Transform3D(0.231434, -1.24873, 0, 1.24873, 0.231434, 0, 0, 0, 1.27, 0.0351917, 0.170463, 0.341173)
+
+[node name="armMesh" type="MeshInstance3D" parent="torso/arm"]
+transform = Transform3D(1, -2.98023e-08, 0, -7.45058e-09, 1, -5.96046e-08, 1.49012e-08, -2.98023e-08, 1, -0.0152708, -0.111318, -0.00317836)
+mesh = SubResource("CapsuleMesh_jl2rx")
+
+[node name="forearm" type="Node3D" parent="torso/arm"]
+transform = Transform3D(0.748956, -0.66262, 0, 0.66262, 0.748956, 0, 0, 0, 1, -0.018796, -0.1981, 0.0244369)
+
+[node name="forearmMesh" type="MeshInstance3D" parent="torso/arm/forearm"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0322471, -0.0989587, -0.00312531)
+mesh = SubResource("CapsuleMesh_ypo10")
+
+[node name="hand" type="Node3D" parent="torso/arm/forearm"]
+transform = Transform3D(0.491885, -0.802817, 0, 0.662324, 0.596225, 0, 0, 0, 1, -0.0271702, -0.212731, -0.00324869)
+
+[node name="armMesh" type="MeshInstance3D" parent="torso/arm/forearm/hand"]
+transform = Transform3D(1, 0, 0, 0, 0.82, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("CapsuleMesh_ehp64")
+
+[node name="finger" type="MeshInstance3D" parent="torso/arm/forearm/hand"]
+transform = Transform3D(1, -1.49012e-08, 3.1665e-08, -2.51457e-08, 0.803857, 0.594823, 1.49012e-08, -0.594823, 0.803857, -0.017714, -0.0590087, 0.0605705)
+mesh = SubResource("CapsuleMesh_vsdui")
+
+[node name="finger3" type="MeshInstance3D" parent="torso/arm/forearm/hand"]
+transform = Transform3D(1, 7.79517e-09, 5.58794e-09, -5.58794e-09, 1.395, 2.98023e-08, -5.58794e-09, -4.15742e-08, 1, -0.016, -0.075, 0)
+mesh = SubResource("CapsuleMesh_vsdui")
+
+[node name="finger2" type="MeshInstance3D" parent="torso/arm/forearm/hand"]
+transform = Transform3D(1, 0, 0, -1.62981e-08, 0.731354, -0.681998, 2.04891e-08, 0.681998, 0.731354, -0.0132566, -0.0514642, -0.057263)
+mesh = SubResource("CapsuleMesh_vsdui")
+
+[node name="leg" type="Node3D" parent="torso"]
+transform = Transform3D(-1.48, -2.45913e-06, 0, 2.46652e-06, -0.637654, -1.11527, 2.82742e-06, -0.730956, 0.972913, 0.0498883, -0.460236, 0.219396)
+
+[node name="legMesh" type="MeshInstance3D" parent="torso/leg"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0322471, -0.129347, -0.00312531)
+mesh = SubResource("CapsuleMesh_1j30m")
+
+[node name="calf" type="Node3D" parent="torso/leg"]
+transform = Transform3D(1, 8.9883e-07, -1.93636e-06, 1.93636e-06, -0.763796, 0.645458, -8.9883e-07, -0.645458, -0.763796, -2.98023e-08, -0.300104, -0.0144278)
+
+[node name="calfMesh" type="MeshInstance3D" parent="torso/leg/calf"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0322471, -0.125863, -0.00312531)
+mesh = SubResource("CapsuleMesh_nyvi2")
+
+[node name="foot" type="Node3D" parent="torso/leg/calf"]
+transform = Transform3D(-0.706575, 1.03773, -2.24921e-08, -0.812823, -0.902082, 1.95521e-08, 2.58273e-14, 2.98024e-08, 1.375, -0.0296885, -0.284219, -0.00338525)
+
+[node name="footMesh" type="MeshInstance3D" parent="torso/leg/calf/foot"]
+transform = Transform3D(1, 7.91624e-09, 3.72529e-09, 5.3551e-09, 0.82, 2.98023e-08, 0, 0, 1, -0.00229383, -0.0218698, -0.00506425)
+mesh = SubResource("CapsuleMesh_3dgl2")
+
+[node name="toe" type="MeshInstance3D" parent="torso/leg/calf/foot"]
+transform = Transform3D(1, 1.86265e-08, 9.31323e-09, 6.51926e-09, 0.927184, 0.374607, -7.45058e-09, -0.374607, 0.927184, 0.0115433, -0.0916974, 0.0369433)
+mesh = SubResource("CapsuleMesh_kp0oi")
+
+[node name="toe2" type="MeshInstance3D" parent="torso/leg/calf/foot"]
+transform = Transform3D(1, 1.90921e-08, -3.72529e-09, 6.51926e-09, 0.927184, -0.374607, -7.45058e-09, 0.374607, 0.927184, 0.0131123, -0.0953342, -0.0437518)
+mesh = SubResource("CapsuleMesh_pb85k")
+
+[node name="toe3" type="MeshInstance3D" parent="torso/leg/calf/foot"]
+transform = Transform3D(1, 1.35042e-08, 7.45058e-09, 6.51926e-09, 1, 1.49012e-08, -7.45058e-09, 0, 1, 0.0131099, -0.0981223, -0.00389861)
+mesh = SubResource("CapsuleMesh_ey6fh")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_4ednd")
+}
+autoplay = "sit"
+blend_times = [&"leap", &"sit", 0.15]

@@ -45,7 +45,7 @@ public partial class UserPolygonDraw : Node3D
             return;
         }
 
-        var extrudedMesh = new ExtrudedMesh(points2DArray, 0.125f, 0.5f);
+        var extrudedMesh = new ExtrudedMesh(points2DArray, 0.125f, 0.5f, 2f);
        
         var mesh = extrudedMesh.GetMesh();
         
@@ -61,9 +61,6 @@ public partial class UserPolygonDraw : Node3D
         GD.Print("Time gen mesh: " + (Time.GetTicksMsec() - time));
         ClearDrawing();
 
-
-
-
     }
 
     private void ClearDrawing()
@@ -73,7 +70,6 @@ public partial class UserPolygonDraw : Node3D
         pointPreviews = new();
 
     }
-
 
     public override void _UnhandledInput(InputEvent @event)
     {
@@ -92,7 +88,6 @@ public partial class UserPolygonDraw : Node3D
 
     }
     
-
     
 
     private void AddPointPreview( Vector3 pointPos )

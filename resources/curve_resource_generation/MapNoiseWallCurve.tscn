@@ -1,0 +1,23 @@
+[gd_scene load_steps=5 format=3 uid="uid://ypoo7gr5570n"]
+
+[ext_resource type="Script" uid="uid://b4dnephx8i620" path="res://resources/curve_resource_generation/MapNoiseWallCurve.cs" id="1_00wdo"]
+[ext_resource type="Texture2D" uid="uid://bm0ma1yn0p4qf" path="res://resources/curve_resource_generation/wall_curve_noise.tres" id="2_56irs"]
+[ext_resource type="Curve2D" uid="uid://tu53q40l80ak" path="res://resources/curve_resource_generation/wall_curve_v1.tres" id="4_5d73k"]
+
+[sub_resource type="Curve2D" id="Curve2D_56irs"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, 682.756, 600, -54.9181, 45.9911, 54.9181, -45.9911, 682.756, 554.594, 23.1778, 14.5182, -23.1778, -14.5182, 682.756, 501.081, 19.6602, 24.1867, -19.6602, -24.1867, 684.803, 460.54, 0.231, 0, -0.230863, -6.38526, 663.307, 435.405, -0.184108, -0.291663, 0.184108, 0.291663, 677.638, 422.432, -0.920537, -0.145831, 0.920537, 0.145831, 845.512, 415.135, 0.28337, -10.4733, -0.28337, 10.4733, 865.984, 424.865, 53.9223, -39.3404, -53.9223, 39.3404, 810.709, 467.838)
+}
+point_count = 9
+
+[node name="MapNoiseWallCurve" type="Node2D"]
+script = ExtResource("1_00wdo")
+NoiseTex = ExtResource("2_56irs")
+
+[node name="Path2D" type="Path2D" parent="."]
+curve = ExtResource("4_5d73k")
+
+[node name="Path2D2" type="Path2D" parent="."]
+position = Vector2(-19, -91)
+scale = Vector2(0.976923, 1.23333)
+curve = SubResource("Curve2D_56irs")

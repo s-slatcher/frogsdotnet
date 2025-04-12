@@ -1,4 +1,5 @@
 using Godot;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -26,6 +27,7 @@ public partial class ExtrudedMesh : GodotObject
     public float MinimumQuadWidth;
     public float EdgeRadius;
     public float EdgeExtension = 0;
+    public bool GenerateBack = false;
     
 
 
@@ -37,19 +39,24 @@ public partial class ExtrudedMesh : GodotObject
     private List<IndexedVertex> vertexList = new();
     private List<PolygonQuad> leafNodeQuads = new();
     private Curve3D edgeRadiusCurve = (Curve3D)GD.Load("uid://c6avem4lbyumt");
+    private Vector2 polygonSize;
 
 
-    public ExtrudedMesh(Vector2[] polygon, float minimumQuadWidth, float edgeRadius)
+    public ExtrudedMesh(Vector2[] polygon, float minimumQuadWidth, float edgeRadius, float edgeExtension)
     {
+        var time = Time.GetTicksMsec();
         Polygon = polygon;
+        polygonSize = gUtils.RectFromPolygon(polygon).Size;
         MinimumQuadWidth = minimumQuadWidth;
         EdgeRadius = edgeRadius;
-        EdgeExtension = 0.5f + edgeRadius;
+        EdgeExtension = edgeExtension;
         SetupCurve2D();
         SetupPolygonQuad();
-        GD.Print("unique vertices = " + vertexList.Count);
-
+        GD.Print(vertexList.Count + " vertices, in " + (Time.GetTicksMsec() - time) + " ms, from " + quadNearbyEdgeLists[ParentQuad].Count, " line polygon");
+        
     }
+
+    
 
     private void SetupPolygonQuad()
     {
@@ -83,8 +90,8 @@ public partial class ExtrudedMesh : GodotObject
             float targetSubdivideWidth = MinimumQuadWidth * 8;
             if (quadNearbyEdgeLists[quad].Count > 0){
                 var closestEdge = gUtils.ShortestDistanceBetweenSegmentAndRect(quad.BoundingRect, quadNearbyEdgeLists[quad][0]);
-                if (closestEdge < MinimumQuadWidth) targetSubdivideWidth = MinimumQuadWidth;
-                else if (closestEdge < MinimumQuadWidth*2) targetSubdivideWidth = MinimumQuadWidth * 2;
+                if (closestEdge < MinimumQuadWidth * 1.5) targetSubdivideWidth = MinimumQuadWidth;
+                else if (closestEdge < MinimumQuadWidth*2.5 ) targetSubdivideWidth = MinimumQuadWidth * 2;
                 else if (closestEdge < EdgeRadius/2) targetSubdivideWidth = MinimumQuadWidth * 4;
             }
 
@@ -95,7 +102,8 @@ public partial class ExtrudedMesh : GodotObject
             foreach (var child in quad.GetChildren())
             {
                 if (child == null) continue;
-                quadNearbyEdgeLists[child] = gUtils.SortLineSegmentsByDistanceToRect(child.BoundingRect, quadNearbyEdgeLists[quad], edgeInfluenceLimit);
+                var edgeCheckDistance = float.Clamp(child.BoundingRect.Size.X * 2, 0, edgeInfluenceLimit); 
+                quadNearbyEdgeLists[child] = gUtils.SortLineSegmentsByDistanceToRect(child.BoundingRect, quadNearbyEdgeLists[quad], edgeCheckDistance);
                 queue.Add(child);
             }
             if (!quad.HasChildren()) // still a leaf node after subdivision attempt
@@ -142,13 +150,14 @@ public partial class ExtrudedMesh : GodotObject
 
     private void WrapPointAroundEdge(IndexedVertex vertex, PolygonQuad quad)
     {
-        double nearestEdgeDelta = double.MaxValue;
+        double nearestEdgeSqr = double.MaxValue;
+        var edgeInfluenceSquare = edgeInfluenceLimit * edgeInfluenceLimit;
         Vector2 sPos = vertex.SourcePosition;
         Vector2 nearestEdgeDirection = Vector2.Zero;
 
         var edgeList = quad.Parent != null ? quadNearbyEdgeLists[quad.Parent] : quadNearbyEdgeLists[quad]; //uses parent quads larger edge list until "nearby" is better defined in subdivision checks  
 
-        
+        List<Vector2> edgeInfluenceVectors = new();
         foreach (var lineSeg in edgeList)
         {
             var norm = lineSeg.GetNormal();
@@ -160,19 +169,21 @@ public partial class ExtrudedMesh : GodotObject
             
             var vecToLine = closePoint - sPos;
     
-            var distance = vecToLine.Length();
+            var distSqr = vecToLine.LengthSquared();
            
-            if (nearestEdgeDelta > distance)
+            if (distSqr < edgeInfluenceSquare)
             {
-                nearestEdgeDelta = distance;
-                nearestEdgeDirection = vecToLine;
+                if (distSqr < nearestEdgeSqr) nearestEdgeSqr = distSqr; 
+                var inverseLengthWeightedVector =  (edgeInfluenceSquare - distSqr) / edgeInfluenceSquare * vecToLine.Normalized(); // longer vectors become smaller in weighting
+                var angleProjectedWeightedVector = inverseLengthWeightedVector.Project(norm); // further lessen in weighting if direction to edge is indirect 
+                // if (angleProjectedWeightedVector.Dot(norm) < 0) continue;
+                nearestEdgeDirection += angleProjectedWeightedVector;
             }
 
-        }
-        
+        }        
         nearestEdgeDirection = nearestEdgeDirection.Normalized();
-
-        if (nearestEdgeDelta < edgeInfluenceLimit)
+        var nearestEdgeDelta = Math.Sqrt(nearestEdgeSqr);
+        if (nearestEdgeDirection != Vector2.Zero)
         {
             var curveProgress = (float)(edgeInfluenceLimit - nearestEdgeDelta);
             Transform3D curvePointTransform = edgeRadiusCurve.SampleBakedWithRotation(curveProgress);
@@ -191,17 +202,12 @@ public partial class ExtrudedMesh : GodotObject
             vertex.Position = rotatedCurvePos + curveOrigin3D;
             vertex.Normal = rotatedNormal.Normalized();
             vertex.VertexColor = (vertex.Normal + new Vector3(1,1,1))/2;
-            if (curveProgress > (edgeInfluenceLimit * 0.7))
+            if (nearestEdgeDelta < 0.01)
             {
                 vertex.Position.Z -= EdgeExtension;
             }
             
-
-        } 
-            
-
-        
-
+        }         
     }
     
     public List<Vector2[]> GetMeshAsPolygons()
@@ -222,19 +228,52 @@ public partial class ExtrudedMesh : GodotObject
         var st = new SurfaceTool();
         st.Begin(Mesh.PrimitiveType.Triangles);
 
+        var polyRect = gUtils.RectIFromPolygon(Polygon);
+
         foreach(int index in vertexIndices)
         {
             st.AddIndex(index);
         }
+       
         foreach(IndexedVertex vertex in vertexList)
         {
+            var UV = (new Vector2(vertex.Position.X, vertex.Position.Y)) / polyRect.Size;
+            st.SetUV(UV);
             st.SetNormal(vertex.Normal);
             st.SetColor(new Color(vertex.VertexColor.X, vertex.VertexColor.Y, vertex.VertexColor.Z, 1));
             st.AddVertex(vertex.Position);
         }
-    
+
+
         var mesh = st.Commit();
         return mesh;
+    }
+
+    public Mesh GetMeshBack()
+    {
+        var vertexIndices = GetTriangleIndices();
+        // vertexIndices.Reverse();
+        // var reversedVertexList = vertexList.ToArray().Reverse().ToList();
+
+        var st = new SurfaceTool();
+        st.Begin(Mesh.PrimitiveType.Triangles);
+
+        foreach(int index in vertexIndices)
+        {
+            st.AddIndex(index);
+        }
+
+        foreach(IndexedVertex vertex in vertexList)
+        {
+            var flipZ = new Vector3(1, 1, -1);
+            var backPos = vertex.Position * flipZ + new Vector3(0, 0, - 1.9f * (EdgeExtension+EdgeRadius)); 
+            var backNorm = vertex.Normal * new Vector3(-1 ,-1, 1);
+
+            st.SetNormal(backNorm);
+            st.SetColor(new Color(vertex.VertexColor.X, vertex.VertexColor.Y, vertex.VertexColor.Z, 1));
+            st.AddVertex(backPos);
+        }
+        return st.Commit();
     }
 
 

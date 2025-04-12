@@ -79,6 +79,11 @@ public partial class GeometryUtils : GodotObject
         return polygon.Select(point => point * scaling).ToArray();
     }
 
+    public Vector2[] TranslatePolygon(Vector2[] polygon, Vector2 translation)
+    {
+        return polygon.Select(point => point + translation).ToArray();
+    }
+
     public double AreaOfTriangle(Vector2 p1, Vector2 p2, Vector2 p3)
     {
         double a = (p1 - p2).Length();

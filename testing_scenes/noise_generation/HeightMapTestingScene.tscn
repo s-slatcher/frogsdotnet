@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://c3mo6nu1khtil"]
+
+[ext_resource type="Script" uid="uid://bfe4gawo4v0i6" path="res://testing_scenes/noise_generation/HeightMapTestingScene.cs" id="1_t0mqq"]
+
+[node name="HeightMapTestingScene" type="Node2D"]
+script = ExtResource("1_t0mqq")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(114, 0)
+rotation = 3.14159
+ignore_rotation = false
+zoom = Vector2(3.82, 3.82)

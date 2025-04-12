@@ -21,6 +21,7 @@ public partial class PolygonQuad : GodotObject
     {
         Polygons = polygons;
         BoundingRect = boundingRect;
+
     }
     
     public Action Updated;
@@ -114,6 +115,7 @@ public partial class PolygonQuad : GodotObject
                 Parent = this,
                 Root = Root
             };
+
             Children[positionKeys[i]] = childQuad;
         };
         
