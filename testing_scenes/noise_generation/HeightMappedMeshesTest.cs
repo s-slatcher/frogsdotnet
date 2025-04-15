@@ -46,8 +46,7 @@ public partial class HeightMappedMeshesTest : Node3D
     Vector2[] GetHeightMapPolygon()
     {
         var heightMap = new HeightMap(300, (int)GD.Randi());
-        heightMap.noise.Frequency = 0.025f;
-        heightMap.MaxHeight = 80;
+        heightMap.MaxHeight = 60;
         var points = heightMap.GetPointsOfInterest();
         var polygonList = new List<Vector2[]>();
         for (int i = 1; i < points.Count - 1; i++)   // range excludes first and last point

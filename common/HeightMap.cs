@@ -1,40 +1,57 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using System.Linq;
 
 public partial class HeightMap : GodotObject
 {
     string seed = "";
-    public int width = 1;
+    
+    // number of noise points sampled per 1/frequency units (1 pseudo-period) of the noise map.
+    private const int samplesPerPeriod = 40;    
+
+    public float width = 1;
     public float MaxHeight = 1;
     public float MinHeight = 0;
-    public FastNoiseLite noise;
+    public int NoiseLayerTotal;
+    List<FastNoiseLite> NoiseLayers = new();
+    public float LayerFrequencyMultiplier;
+    public float LayerGain;
+    public float ExponentialFactor = 1f;
 
-    List<float> pointList = []; 
+     
+    List<Vector2> pointList = []; 
     List<Vector2> pointsOfInterest = [];
 
-// todo:
-//  - map heights to value range (so no negatives, and returns useable heights)
-// - allow remapping values, to increase or decrease extremity of height changes
 
 
-    public HeightMap(int mapWidth, int noiseSeed)
+    public HeightMap(float mapWidth, int noiseSeed, float noiseFrequency = 0.01f, int noiseLayers = 2, float layerFrequencyMultiplier = 2f, float layerGain = 0.5f )
     {
         this.width = mapWidth;
-        this.noise = new FastNoiseLite
+        this.NoiseLayerTotal = noiseLayers;
+        this.LayerFrequencyMultiplier = layerFrequencyMultiplier;
+        this.LayerGain = layerGain;
+
+        for (int i = 0; i < noiseLayers; i++)
         {
-            
-            Frequency = 0.04f, // roughly changes slope direction every 10 units at 0.05
-            FractalType = FastNoiseLite.FractalTypeEnum.Fbm,
-            FractalOctaves = 2,
-            DomainWarpFractalLacunarity = 2f,
-            Seed = noiseSeed,
-        };
+            // calc frequency now (to bake in noise gen) but layer strength applied when combining values  
+            var layerFrequency = noiseFrequency * Math.Pow(layerFrequencyMultiplier, i);
+            var noise = new FastNoiseLite()
+            {
+                FractalType = FastNoiseLite.FractalTypeEnum.None,
+                Frequency = (float)layerFrequency,
+                Seed = noiseSeed + i,
+            };
+
+            NoiseLayers.Add(noise);
+
+        }
 
     }
 
-    public float getSlope(float pos)
+    public float getSlope(FastNoiseLite noise, float pos)
     {
         var delta = noise.Frequency / 10;
         var valPlus = noise.GetNoise1D(pos + delta);
@@ -42,55 +59,59 @@ public partial class HeightMap : GodotObject
         return (valPlus - valMinus) / (delta * 2);         
     }
 
-    public float getSlopeOfSlope(float pos)
+
+    public List<Vector2> GetHeights()
     {
-        var delta = noise.Frequency / 5;
-        var slopePlus = getSlope(pos + delta);
-        var slopeMinus = getSlope(pos - delta);
-        return (slopePlus - slopeMinus) / (delta * 2); 
-
-    }
-
-    public List<float> GetHeights(Vector2? remapRange = null)
-    {
-        List<float> list = [];
-
+        List<Vector2> points = [];
         List<Vector2> _pointsOfInterest = [];
 
-        int firstSlopeTrend = Math.Sign(getSlope(0));
-        // int secondSlopeTrend = Math.Sign(getSlopeOfSlope(0));
 
-        for (int i = 0; i < width; i++)
-        {
+        var highestFreq = NoiseLayers[NoiseLayers.Count - 1].Frequency;
+        var noisePeriod = 1 / highestFreq;
+        var sampleTotal = (int) ( width / noisePeriod * samplesPerPeriod );
+        var sampleGap = width / sampleTotal;
+        
+        var slopeTrends = NoiseLayers.Select( noise => Math.Sign( getSlope(noise, 0))).ToList();
+        
+        float strengthDivisor = 0;
+        for (int i = 0; i < NoiseLayers.Count; i++) strengthDivisor += (float)Math.Pow(LayerGain, i);
+        
 
-            var val = noise.GetNoise1D(i);
-            var mappedVal = (val + 1) / 2 * (MaxHeight - MinHeight) + MinHeight;
-            list.Add(mappedVal);
+        for (int i = 0; i < sampleTotal; i++)
+        {   
+            var noisePos = sampleGap * i;
+            float combinedHeight = 0;
             
-            var firstSlope = getSlope(i);
-            // svar secondSlope = getSlopeOfSlope(i); 
+            bool isPointOfInterest = false;
 
-
-            if (Math.Sign(firstSlope) != firstSlopeTrend)
+            for (int j = 0; j < NoiseLayers.Count; j++)
             {
-                _pointsOfInterest.Add(new Vector2(i, mappedVal));
-                firstSlopeTrend *= -1;
+                var noiseLayer = NoiseLayers[j];
+                var layerStrength = (float) Math.Pow(LayerGain, j);
+                var value = noiseLayer.GetNoise1D(noisePos);
+                combinedHeight += value * layerStrength;
+                
+                var slope = getSlope(noiseLayer, noisePos);
+                if (Math.Sign(slope) != slopeTrends[j])
+                {
+                    slopeTrends[j] *= -1;
+                    isPointOfInterest = true;
+                }
             }
+            
+            combinedHeight /= strengthDivisor;
+            var exponentValue = Math.Sign(combinedHeight) * Math.Pow( Math.Abs(combinedHeight), ExponentialFactor); 
+            var mappedValue = (exponentValue + 1) / 2 * (MaxHeight - MinHeight) + MinHeight;
+            var mapVector = new Vector2(noisePos, (float) mappedValue);
+            
+            points.Add(mapVector);
+            if (isPointOfInterest) _pointsOfInterest.Add(mapVector);
 
-            // second slope offering too many points, put on cooldown?
-
-            // if (Math.Sign(secondSlope) != secondSlopeTrend)
-            // {
-            //     _pointsOfInterest.Add(new Vector2(i, val));
-            //     secondSlopeTrend *= -1;
-            // }
         }
 
         pointsOfInterest = _pointsOfInterest;
-        
-        
     
-        pointList = list;
+        pointList = points;
         return pointList;
     }
 
@@ -99,7 +120,7 @@ public partial class HeightMap : GodotObject
     // vector2 X value cooresponds to index on list of heights from GetHeights() 
     public List<Vector2> GetPointsOfInterest()
     {
-        if (pointsOfInterest.Count == 0) GetHeights(); // must be called to cache point list
+        GetHeights(); // called again in case noise values have changed, to update points of interest
         return pointsOfInterest;
 
     }

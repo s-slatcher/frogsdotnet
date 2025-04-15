@@ -2,6 +2,7 @@ using Godot;
 using GodotPlugins.Game;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
 
 public partial class UserPolygonDraw : Node3D
@@ -18,6 +19,7 @@ public partial class UserPolygonDraw : Node3D
     private bool activeDrawing = false;
     private List<Vector3> currentPointList = new();
     private List<MeshInstance3D> pointPreviews = new();
+    GeometryUtils gu = new();
 
 
     public override void _Ready()
@@ -44,8 +46,12 @@ public partial class UserPolygonDraw : Node3D
             GD.Print("invalid shape");
             return;
         }
+        
+        var smoothCurve = gu.PointsToCurve(points2DArray, 0.5f, true);
+        var smoothPoly = smoothCurve.Tessellate().ToArray();
 
-        var extrudedMesh = new ExtrudedMesh(points2DArray, 0.125f, 0.5f, 2f);
+
+        var extrudedMesh = new ExtrudedMesh(smoothPoly, 0.125f, 0.5f, 2f);
        
         var mesh = extrudedMesh.GetMesh();
         

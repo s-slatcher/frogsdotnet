@@ -38,7 +38,7 @@ public partial class ExtrudedMesh : GodotObject
     private Dictionary<Vector2I, IndexedVertex> vertexDictionary = new();
     private List<IndexedVertex> vertexList = new();
     private List<PolygonQuad> leafNodeQuads = new();
-    private Curve3D edgeRadiusCurve = (Curve3D)GD.Load("uid://c6avem4lbyumt");
+    private Curve3D edgeRadiusCurve = (Curve3D)GD.Load("uid://c6avem4lbyumt").Duplicate();
     private Vector2 polygonSize;
 
 
@@ -67,6 +67,7 @@ public partial class ExtrudedMesh : GodotObject
 
     private void SetupCurve2D()
     {
+        
         edgeRadiusCurve.SetPointOut(  0, edgeRadiusCurve.GetPointOut(0) * EdgeRadius);
         edgeRadiusCurve.SetPointPosition(1, edgeRadiusCurve.GetPointPosition(1) * EdgeRadius);
         edgeRadiusCurve.SetPointIn(1, edgeRadiusCurve.GetPointIn(1) * EdgeRadius);

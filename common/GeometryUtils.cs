@@ -15,6 +15,10 @@ using Vector3 = Godot.Vector3;
 
 public partial class GeometryUtils : GodotObject
 {
+    //gives actual modulo not remainder (to get a wrapping array index)
+    int Mod(int x, int m) {
+        return (x%m + m)%m;
+    }
 
     public Rect2 RectFromPolygon(Vector2[] polygon)
     {
@@ -84,13 +88,15 @@ public partial class GeometryUtils : GodotObject
         return polygon.Select(point => point + translation).ToArray();
     }
 
+    public Vector2[] RotatePolygon(Vector2[] polygon, float rotation)
+    {
+        return polygon.Select(point => point.Rotated(rotation)).ToArray();
+    }
+
+
     public double AreaOfTriangle(Vector2 p1, Vector2 p2, Vector2 p3)
     {
-        double a = (p1 - p2).Length();
-        double b = (p2 - p3).Length();
-        double c = (p3 - p1).Length();
-        double s = (a + b + c)/2;
-        return Math.Sqrt( s * (s-a) * (s-b) * (s-c) );  
+        return AreaOfTriangle3D(AddDepth(p1), AddDepth(p2), AddDepth(p3));
     }
     public double AreaOfTriangle3D(Vector3 p1, Vector3 p2, Vector3 p3)
     {
@@ -101,6 +107,10 @@ public partial class GeometryUtils : GodotObject
         return Math.Sqrt( s * (s-a) * (s-b) * (s-c) );  
     }
 
+    
+    //-----------------------------------------------------------------
+    // Boolean operations (e.g., clip, intersect, merge) on polygons or on groups of polygons 
+    //-----------------------------------------------------------------
 
     public List<Vector2[]> ClipPolygonRecursive(Vector2[] basePolygon, Vector2[] clippingPolygon)
     {
@@ -161,7 +171,7 @@ public partial class GeometryUtils : GodotObject
         return splitResults;
 
     }
-
+    
     private Vector2 GetAveragePosition(Vector2[] clippingPolygon)
     {
         Vector2 accum = new(0,0);
@@ -170,7 +180,6 @@ public partial class GeometryUtils : GodotObject
         }
         return accum / clippingPolygon.Length;
     }
-
    
 
     public List<LineSegment> LineSegmentsFromPolygon(Vector2[] polygon)
@@ -188,6 +197,10 @@ public partial class GeometryUtils : GodotObject
         return lineSegments; 
     }
 
+
+    //-----------------------------------------------------------------
+    // Rect2 and LineSegment overlapping checks and distance checks 
+    //-----------------------------------------------------------------
    
     public List<LineSegment> FilterLineSegmentsByRectIntersection( List<LineSegment> lineSegments, Rect2 rect )
     {
@@ -282,5 +295,143 @@ public partial class GeometryUtils : GodotObject
         return new HashSet<Vector2>(poly1).SetEquals(new HashSet<Vector2>(poly2));
     }
 
+
+
+    //-----------------------------------------------------------------
+    // Curve2D transformations and conversion from polygon
+    //-----------------------------------------------------------------
+
+    public Curve2D PointsToCurve(Vector2[] points, float smoothingFactor = 0, bool curveIsClosed = true)
+    {
+
+        int pointLen = points.Length;
+        var smoothedCurve = new Curve2D();
+        smoothingFactor = Math.Clamp(smoothingFactor, 0, 1.5f);  
+        
+        for (int i = 0; i < points.Length; i++)
+        {
+
+            var p = points[i];
+            var last = points[ Mod(i-1, pointLen) ];
+            var next = points[ Mod(i+1, pointLen) ];
+
+            var vecLast = p - last;
+            var vecNext = next - p;
+
+            // ignore previous or next point direction if i is first or last point in curve respectively, and curve is not closed. 
+            if (!curveIsClosed && i == 0 ) vecLast = vecNext * -1;
+            if (!curveIsClosed && i == pointLen-1) vecNext = vecLast * -1;
+
+
     
+            var vecAvg = ((vecLast.Normalized() ) + (vecNext.Normalized()) ) / 2;
+            // var vecAvg = ((vecLast ) + (vecNext ) ) / 2;
+            var handleDir = vecAvg.Normalized();
+
+
+            // if (vecLast.AngleTo(vecNext) > Math.PI/2;
+            
+            // var handleAngle = (Math.PI - angle) / 2;
+            // bool nextIsShorter = vecLast.Length() > vecNext.Length();
+            // float angle = 0;
+            // if (nextIsShorter) angle = handleDir.AngleTo(vecNext);
+            // else angle = (handleDir).AngleTo(vecLast);
+            var shortLength = Math.Min(vecNext.Length(), vecLast.Length());
+
+            
+
+            // var handleNextLength = shortLength * 0.5 / Math.Cos(angle) * smoothingFactor ;
+            // var handleLastLength = shortLength * 0.5 / Math.Cos(angle) * smoothingFactor ;
+            var handleNextLength = (vecNext.Length() * 0.5) / Math.Cos(handleDir.AngleTo(vecNext)) * smoothingFactor ;
+            var handleLastLength = (vecLast.Length() * 0.5) / Math.Cos((-1 * handleDir).AngleTo(-1 * vecLast)) * smoothingFactor ;
+
+            var handleOut = handleDir * (float)handleNextLength;
+            var handleIn = handleDir * -1 * (float)handleLastLength;            
+            smoothedCurve.AddPoint(p, handleIn, handleOut );
+        }
+
+        if (!curveIsClosed) return smoothedCurve;
+        else
+        {
+            // smoothly enclose the shape by splitting the that last point's 'in' and 'out' handles across two nearly overlapping points
+            var delta = 0.1f;
+            var firstPointPos = smoothedCurve.GetPointPosition(0);
+            var firstInVec = smoothedCurve.GetPointIn(0);
+            smoothedCurve.SetPointIn(0, Vector2.Zero);
+            var appendedPointPos = firstPointPos + firstInVec.Normalized() * delta;
+            smoothedCurve.AddPoint(appendedPointPos, firstInVec, Vector2.Zero); 
+            return smoothedCurve;
+        }
+        
+    }
+
+    public Curve2D ScaleCurve(Curve2D curve, Vector2 scale)
+    {
+        var newCurve = new Curve2D();
+        for (int i = 0; i < curve.PointCount; i++)
+        {
+            var pointPos = curve.GetPointPosition(i);
+            var pointIn = curve.GetPointIn(i);
+            var pointOut = curve.GetPointOut(i);
+            
+            newCurve.AddPoint(pointPos * scale);
+            newCurve.SetPointIn(i, pointIn * scale);
+            newCurve.SetPointOut(i, pointOut * scale);
+        }
+        return newCurve;
+    }
+
+    public Curve2D TranslateCurve(Curve2D curve, Vector2 translation)
+    {
+        var translatedCurve = new Curve2D();
+        for (int i = 0; i < curve.PointCount; i++)
+        {
+            translatedCurve.AddPoint(curve.GetPointPosition(i) + translation);
+            translatedCurve.SetPointIn(i, curve.GetPointIn(i));
+            translatedCurve.SetPointOut(i, curve.GetPointOut(i));
+        }
+        return translatedCurve;
+    } 
+    
+
+    public Curve2D SliceCurve(Curve2D curve, int from, int to, bool repositionStartPoint)
+    {
+        var slicedCurve = curve.Duplicate() as Curve2D;
+        var translate = slicedCurve.GetPointPosition(0) - slicedCurve.GetPointPosition(from);
+        for (int i = curve.PointCount-1; i > -1; i--)
+        {
+            if (i > to || i < from) slicedCurve.RemovePoint(i);
+            else {
+                if (repositionStartPoint) 
+                {
+                    slicedCurve.SetPointPosition(i, slicedCurve.GetPointPosition(i) + translate );
+                }
+            }
+        }
+        return slicedCurve;
+    }
+
+
+    public Curve2D RotateCurve(Curve2D curve, float rotation, bool rotateHandles = true)
+    {
+        var rotatedCurve = new Curve2D();
+        for (int i = 0; i < curve.PointCount; i++)
+        {
+            var pointPos = curve.GetPointPosition(i).Rotated(rotation);
+            var pointIn = curve.GetPointIn(i);
+            var pointOut = curve.GetPointOut(i);
+            
+            if (rotateHandles)
+            {
+                pointIn = curve.GetPointIn(i).Rotated(rotation);
+                pointOut = curve.GetPointOut(i).Rotated(rotation);
+            }
+            
+            rotatedCurve.AddPoint(pointPos);
+            rotatedCurve.SetPointIn(i, pointIn);
+            rotatedCurve.SetPointOut(i, pointOut);
+        }
+        return rotatedCurve;
+    }
+
 }

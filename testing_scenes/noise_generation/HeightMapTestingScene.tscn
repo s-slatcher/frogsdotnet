@@ -1,12 +1,22 @@
-[gd_scene load_steps=2 format=3 uid="uid://c3mo6nu1khtil"]
+[gd_scene load_steps=3 format=3 uid="uid://c3mo6nu1khtil"]
 
 [ext_resource type="Script" uid="uid://bfe4gawo4v0i6" path="res://testing_scenes/noise_generation/HeightMapTestingScene.cs" id="1_t0mqq"]
+
+[sub_resource type="Curve2D" id="Curve2D_t0mqq"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, 152, 124, 0, 0, 0, 0, 147, 48, -23.8348, 1.45957, 23.8348, -1.45957, 171, 19, -7.10329, -0.550894, 7.10329, 0.550894, 285, 14, 0, 0, 0, 0, 288, 51, 0, 0, 0, 0, 269, 139)
+}
+point_count = 6
 
 [node name="HeightMapTestingScene" type="Node2D"]
 script = ExtResource("1_t0mqq")
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(114, 0)
+position = Vector2(147, -9)
 rotation = 3.14159
 ignore_rotation = false
-zoom = Vector2(3.82, 3.82)
+zoom = Vector2(2.91, 2.91)
+
+[node name="Path2D" type="Path2D" parent="."]
+position = Vector2(5, 3)
+curve = SubResource("Curve2D_t0mqq")
