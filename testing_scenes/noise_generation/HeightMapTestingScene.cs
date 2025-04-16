@@ -14,15 +14,13 @@ public partial class HeightMapTestingScene : Node2D
 
     public override void _Ready()
     {   
-        // seed = (int)GD.Randi();
+        seed = (int)GD.Randi();
         var heightMap = new HeightMap(Width, seed, 0.025f, 3, 2, 0.5f);
         heightMap.MaxHeight = MaxHeight;
 
         var points = heightMap.GetHeights();
         var pointsOfInterest = heightMap.GetPointsOfInterest();
         
-       
-
         var polyline = new Line2D();
         for (int i = 0; i < points.Count; i++)
         {
@@ -68,40 +66,23 @@ public partial class HeightMapTestingScene : Node2D
 
     void GenerateHeightMapPolygons_v2(List<Vector2> points)
     {
-        //step 1; turn points to sets of points forming plateaus
-        // var flatPointSet = new List<Vector2>();
-        // for (int i = 1; i < points.Count - 1; i++)   // range excludes first and last points for simplicity
-        // {
-        //     var p1 = points[i];
-        //     var pLast = points[i-1];
-        //     var pNext = points[i+1];
-
-        //     var flatPoints = new List<Vector2>(){ 
-        //         p1 + new Vector2((pLast.X - p1.X)/2, 0),
-        //         p1 + new Vector2((pNext.X - p1.X)/2, 0),
-
-        //     };
-        //     flatPointSet.AddRange(flatPoints);
-        // }
+        
 
         var groups = new List<List<Vector2>>();
         var currentGroup = new List<Vector2>();
         var groupMin = float.MaxValue;
         var groupMax = float.MinValue;
         // step 2; group points together with a running average of slope
-        float tolerance = 16; 
+        float tolerance = 20; 
         for (int i = 1; i < points.Count; i++)
         {
             var pointHeight = points[i].Y;
-            var newMin = Math.Min(pointHeight, groupMin);
-            var newMax = Math.Max(pointHeight, groupMax);
+            groupMin = Math.Min(pointHeight, groupMin);
+            groupMax = Math.Max(pointHeight, groupMax);
             
-            
-            groupMin = newMin;
-            groupMax = newMax;
             currentGroup.Add(points[i]);
 
-            if (newMax - newMin > tolerance)
+            if (groupMax - groupMin > tolerance)
             {
                 groups.Add(currentGroup);
                 currentGroup = new(){points[i]};
@@ -122,21 +103,9 @@ public partial class HeightMapTestingScene : Node2D
     
             p1.Y = p2.Y = avgY;
             
-            var groupGapOffset = new Vector2(i * 5, 0); // add only for debugging purposes
+            var groupGapOffset = new Vector2(i * 7, 0); // add only for debugging purposes
             
-            // extend points out to meet halfway to their neighboring group edges
-            // if (i > 0)
-            // {
-            //     var VecToLeftNeighbor = groups[i-1][^1] - p1;
-            //     p1 += new Vector2(VecToLeftNeighbor.X / 2, 0);
-            // }
-            // if (i < groups.Count - 1)
-            // {
-            //     var VecToRightNeighbor = groups[i+1][0] - p2;
-            //     p2 += new Vector2(VecToRightNeighbor.X / 2, 0);
-            // }
-            
-            
+
             var polygon = new Vector2[]
             {
                 p1 + groupGapOffset ,
@@ -160,100 +129,55 @@ public partial class HeightMapTestingScene : Node2D
     
     void UnitFromRect(Rect2 rect)
     {
-        
-        var hm = new HeightMap(rect.Size.Y * 2, (int)GD.Randi(), 0.06f, 5, 2, 0.5f);
+        // generate two different curve stretches
+
+        var hm = new HeightMap(rect.Size.Y, (int)GD.Randi(), 0.06f, 5, 2, 0.5f);
         hm.MaxHeight = float.Clamp(5, 0, rect.Size.X/2);
         hm.MinHeight = -hm.MaxHeight;
-        var noisePoints = hm.GetPointsOfInterest();
         
-        if (!int.IsEvenInteger(noisePoints.Count)) noisePoints.RemoveAt(noisePoints.Count-1);
-        var midPointIndex = 0;
-        var lowDelta = float.MaxValue;
-        for (int i = 0; i < noisePoints.Count; i++)
-        {
-            var delta = Math.Abs( noisePoints[i].X - rect.Size.Y );
-            if (delta < lowDelta) 
-            {  
-                midPointIndex = i; 
-                lowDelta = delta;
-            }
-            else break;  // assumes in sorted list that value will only get closer until correct index is passed
-        }
-        GD.Print(noisePoints.Count + " " + midPointIndex);
-
-        var leftSide = noisePoints.Slice(0, midPointIndex).ToArray();
-        var rightSide = noisePoints.Slice(midPointIndex, noisePoints.Count - midPointIndex -1).ToArray();
-        // need the slice to be actually length approriate 
-        
-        
-        // normalize point positions
-        leftSide = gu.TranslatePolygon(leftSide, -leftSide[0]);
-        rightSide = gu.TranslatePolygon(rightSide, -rightSide[0]);
+        var leftSide = hm.GetPointsOfInterest();
+        hm.domainOffset = rect.Size.Y;
+        var rightSide = hm.GetPointsOfInterest();
 
         //rotate to vertical
-        leftSide = gu.RotatePolygon(leftSide, (float)Math.PI/2);
-        rightSide = gu.RotatePolygon(rightSide, (float)Math.PI/2);
+        leftSide = gu.RotatePolygon(leftSide.ToArray(), (float)Math.PI/2).ToList();
+        rightSide = gu.RotatePolygon(rightSide.ToArray(), (float)Math.PI/2).ToList();
 
-        // move right side over and invert
-        rightSide = gu.TranslatePolygon(rightSide, new Vector2(rect.Size.X, 0) );
-        var _ = leftSide.ToList();
-        _.Reverse();
-        leftSide = _.ToArray();
-
-        //smooth and tesselate each side separately; 
-        var leftCurve = gu.PointsToCurve(leftSide, 0.5f, false);
-        var rightCurve = gu.PointsToCurve(rightSide, 0.5f, false);
-        
-        var rightLastIdx = rightCurve.PointCount - 1;
-        // smooth curves into flat tops
-        var leftTopPoint = leftCurve.GetPointPosition(0);
-        var rightTopPoint = rightCurve.GetPointPosition(rightLastIdx);
-        var topVector = (rightTopPoint - leftTopPoint).Normalized();
-
-        var topEdgeRadius = 2;
-        var topNormal =  topVector.Rotated((float)Math.PI/2) * topEdgeRadius;
-        
-        var handleLeft = -1 * topVector * topEdgeRadius / 3;
-        var handleRight = topVector * topEdgeRadius / 3;
-
-        var leftNewPoint = leftTopPoint + topVector.Rotated((float)Math.PI/4);
-        var rightNewPoint = rightTopPoint + (-1 * topVector).Rotated(-(float)Math.PI/4);
-
-        
-        leftCurve.SetPointIn(0, Vector2.Zero);
-        rightCurve.SetPointOut(rightLastIdx, Vector2.Zero);
-        leftCurve.AddPoint(leftNewPoint, Vector2.Zero, handleLeft, 0);
-        rightCurve.AddPoint(rightNewPoint, handleRight , Vector2.Zero);
-        // var topRotate = topVector.Rotated(0.2f);
-        // var topRotateMinus = topVector.Rotated(-0.2f);
+        // add ending points
+        foreach (var side in new[]{leftSide, rightSide})
+        {
+            var edgeVector = new Vector2(0, 1);
+            var endPoint = side[^1];
+            // angle transition split into two points to help curve smoother
+            var angleFlip = side == rightSide? -1 : 1;
+            var edgeAngle = -Math.PI/2.1;  // smaller angles than 90 produce better results in curve smoothing
+            var edgePoint1 = endPoint + edgeVector.Rotated((float)edgeAngle/2 * angleFlip);
+            var edgePoint2 = edgePoint1 + edgeVector.Rotated((float)edgeAngle * angleFlip);
+            side.AddRange([edgePoint1, edgePoint2]);
+        }
        
-        // var topVector = rightCurve.GetPointPosition(rightLastIdx) - leftCurve.GetPointPosition(0);
-        // rightCurve.SetPointIn( rightLastIdx, topVector.Normalized() * 2);
-        // rightCurve.SetPointOut( rightLastIdx, topVector.Normalized() * -2);
-        
+        // translate lines, reverse right side and combine as poly
+        var translatedRightSide = gu.TranslatePolygon(rightSide.ToArray(), new Vector2(rect.Size.X, 0));
+        var combinedUnitPoly = leftSide.Concat(translatedRightSide.Reverse().ToArray()).ToArray();
 
+
+        // add to curve and smooth, then tesselate back into polygon
+        var smoothCurve = gu.PointsToCurve(combinedUnitPoly, 0.5f, false);
+        var tesselatePoly = smoothCurve.Tessellate();
        
+        var translatedPoly = gu.TranslatePolygon(tesselatePoly, rect.Position);
+
+        // var polyLine = new Line2D(){Points = tesselatePoly};
+        // polyLine.Position = new Vector2(0, -180);
+        // polyLine.Width = 0.5f;
         
-
-
-       
-        var smoothLeftPoly = leftCurve.Tessellate();
-        var smoothRightPoly = rightCurve.Tessellate();
-       
-
-        // combine into one polygon, then into a smoothed out curve
-        var unitPolygon = new List<Vector2>();
-        unitPolygon.AddRange(smoothLeftPoly);
-        unitPolygon.AddRange(smoothRightPoly);
-        var unitPolyTranslated = gu.TranslatePolygon(unitPolygon.ToArray(), rect.Position);
-
-        
+        // AddChild(polyLine);
 
 
         
         // GD.Print("total points after tes: " + tesselatedPoly.Length);
 
-        var polyInst = new Polygon2D(){Polygon = unitPolyTranslated};
+        var polyInst = new Polygon2D(){Polygon = translatedPoly};
         polyInst.Position = new Vector2(0, -180);
         AddChild(polyInst);
 

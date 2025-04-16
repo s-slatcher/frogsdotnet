@@ -4,9 +4,9 @@
 
 [sub_resource type="Curve2D" id="Curve2D_t0mqq"]
 _data = {
-"points": PackedVector2Array(0, 0, 0, 0, 152, 124, 0, 0, 0, 0, 147, 48, -23.8348, 1.45957, 23.8348, -1.45957, 171, 19, -7.10329, -0.550894, 7.10329, 0.550894, 285, 14, 0, 0, 0, 0, 288, 51, 0, 0, 0, 0, 269, 139)
+"points": PackedVector2Array(0, 0, 0, 0, 61, 47, 0, 0, 0, 0, 88, 29, 0, 0, 0, 0, 128, 43, 0, 0, 0, 0, 184, 43, 0, 0, 0, 0, 222, 35, -0.288161, -0.0533633, 0.288161, 0.0533633, 265, 38, -5.8803, -11.0664, 5.8803, 11.0664, 285, 47, -0.111, 24.826, 0, 0, 290, 67, 0, 0, 0, 0, 289.425, 133)
 }
-point_count = 6
+point_count = 9
 
 [node name="HeightMapTestingScene" type="Node2D"]
 script = ExtResource("1_t0mqq")
@@ -18,5 +18,5 @@ ignore_rotation = false
 zoom = Vector2(2.91, 2.91)
 
 [node name="Path2D" type="Path2D" parent="."]
-position = Vector2(5, 3)
+position = Vector2(17, 7)
 curve = SubResource("Curve2D_t0mqq")

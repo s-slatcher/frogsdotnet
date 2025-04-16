@@ -13,6 +13,7 @@ public partial class HeightMap : GodotObject
     private const int samplesPerPeriod = 40;    
 
     public float width = 1;
+    public float domainOffset = 0;
     public float MaxHeight = 1;
     public float MinHeight = 0;
     public int NoiseLayerTotal;
@@ -88,7 +89,9 @@ public partial class HeightMap : GodotObject
             {
                 var noiseLayer = NoiseLayers[j];
                 var layerStrength = (float) Math.Pow(LayerGain, j);
-                var value = noiseLayer.GetNoise1D(noisePos);
+
+                var value = noiseLayer.GetNoise1D(noisePos + domainOffset);
+
                 combinedHeight += value * layerStrength;
                 
                 var slope = getSlope(noiseLayer, noisePos);
