@@ -4,8 +4,8 @@
 
 [resource]
 cull_mode = 2
-specular_mode = 1
 albedo_texture = ExtResource("1_sfa28")
 uv1_scale = Vector3(0.1, 0.1, 0.1)
 uv1_triplanar = true
-uv1_triplanar_sharpness = 7.35544
+uv1_triplanar_sharpness = 7.88339
+disable_receive_shadows = true

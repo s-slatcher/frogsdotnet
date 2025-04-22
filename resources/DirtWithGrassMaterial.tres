@@ -1,0 +1,25 @@
+[gd_resource type="ShaderMaterial" load_steps=5 format=3 uid="uid://b8kwrx0bwxsks"]
+
+[ext_resource type="Shader" uid="uid://bwviqumuf66aj" path="res://resources/ToonDirtShader.gdshader" id="1_q7a24"]
+[ext_resource type="Texture2D" uid="uid://dffs6vsvyeq3c" path="res://resources/textures/rock_tex.png" id="2_8m2v7"]
+[ext_resource type="Texture2D" uid="uid://ccgmhq4uq5pyq" path="res://resources/textures/Cartoon_green_texture_grass.jpg" id="3_a84ql"]
+[ext_resource type="Texture2D" uid="uid://b26k20ol5i1jj" path="res://resources/noise/grass_masking_noise.tres" id="4_7ubgm"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_q7a24")
+shader_parameter/texture_grass = ExtResource("3_a84ql")
+shader_parameter/texture_noise_mask = ExtResource("4_7ubgm")
+shader_parameter/albedo = Color(0.847383, 0.532895, 0.267003, 1)
+shader_parameter/texture_albedo = ExtResource("2_8m2v7")
+shader_parameter/albedo_texture_size = Vector2i(991, 991)
+shader_parameter/point_size = 1.0
+shader_parameter/roughness = 1.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/specular = 0.5
+shader_parameter/metallic = 0.0
+shader_parameter/uv1_blend_sharpness = 1.0
+shader_parameter/uv1_scale = Vector3(0.18, 0.18, 0.18)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)

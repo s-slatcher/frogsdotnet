@@ -20,12 +20,12 @@ public partial class HeightMappedMeshesTest : Node3D
         var em = new ExtrudedMesh(poly, 0.25f, 1f, 5f);
         GetNode<MeshInstance3D>("MeshContainer").Mesh = Wireframe ? em.GetWireframeMesh() : em.GetMesh();
 
-        // texture generation
-        var tex = GetEdgeTexture(poly);
+       
 
         var material = GetNode<MeshInstance3D>("MeshContainer").MaterialOverride as ShaderMaterial;
         var sprite = GetNode<Sprite2D>("CanvasLayer/Sprite2D");
-
+    // texture generation
+            var tex = GetEdgeTexture(poly);
         material.SetShaderParameter("texture_edge", tex);
         // sprite.Texture = tex;
         // sprite.Centered = false;

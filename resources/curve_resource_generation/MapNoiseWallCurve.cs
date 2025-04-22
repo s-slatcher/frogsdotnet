@@ -101,7 +101,7 @@ public partial class MapNoiseWallCurve : Node2D
         var uprightCurve = gu.RotateCurve(curveSlice, (float)Math.PI/2);
         // var curveSliceRight = gu.SliceCurve(curve, indexOffset + index, indexOffset + index + index, true);
         
-        var rotatedCurve = gu.RotateCurve(uprightCurve, (float)Math.Atan2(curveLeftVector.Y, curveLeftVector.X) - (float)Math.PI/2, true );
+        var rotatedCurve = gu.RotateCurve(uprightCurve, (float)Math.Atan2(curveLeftVector.Y, curveLeftVector.X) - (float)Math.PI/2 );
         var translatedCurve = gu.TranslateCurve(rotatedCurve, curveStartLeft);
 
         var curveTopPos = translatedCurve.GetPointPosition(translatedCurve.PointCount-1) + new Vector2(10, 10);
@@ -116,7 +116,7 @@ public partial class MapNoiseWallCurve : Node2D
 
 
         
-        var rotatedCurveRight = gu.RotateCurve(uprightCurve, (float)Math.Atan2(curveRightVector.Y, curveRightVector.X) - (float)Math.PI/2, true );
+        var rotatedCurveRight = gu.RotateCurve(uprightCurve, (float)Math.Atan2(curveRightVector.Y, curveRightVector.X) - (float)Math.PI/2);
         var translatedCurveRight = gu.TranslateCurve(rotatedCurveRight, curveStartRight);
 
         var polygon = new List<Vector2>();

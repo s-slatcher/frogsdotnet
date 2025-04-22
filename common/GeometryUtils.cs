@@ -412,20 +412,18 @@ public partial class GeometryUtils : GodotObject
     }
 
 
-    public Curve2D RotateCurve(Curve2D curve, float rotation, bool rotateHandles = true)
+    public Curve2D RotateCurve(Curve2D curve, float rotation, float? customHandleRotation = null)
     {
         var rotatedCurve = new Curve2D();
+        if (customHandleRotation == null) customHandleRotation = rotation;
         for (int i = 0; i < curve.PointCount; i++)
         {
             var pointPos = curve.GetPointPosition(i).Rotated(rotation);
             var pointIn = curve.GetPointIn(i);
             var pointOut = curve.GetPointOut(i);
             
-            if (rotateHandles)
-            {
-                pointIn = curve.GetPointIn(i).Rotated(rotation);
-                pointOut = curve.GetPointOut(i).Rotated(rotation);
-            }
+            pointIn = curve.GetPointIn(i).Rotated((float)customHandleRotation);
+            pointOut = curve.GetPointOut(i).Rotated((float)customHandleRotation);
             
             rotatedCurve.AddPoint(pointPos);
             rotatedCurve.SetPointIn(i, pointIn);

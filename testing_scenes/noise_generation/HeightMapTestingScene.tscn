@@ -12,7 +12,7 @@ point_count = 9
 script = ExtResource("1_t0mqq")
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(147, -9)
+position = Vector2(293, -88)
 rotation = 3.14159
 ignore_rotation = false
 zoom = Vector2(2.91, 2.91)

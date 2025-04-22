@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://56ilxsaajs3r"]
+
+[ext_resource type="Script" uid="uid://trj54cev1yhl" path="res://testing_scenes/polygon_drawing/ConvexhullTesting.cs" id="1_yjygf"]
+
+[node name="ConvexhullTesting" type="Node2D"]
+script = ExtResource("1_yjygf")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(124, 152, 154, 73, 191, 89, 220, 89, 238, 73, 255, 60, 329, 87, 295, 138, 341, 145, 345, 184, 369, 242, 339, 283, 270, 303, 199, 301, 145, 258, 199, 249, 229, 196, 180, 198, 176, 167, 100, 197, 118, 164)

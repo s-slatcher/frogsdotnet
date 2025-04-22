@@ -105,6 +105,7 @@ public partial class PolygonQuad : GodotObject
             var childPolyList = new List<Vector2[]>();
             // if (Polygons[0].Length == 0) childPolyList = [Polygons[0]];
             childPolyList.AddRange(GetChildPolygonSlices(childRect));
+            if (childPolyList[0].Length == 0) continue; 
             // else childPolyList = [gUtils.PolygonFromRectI(childRect)];
 
             PolygonQuad childQuad = new(childPolyList, childRect)
@@ -115,12 +116,13 @@ public partial class PolygonQuad : GodotObject
                 Parent = this,
                 Root = Root
             };
-
+            
             Children[positionKeys[i]] = childQuad;
         };
         
         // stitching could run *after* full subdividing, so stitched aren't wasted on nodes that will end up subdividing themselves 
         StitchPointsOnNeighborPolygons();
+        
 
     }
 
@@ -163,6 +165,14 @@ public partial class PolygonQuad : GodotObject
         
     }
 
+    public void SimplifyPolygon(){
+        var onlyEdgesPoly = new List<Vector2>();
+        foreach (var point in Polygons[0])
+        {
+            if (PolyPointIsOnGridEdge(point)) onlyEdgesPoly.Add(point);
+        }
+        Polygons[0] = onlyEdgesPoly.ToArray();
+    }
 
     private List<Vector2[]> GetChildPolygonSlices(Rect2 childRect)
     {
@@ -190,31 +200,22 @@ public partial class PolygonQuad : GodotObject
     }
 
     private bool PolyPointIsOnGridEdge(Vector2 point)
-    {
-        if (SharedVectorAxis(point, BoundingRect.Position) == -1 &&
-            SharedVectorAxis(point, BoundingRect.End) == -1)
-        {
-            return false;
-        }
-        return true;
+    {  
+        var r = BoundingRect;
+        var pos = point - r.Position;
+        if (pos.X == 0|| pos.Y == 0 || pos.X == r.Size.X || pos.Y == r.Size.Y) return true;
+        return false; 
     }
     
     public bool HasChildren()
     {
-        if (Children["TL"] == null &&
-            Children["TR"] == null &&
-            Children["BL"] == null &&
-            Children["BR"] == null) 
-        {
-            return false;
-        }
-        else return true;
+        return GetChildren().Count > 0;
         
     }
 
     public List<PolygonQuad> GetChildren()
     {
-        return Children.Values.ToList();
+        return Children.Values.Where(child => child != null).ToList();
     }
 
     // assumes point is NOT on edge of quad bounds, so returns only one quad (or none).
@@ -290,8 +291,8 @@ public partial class PolygonQuad : GodotObject
 
     private int SharedVectorAxis(Vector2 p1, Vector2 p2)
     {
-        if (Math.Abs(p1[0] - p2[0]) < 0.0001 ) return 0;
-        if (Math.Abs(p1[1] - p2[1]) < 0.0001 ) return 1;
+        if (Math.Abs(p1[0] - p2[0]) < 0.001 ) return 0;
+        if (Math.Abs(p1[1] - p2[1]) < 0.001 ) return 1;
         return -1; 
 
     }

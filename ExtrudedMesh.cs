@@ -28,26 +28,41 @@ public partial class ExtrudedMesh : GodotObject
     public float EdgeRadius;
     public float EdgeExtension = 0;
     public bool GenerateBack = false;
+    public int LodFactor = 0; // each lod factor halves the minimum quad size used when generated the mesh
     
+    public List<Mesh> Meshes = new();
+    public List<Mesh> WireframeMeshes = new();
 
+    
+    const float targetMaximumQuadWidth = 16;
+    private float MaximumQuadWidth;
 
     private float edgeInfluenceLimit;
     private GeometryUtils gUtils = new();
     private Dictionary<PolygonQuad, List<LineSegment>> quadNearbyEdgeLists = new();
-    // private Dictionary<PolygonQuad, PolygonMeshSlice> meshSliceDictionary = new();
     private Dictionary<Vector2I, IndexedVertex> vertexDictionary = new();
     private List<IndexedVertex> vertexList = new();
     private List<PolygonQuad> leafNodeQuads = new();
     private Curve3D edgeRadiusCurve = (Curve3D)GD.Load("uid://c6avem4lbyumt").Duplicate();
     private Vector2 polygonSize;
 
+    private float edgeRatio = 0;
 
-    public ExtrudedMesh(Vector2[] polygon, float minimumQuadWidth, float edgeRadius, float edgeExtension)
+
+    public ExtrudedMesh(Vector2[] polygon, float minimumQuadWidth, float edgeRadius, float edgeExtension, int meshDetailLevels = 1)
     {
         var time = Time.GetTicksMsec();
         Polygon = polygon;
         polygonSize = gUtils.RectFromPolygon(polygon).Size;
         MinimumQuadWidth = minimumQuadWidth;
+
+        // set max quad width to be closest value to target max while still cleanly dividing into min quad width
+        var maxQuadWithExponent = Math.Log2(targetMaximumQuadWidth / minimumQuadWidth );
+        var roundedExponent = Math.Round(maxQuadWithExponent);
+        MaximumQuadWidth = minimumQuadWidth * (float)Math.Pow(2, roundedExponent);
+        LodFactor = (int)roundedExponent;
+        GD.Print("lod factor " + LodFactor);
+
         EdgeRadius = edgeRadius;
         EdgeExtension = edgeExtension;
         SetupCurve2D();
@@ -74,51 +89,61 @@ public partial class ExtrudedMesh : GodotObject
         
         edgeRadiusCurve.BakeInterval = EdgeRadius / 100f;
         var length = edgeRadiusCurve.GetBakedLength();
-        edgeInfluenceLimit = length; 
-        
+        edgeRatio = length / EdgeRadius; 
+        edgeInfluenceLimit = EdgeRadius;
     }
 
 
     public void SubdivideQuads()
     {
-        var queue = new List<PolygonQuad>{ParentQuad};
-        int queuePosition = 0;
-        while (queue.Count > queuePosition)
-        {   
-            var quad = queue[queuePosition];
-            queuePosition += 1;
-            
-            float targetSubdivideWidth = MinimumQuadWidth * 8;
-            if (quadNearbyEdgeLists[quad].Count > 0){
-                var closestEdge = gUtils.ShortestDistanceBetweenSegmentAndRect(quad.BoundingRect, quadNearbyEdgeLists[quad][0]);
-                if (closestEdge < MinimumQuadWidth * 1.5) targetSubdivideWidth = MinimumQuadWidth;
-                else if (closestEdge < MinimumQuadWidth*2.5 ) targetSubdivideWidth = MinimumQuadWidth * 2;
-                else if (closestEdge < EdgeRadius/2) targetSubdivideWidth = MinimumQuadWidth * 4;
-            }
+        var indexingQueue = new List<PolygonQuad>{ParentQuad};
+        var subdivideQueue = new List<PolygonQuad>();
 
-            if (targetSubdivideWidth <= quad.BoundingRect.Size.X / 2) 
+        while (indexingQueue.Count > 0)
+        {
+            foreach (var quad in indexingQueue)
+            {
+                IndexQuad(quad);
+                if (QuadDensityTarget(quad) < quad.BoundingRect.Size.X) subdivideQueue.Add(quad);
+            }
+            indexingQueue = new List<PolygonQuad>();
+            
+            Meshes.Add(GetMesh());
+            WireframeMeshes.Add(GetWireframeMesh());
+            
+            foreach (var quad in subdivideQueue)
             {
                 quad.Subdivide();
+                foreach (var child in quad.GetChildren())
+                {
+                    var edgeCheckDistance = float.Clamp(child.BoundingRect.Size.X * 2, edgeInfluenceLimit/2, edgeInfluenceLimit*2);  
+                    quadNearbyEdgeLists[child] = gUtils.SortLineSegmentsByDistanceToRect(child.BoundingRect, quadNearbyEdgeLists[quad], edgeCheckDistance);
+                    indexingQueue.Add(child);
+                }
             }
-            foreach (var child in quad.GetChildren())
-            {
-                if (child == null) continue;
-                var edgeCheckDistance = float.Clamp(child.BoundingRect.Size.X * 2, 0, edgeInfluenceLimit); 
-                quadNearbyEdgeLists[child] = gUtils.SortLineSegmentsByDistanceToRect(child.BoundingRect, quadNearbyEdgeLists[quad], edgeCheckDistance);
-                queue.Add(child);
-            }
-            if (!quad.HasChildren()) // still a leaf node after subdivision attempt
-            {
-                leafNodeQuads.Add(quad);
-                IndexQuad(quad);
-            }
-            
+            subdivideQueue = new List<PolygonQuad>();
         }
+      
+
+    }
+
+    private float QuadDensityTarget(PolygonQuad quad)
+    {
+        
+        if (quadNearbyEdgeLists[quad].Count == 0) return MaximumQuadWidth;
+        
+        var closestEdgeDelta = gUtils.ShortestDistanceBetweenSegmentAndRect(quad.BoundingRect, quadNearbyEdgeLists[quad][0]);
+        var curveProgress = (float)(edgeInfluenceLimit - closestEdgeDelta) * edgeRatio;
+        curveProgress = (float)Math.Pow(float.Clamp(curveProgress, 0, 1), 2);
+        // lerps from 0 to *half* max quad width, then outside that range defaults to max quad width;
+        var quadWidthNeeded = float.Lerp(0, MaximumQuadWidth/2, 1 - curveProgress);  
+        return quadWidthNeeded;
     }
 
     private void IndexQuad(PolygonQuad quad)
     {
         List<int> indexedPolygon3D = new();
+        
         foreach (var polygon in quad.Polygons)
         {
             foreach (var point in polygon)
@@ -167,9 +192,10 @@ public partial class ExtrudedMesh : GodotObject
             var l2 = lineSeg.End + offset;
 
             var closePoint = Geometry2D.GetClosestPointToSegment(sPos, l1, l2); 
-            
+
             var vecToLine = closePoint - sPos;
-    
+            if (Math.Abs(vecToLine.AngleTo(norm)) > Math.PI/2) continue;
+
             var distSqr = vecToLine.LengthSquared();
            
             if (distSqr < edgeInfluenceSquare)
@@ -186,7 +212,7 @@ public partial class ExtrudedMesh : GodotObject
         var nearestEdgeDelta = Math.Sqrt(nearestEdgeSqr);
         if (nearestEdgeDirection != Vector2.Zero)
         {
-            var curveProgress = (float)(edgeInfluenceLimit - nearestEdgeDelta);
+            var curveProgress = (float)(edgeInfluenceLimit - nearestEdgeDelta) * edgeRatio;
             Transform3D curvePointTransform = edgeRadiusCurve.SampleBakedWithRotation(curveProgress);
             
 
@@ -203,7 +229,7 @@ public partial class ExtrudedMesh : GodotObject
             vertex.Position = rotatedCurvePos + curveOrigin3D;
             vertex.Normal = rotatedNormal.Normalized();
             vertex.VertexColor = (vertex.Normal + new Vector3(1,1,1))/2;
-            if (nearestEdgeDelta < 0.01)
+            if (nearestEdgeDelta < 0.005)
             {
                 vertex.Position.Z -= EdgeExtension;
             }
@@ -211,20 +237,11 @@ public partial class ExtrudedMesh : GodotObject
         }         
     }
     
-    public List<Vector2[]> GetMeshAsPolygons()
-    {
-        List<Vector2[]> polyList = new();
-        foreach (var quad in leafNodeQuads )
-        {
-            polyList.AddRange(quad.Polygons);
-        }
-        
-        return polyList;
-    } 
 
-    public Mesh GetMesh()
+    public Mesh GetMesh(float quadSizeLimit = -1)
     {
-        var vertexIndices = GetTriangleIndices();
+        if (quadSizeLimit == -1) quadSizeLimit = MinimumQuadWidth;
+        var vertexIndices = GetTriangleIndices_Lod(quadSizeLimit);
 
         var st = new SurfaceTool();
         st.Begin(Mesh.PrimitiveType.Triangles);
@@ -233,62 +250,72 @@ public partial class ExtrudedMesh : GodotObject
 
         foreach(int index in vertexIndices)
         {
-            st.AddIndex(index);
-        }
-       
-        foreach(IndexedVertex vertex in vertexList)
-        {
+            // st.AddIndex(index);
+            var vertex = vertexList[index];
             var UV = (new Vector2(vertex.Position.X, vertex.Position.Y)) / polyRect.Size;
+            
             st.SetUV(UV);
-            st.SetNormal(vertex.Normal);
+            // st.SetNormal(vertex.Normal);
+            
             st.SetColor(new Color(vertex.VertexColor.X, vertex.VertexColor.Y, vertex.VertexColor.Z, 1));
             st.AddVertex(vertex.Position);
         }
+       
+        // foreach(IndexedVertex vertex in vertexList)
+        // {
+        //     var UV = (new Vector2(vertex.Position.X, vertex.Position.Y)) / polyRect.Size;
+        //     st.SetUV(UV);
+        //     // st.SetNormal(vertex.Normal);
+            
+        //     st.SetColor(new Color(vertex.VertexColor.X, vertex.VertexColor.Y, vertex.VertexColor.Z, 1));
+        //     st.AddVertex(vertex.Position);
+        // }
 
-
+        st.GenerateNormals();
         var mesh = st.Commit();
         return mesh;
     }
 
     public Mesh GetMeshBack()
     {
-        var vertexIndices = GetTriangleIndices();
-        // vertexIndices.Reverse();
-        // var reversedVertexList = vertexList.ToArray().Reverse().ToList();
+        return new Mesh();
+        // var vertexIndices = GetTriangleIndices_Lod();
+        // // vertexIndices.Reverse();
+        // // var reversedVertexList = vertexList.ToArray().Reverse().ToList();
 
-        var st = new SurfaceTool();
-        st.Begin(Mesh.PrimitiveType.Triangles);
+        // var st = new SurfaceTool();
+        // st.Begin(Mesh.PrimitiveType.Triangles);
 
-        foreach(int index in vertexIndices)
-        {
-            st.AddIndex(index);
-        }
+        // foreach(int index in vertexIndices)
+        // {
+        //     st.AddIndex(index);
+        // }
 
-        foreach(IndexedVertex vertex in vertexList)
-        {
-            var flipZ = new Vector3(1, 1, -1);
-            var backPos = vertex.Position * flipZ + new Vector3(0, 0, - 1.9f * (EdgeExtension+EdgeRadius)); 
-            var backNorm = vertex.Normal * new Vector3(-1 ,-1, 1);
+        // foreach(IndexedVertex vertex in vertexList)
+        // {
+        //     var flipZ = new Vector3(1, 1, -1);
+        //     var backPos = vertex.Position * flipZ + new Vector3(0, 0, - 1.9f * (EdgeExtension+EdgeRadius)); 
+        //     var backNorm = vertex.Normal * new Vector3(-1 ,-1, 1);
 
-            st.SetNormal(backNorm);
-            st.SetColor(new Color(vertex.VertexColor.X, vertex.VertexColor.Y, vertex.VertexColor.Z, 1));
-            st.AddVertex(backPos);
-        }
-        return st.Commit();
+        //     st.SetNormal(backNorm);
+        //     st.SetColor(new Color(vertex.VertexColor.X, vertex.VertexColor.Y, vertex.VertexColor.Z, 1));
+        //     st.AddVertex(backPos);
+        // }
+        // return st.Commit();
     }
 
 
-    public Mesh GetWireframeMesh()
+    public Mesh GetWireframeMesh(float quadSizeLimit = -1)
     {
-        var vertexIndices = GetTriangleIndices();  
+        if (quadSizeLimit == -1) quadSizeLimit = MinimumQuadWidth;
+        var vertexIndices = GetTriangleIndices_Lod(quadSizeLimit);  
         var wireframeVertices = new List<Vector3>();
         
         for (int i = 0; i < vertexIndices.Count; i += 3)
         {
             List<Vector3> verts = [vertexList[vertexIndices[i]].Position, vertexList[vertexIndices[i+1]].Position, vertexList[vertexIndices[i+2]].Position];
-            var thickness = (float)(gUtils.AreaOfTriangle3D(verts[0], verts[1], verts[2]) * 0.01);  
-            // thickness = Math.Clamp(thickness, 0.075f, 1.5f);
-            thickness = 0.025f * MinimumQuadWidth;
+            // var thickness = (float)(gUtils.AreaOfTriangle3D(verts[0], verts[1], verts[2]) * 0.05);  
+            var thickness = 0.02f;
 
             wireframeVertices.AddRange(GetLineTriangles(verts[0], verts[1], thickness));
             wireframeVertices.AddRange(GetLineTriangles(verts[1], verts[2], thickness));
@@ -302,6 +329,7 @@ public partial class ExtrudedMesh : GodotObject
         foreach (var vertex in wireframeVertices){
             st.AddVertex(vertex);
         }
+        st.GenerateNormals();
         return st.Commit();
     }
 
@@ -353,6 +381,68 @@ public partial class ExtrudedMesh : GodotObject
             (int)(point.X * 1000),
             (int)(point.Y * 1000)
         );
+    }
+    
+    private List<int> TriangulateQuad(PolygonQuad quad)
+    {
+        var vertexIndices = new List<int>();
+        
+        foreach (var polygon in quad.Polygons )
+        {
+          
+            if (polygon.Length == 0) continue;
+            
+            var triangleIndices = Geometry2D.TriangulatePolygon(polygon);
+            
+            var convertedIndices = new List<int>(); 
+
+            foreach (var index in triangleIndices)
+            {
+                var polyPoint = polygon[index];
+                var key = RoundVectorAsKey(polyPoint);
+                if (!vertexDictionary.ContainsKey(key)) 
+                {
+                    GD.Print(quad.BoundingRect.Size.X);
+                    IndexPoint(polyPoint, quad);
+                }
+                
+                convertedIndices.Add(vertexDictionary[key].ArrayIndex);
+            }
+            
+            vertexIndices.AddRange(convertedIndices);
+        }
+        return vertexIndices;
+    }
+
+    private List<int> GetTriangleIndices_Lod(float quadSizeLimit)
+    {
+        var vertexIndices = new List<int>();
+        var finalQuadSize = quadSizeLimit;
+        
+        var queue = new List<PolygonQuad>{ParentQuad}; 
+        int queuePosition = 0;
+        while (queue.Count > queuePosition)
+        {
+            var quad = queue[queuePosition];
+            queuePosition += 1;
+            
+            if (!quad.HasChildren() || quad.BoundingRect.Size.X == finalQuadSize)
+            {
+                vertexIndices.AddRange(TriangulateQuad(quad));
+                continue;
+            }
+            foreach (var child in quad.GetChildren())
+            {
+                if (child == null) continue;
+                if (child.Polygons[0].Length == 0) continue;
+                queue.Add(child);
+            }
+                
+        }
+        return vertexIndices;
+            
+            
+        
     }
 
 }

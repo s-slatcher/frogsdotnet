@@ -20,7 +20,7 @@ public partial class HeightMap : GodotObject
     List<FastNoiseLite> NoiseLayers = new();
     public float LayerFrequencyMultiplier;
     public float LayerGain;
-    public float ExponentialFactor = 1f;
+    public bool RemapToHeightRange = false;
 
      
     List<Vector2> pointList = []; 
@@ -77,6 +77,8 @@ public partial class HeightMap : GodotObject
         float strengthDivisor = 0;
         for (int i = 0; i < NoiseLayers.Count; i++) strengthDivisor += (float)Math.Pow(LayerGain, i);
         
+        var minValue = float.MaxValue;
+        var maxValue = float.MinValue;
 
         for (int i = 0; i < sampleTotal; i++)
         {   
@@ -103,8 +105,12 @@ public partial class HeightMap : GodotObject
             }
             
             combinedHeight /= strengthDivisor;
-            var exponentValue = Math.Sign(combinedHeight) * Math.Pow( Math.Abs(combinedHeight), ExponentialFactor); 
-            var mappedValue = (exponentValue + 1) / 2 * (MaxHeight - MinHeight) + MinHeight;
+            var mappedValue = (combinedHeight + 1) / 2 * (MaxHeight - MinHeight) + MinHeight;
+            
+            minValue = Math.Min(minValue, mappedValue);
+            maxValue = Math.Max(maxValue, mappedValue);
+
+            
             var mapVector = new Vector2(noisePos, (float) mappedValue);
             
             points.Add(mapVector);
@@ -112,6 +118,15 @@ public partial class HeightMap : GodotObject
 
         }
 
+        if (RemapToHeightRange)
+        {
+            for (int i = 0; i < _pointsOfInterest.Count; i++)
+            {
+                var pointHeight = _pointsOfInterest[i].Y;
+                var remapHeight = (pointHeight - minValue) / (maxValue - minValue) * (MaxHeight - MinHeight) + MinHeight;
+                _pointsOfInterest[i] = new Vector2(_pointsOfInterest[i].X, remapHeight );
+            }
+        }
         pointsOfInterest = _pointsOfInterest;
     
         pointList = points;
@@ -127,6 +142,8 @@ public partial class HeightMap : GodotObject
         return pointsOfInterest;
 
     }
+
+    
 
 
 

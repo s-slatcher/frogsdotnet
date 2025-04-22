@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://ccgh4ycc7mj5e"]
+
+[resource]
+cull_mode = 2
+albedo_color = Color(0, 1.2, 0, 1)
+uv1_scale = Vector3(1.285, 1.285, 1.285)
+uv1_triplanar = true
+uv1_triplanar_sharpness = 16.5642
+uv1_world_triplanar = true

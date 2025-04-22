@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://ddgs3ug4s87pm" path="res://testing_scenes/mesh_extrusion_testing/MeshExtruderTest.cs" id="1_h1byj"]
 [ext_resource type="Texture2D" uid="uid://ch5r8fna4n5xl" path="res://icon.svg" id="2_vvnmm"]
 [ext_resource type="Material" uid="uid://mdk7d5ikdddq" path="res://resources/ToonDirtMaterial.tres" id="3_42aw6"]
+[ext_resource type="Material" uid="uid://ccgh4ycc7mj5e" path="res://resources/wireframe_material.tres" id="4_73qbn"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_vvnmm"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -31,14 +32,6 @@ albedo_texture = ExtResource("2_vvnmm")
 size = Vector2(5, 5)
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_ok2j6"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vvnmm"]
-cull_mode = 2
-albedo_color = Color(0, 1.2, 0, 1)
-uv1_scale = Vector3(1.285, 1.285, 1.285)
-uv1_triplanar = true
-uv1_triplanar_sharpness = 16.5642
-uv1_world_triplanar = true
 
 [node name="MeshExtruderTest" type="Node3D"]
 script = ExtResource("1_h1byj")
@@ -76,7 +69,7 @@ material_override = ExtResource("3_42aw6")
 mesh = SubResource("CapsuleMesh_ok2j6")
 
 [node name="ExtrudedWireframeContainer" type="MeshInstance3D" parent="."]
-material_override = SubResource("StandardMaterial3D_vvnmm")
+material_override = ExtResource("4_73qbn")
 mesh = SubResource("CapsuleMesh_ok2j6")
 
 [node name="Camera3D" type="Camera3D" parent="."]

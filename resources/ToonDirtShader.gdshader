@@ -4,6 +4,7 @@ shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_toon;
 
 uniform sampler2D texture_edge : source_color, filter_linear_mipmap, repeat_enable;
+uniform sampler2D texture_debug_test : source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2D texture_grass : source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2D texture_noise_mask : source_color, filter_linear_mipmap, repeat_enable;
 
@@ -64,7 +65,8 @@ void fragment() {
 	vec4 albedo_tex = triplanar_texture(texture_albedo, uv1_power_normal, uv1_triplanar_pos);
 	//ALBEDO = albedo.rgb * albedo_tex.rgb;
 	ALBEDO = albedo.rgb;
-	vec4 edge_color = texture(texture_edge, vec2(UV.x, UV.y));
+	vec4 edge_color = texture(texture_edge, UV);
+	vec4 debug_color = texture(texture_debug_test, UV);
 	float noise_uv_scaler = 0.05f; // at 0.05, texture repeats every 20 meters
 	vec4 noise_mask_color = texture(texture_noise_mask, vertex_pos.xy * noise_uv_scaler);
 	//ALBEDO = edge_color.rgb;
@@ -78,6 +80,9 @@ void fragment() {
 	vec4 grass_tex = triplanar_texture(texture_grass, uv1_power_normal, uv1_triplanar_pos);
 	ALBEDO = mix(ALBEDO, grass_tex.rgb, grass_color_step);
 	
+	//ALBEDO = edge_color.rgb;
+	//ALBEDO = vec3(UV, 1);
+	//ALBEDO = debug_color.rgb;
 	
 	float metallic_tex = dot(triplanar_texture(texture_metallic, uv1_power_normal, uv1_triplanar_pos), metallic_texture_channel);
 	METALLIC = metallic_tex * metallic;
