@@ -9,41 +9,66 @@ using Vector2 = Godot.Vector2;
 
 public partial class TerrainMap : GodotObject
 {
-    public int Seed = 0;
+
     public float MaxHeight = 100;
     public float MinHeight = 0;
-    public int Width = 100; 
-    public int MajorDivisions = 3;
-    public float CliffGrade = float.Pi/18;
+
+    public float CliffGrade = float.Pi/15;
     public float CliffSideNoiseWidth = 8;
-    
-    private Vector2 smallGapRange = new(1, 10);
-    private float smallGapBaseChance = 0.33f;
-    private Vector2 majorGapRange = new(40, 60);
+
     private float groupingTolerance = 14f; // maximum height difference allowed in one group of points
     private float MinSurfaceWidth = 8; // minimum width difference of the points contained in a group, priority over groupingTolerance
+    
+
+    private float landDistortShiftFactor = 0.33f;
+    private Random rand;
+    private HeightMap heightMap;
+    private HeightMap landDistortionMap;
+
     private GeometryUtils gu = new();
 
 
-    public List<Polygon2D> Generate()
+
+   
+    public TerrainMap(int seed = 0)
     {
+        rand = new(seed);
+        heightMap = new(seed);
+        heightMap.RemapToHeightRange = true; 
+
+        var distortFreq = 0.04f;
+        var distortLayers = 3;
+        var layerFrequencyMult = 2.25f;
+        var layerStrengthMult = 0.45f;
+        landDistortionMap = new(seed, distortFreq, distortLayers, layerFrequencyMult, layerStrengthMult);
         
         
-        // generate simplex noise height map and get list of turning points in noise curve
-        var heightMap = new HeightMap(Width, Seed, 0.020f, 3, 2, 0.5f);
+        
+    }
+
+    void UpdateHeightMaps()
+    {
         heightMap.MaxHeight = MaxHeight;
         heightMap.MinHeight = MinHeight;
-        heightMap.RemapToHeightRange = true; 
-        var turningPoints = heightMap.GetPointsOfInterest();
 
-        // group and reduce points into simpler rectangles
-        List<Rect2> towerRects = GroupPoints(turningPoints);
+        landDistortionMap.MaxHeight = CliffSideNoiseWidth * ( 1 - landDistortShiftFactor);
+        landDistortionMap.MinHeight = landDistortionMap.MaxHeight - CliffSideNoiseWidth;
+    }
+
+   
+
+    public List<Polygon2D> GenerateNext(float width)
+    {
         
+        UpdateHeightMaps();
+
+        var points = heightMap.GetNextHeights(width);
+
+        
+        List<Rect2> towerRects = GroupPoints(points);
         var towerPolygons = towerRects.Select(GetTowerPolygon).ToList();
-        
         ArrangeTowers(towerPolygons);
         var mergedList = ReduceMergePolygons(towerPolygons);
-
         return mergedList;
         
     }
@@ -64,9 +89,10 @@ public partial class TerrainMap : GodotObject
             else
             {
                 currentMerge = mergeResult[0];
-            }  
+            }
+            
         }
-        
+        mergedList.Add(ConvertToPolygonInstance(currentMerge));
         return mergedList;
     }
 
@@ -80,65 +106,41 @@ public partial class TerrainMap : GodotObject
         poly2D.Position = rect.Position;
         
         return poly2D;
-
+        
     }
 
     private void ArrangeTowers(List<Vector2[]> towers)
     {
-        var gapIndices = new int[MajorDivisions-1];
-        var largeGapFrequency = (float)towers.Count / (float)(MajorDivisions);
-        for (int i = 0; i < gapIndices.Length; i++) gapIndices[i] = (int) (largeGapFrequency * (i + 1) );
+        
 
         for (int i = 0; i < towers.Count - 1; i++)
         {   
             
             var towerPoly = towers[i];
             var nextTowerPoly = towers[i+1];
+            bool leftUnitIsShorter = towerPoly[0].Y < nextTowerPoly[0].Y; 
 
-            var heightFactor = towerPoly[0].Y / MaxHeight;
-            var splitChance = smallGapBaseChance * (1 - heightFactor); //lower height = higher chance to split
-            var splitGap = GD.Randf() < splitChance ? GD.RandRange(smallGapRange.X, smallGapRange.Y) : 0;
-            if (gapIndices.Contains(i)) splitGap += GD.RandRange(majorGapRange.X, majorGapRange.Y); 
+            Vector2 topEdge;
+            Vector2 mergePoint;
+            Vector2 alignTranslation;
 
-            if (splitGap > 0)
+            if (leftUnitIsShorter)
             {
-                var unitRectLeft = gu.RectFromPolygon(towerPoly);
-                var unitRectRight = gu.RectFromPolygon(nextTowerPoly);
-                var leftX = unitRectLeft.End.X;
-                var rightX = unitRectRight.Position.X;
-                
-                var gapTranslation = new Vector2(leftX - rightX, 0);
-                gapTranslation += new Vector2((float)splitGap, 0);         
-                
-                towers[i+1] = gu.TranslatePolygon(towers[i+1], gapTranslation);
-                
-                
+                topEdge = towerPoly[^1];
+                mergePoint = HeightMatchPointToUnitEdge(nextTowerPoly, topEdge, false);
+                alignTranslation = new Vector2( (topEdge - mergePoint).X, 0);
+
             }
             else
             {
-                bool leftUnitIsShorter = towerPoly[0].Y < nextTowerPoly[0].Y; 
-
-                Vector2 topEdge;
-                Vector2 mergePoint;
-                Vector2 alignTranslation;
-
-                if (leftUnitIsShorter)
-                {
-                    topEdge = towerPoly[^1];
-                    mergePoint = HeightMatchPointToUnitEdge(nextTowerPoly, topEdge, false);
-                    alignTranslation = new Vector2( (topEdge - mergePoint).X, 0);
-
-                }
-                else
-                {
-                    topEdge = nextTowerPoly[0];
-                    mergePoint = HeightMatchPointToUnitEdge(towerPoly, topEdge, true );
-                    alignTranslation = new Vector2( (mergePoint - topEdge).X, 0);
-                }
-
-                towers[i+1] = gu.TranslatePolygon(towers[i+1], alignTranslation);
-
+                topEdge = nextTowerPoly[0];
+                mergePoint = HeightMatchPointToUnitEdge(towerPoly, topEdge, true );
+                alignTranslation = new Vector2( (mergePoint - topEdge).X, 0);
             }
+
+            towers[i+1] = gu.TranslatePolygon(towers[i+1], alignTranslation);
+
+            
         }
     }
 
@@ -188,19 +190,9 @@ public partial class TerrainMap : GodotObject
     {
         var sideLength =  rect.Size.Y / float.Cos(CliffGrade);
         var baseWidth = Math.Sqrt(sideLength*sideLength - rect.Size.Y * rect.Size.Y) * 2 + rect.Size.X;
-        var noiseWindowShiftFactor = 0.33f;
         
-
-        // generate two different curve stretches
-        var hm = new HeightMap(sideLength, (int)GD.Randi(), 0.04f, 3, 2.25f, 0.45f);
-        // hm.RemapToHeightRange = true
-        
-        
-        hm.MaxHeight = CliffSideNoiseWidth * ( 1 - noiseWindowShiftFactor);
-        hm.MinHeight = hm.MaxHeight - CliffSideNoiseWidth;
-        var leftSide = hm.GetPointsOfInterest().ToArray();
-        hm.domainOffset = rect.Size.X * 2;
-        var rightSide = hm.GetPointsOfInterest().ToArray();
+        var leftSide = landDistortionMap.GetNextHeights(sideLength).ToArray();
+        var rightSide = landDistortionMap.GetNextHeights(sideLength).ToArray();
 
         // normalize positions
         leftSide = gu.TranslatePolygon(leftSide, new Vector2(-leftSide[0].X, 0));
@@ -254,7 +246,7 @@ public partial class TerrainMap : GodotObject
 
     private Vector2 HeightMatchPointToUnitEdge(Vector2[] towerPolygon, Vector2 point, bool rightEdge)
     {
-        // assumes units have roughly same number of points on left and right sides -- could possibly fail with extreme height differences and bad luck
+        
         Vector2 indexRange;
         if (rightEdge) indexRange = new Vector2(towerPolygon.Length/2 - 1, towerPolygon.Length);
         else indexRange = new Vector2(0, towerPolygon.Length/2 + 1);

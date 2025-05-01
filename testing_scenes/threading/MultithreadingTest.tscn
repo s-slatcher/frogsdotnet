@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b7wdlad5xjej7"]
+
+[ext_resource type="Script" uid="uid://bfgbk7nqlnmfc" path="res://testing_scenes/threading/MultithreadingTest.cs" id="1_qkn85"]
+
+[node name="MultithreadingTest" type="Node2D"]
+script = ExtResource("1_qkn85")

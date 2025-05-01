@@ -56,7 +56,7 @@ public partial class UserPolygonDraw : Node3D
         var mesh = extrudedMesh.GetMesh();
         
         var meshInst = PolyContainer.Duplicate() as MeshInstance3D;
-        meshInst.Mesh = mesh;
+        // meshInst.Mesh = mesh;
         meshInst.Visible = true;
 
         var rigidBody = RigidBodyDrawing.Instantiate() as PhysicsDrawing;

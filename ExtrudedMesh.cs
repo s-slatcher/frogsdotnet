@@ -12,6 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Transactions;
 using Vector2 = Godot.Vector2;
 using Vector3 = Godot.Vector3;
@@ -28,9 +29,11 @@ public partial class ExtrudedMesh : GodotObject
     public float EdgeRadius;
     public float EdgeExtension = 0;
     public bool GenerateBack = false;
+    public float EdgeCutOffHeight = 0;
     public int LodFactor = 0; // each lod factor halves the minimum quad size used when generated the mesh
-    
-    public List<Mesh> Meshes = new();
+
+    public Mesh CachedMesh;
+
     public List<Mesh> WireframeMeshes = new();
 
     
@@ -46,6 +49,10 @@ public partial class ExtrudedMesh : GodotObject
     private Curve3D edgeRadiusCurve = (Curve3D)GD.Load("uid://c6avem4lbyumt").Duplicate();
     private Vector2 polygonSize;
 
+    private List<Action> actionList = new();
+    private ValueTask vertexIndexingTask;
+    
+
     private float edgeRatio = 0;
 
 
@@ -60,23 +67,27 @@ public partial class ExtrudedMesh : GodotObject
         var maxQuadWithExponent = Math.Log2(targetMaximumQuadWidth / minimumQuadWidth );
         var roundedExponent = Math.Round(maxQuadWithExponent);
         MaximumQuadWidth = minimumQuadWidth * (float)Math.Pow(2, roundedExponent);
-        LodFactor = (int)roundedExponent;
-        GD.Print("lod factor " + LodFactor);
 
         EdgeRadius = edgeRadius;
         EdgeExtension = edgeExtension;
         SetupCurve2D();
-        SetupPolygonQuad();
-        GD.Print(vertexList.Count + " vertices, in " + (Time.GetTicksMsec() - time) + " ms, from " + quadNearbyEdgeLists[ParentQuad].Count, " line polygon");
+        
+        // SetupPolygonQuad();
+        // GD.Print(vertexList.Count + " vertices, in " + (Time.GetTicksMsec() - time) + " ms, from " + quadNearbyEdgeLists[ParentQuad].Count, " line polygon");
         
     }
 
     
 
-    private void SetupPolygonQuad()
+    public void SetupPolygonQuad()
     {
         ParentQuad = PolygonQuad.CreateRootQuad(Polygon, MinimumQuadWidth);
-        quadNearbyEdgeLists[ParentQuad] = gUtils.LineSegmentsFromPolygon(Polygon);
+        // trim off bottom edges that will be obscured. 
+        quadNearbyEdgeLists[ParentQuad] = gUtils.LineSegmentsFromPolygon(Polygon).Where( lineSeg => {
+            bool isBottomEdge = lineSeg.Start.Y < EdgeCutOffHeight && lineSeg.End.Y < EdgeCutOffHeight;
+            return !isBottomEdge;
+        }).ToList();
+
         SubdivideQuads();
     }
 
@@ -93,36 +104,76 @@ public partial class ExtrudedMesh : GodotObject
         edgeInfluenceLimit = EdgeRadius;
     }
 
+    private List<LineSegment> TrimBottomEdges(List<LineSegment> lineSegs)
+    {
+        
+        return lineSegs.Where( lineSeg => {
+            bool isBottomEdge = lineSeg.Start.Y < EdgeCutOffHeight && lineSeg.End.Y < EdgeCutOffHeight;
+            return !isBottomEdge;
+        }).ToList();
+    }
 
     public void SubdivideQuads()
     {
+        
+        var time = Time.GetTicksMsec();
+        
         var indexingQueue = new List<PolygonQuad>{ParentQuad};
         var subdivideQueue = new List<PolygonQuad>();
 
+
+
         while (indexingQueue.Count > 0)
         {
-            foreach (var quad in indexingQueue)
+            for (int i = 0; i < indexingQueue.Count; i++)
             {
+                var quad = indexingQueue[i];
                 IndexQuad(quad);
                 if (QuadDensityTarget(quad) < quad.BoundingRect.Size.X) subdivideQueue.Add(quad);
-            }
+            } 
+            
             indexingQueue = new List<PolygonQuad>();
             
-            Meshes.Add(GetMesh());
-            WireframeMeshes.Add(GetWireframeMesh());
+            // Meshes.Add(GetMesh());
+            // WireframeMeshes.Add(GetWireframeMesh());
             
-            foreach (var quad in subdivideQueue)
+            for (int i = 0; i < subdivideQueue.Count; i++)
             {
+                var quad = subdivideQueue[i];
                 quad.Subdivide();
                 foreach (var child in quad.GetChildren())
                 {
-                    var edgeCheckDistance = float.Clamp(child.BoundingRect.Size.X * 2, edgeInfluenceLimit/2, edgeInfluenceLimit*2);  
+                    var edgeCheckDistance = edgeInfluenceLimit;  
                     quadNearbyEdgeLists[child] = gUtils.SortLineSegmentsByDistanceToRect(child.BoundingRect, quadNearbyEdgeLists[quad], edgeCheckDistance);
                     indexingQueue.Add(child);
                 }
+                
             }
+            
             subdivideQueue = new List<PolygonQuad>();
         }
+        
+        // GD.Print("total subdivide time : "  + (Time.GetTicksMsec() - time) );
+        // Parallel.Invoke([.. actionList]);
+        // foreach (Action action in actionList)
+        // {
+        //     action.Invoke();
+        // }
+        // 
+        time = Time.GetTicksMsec();
+        
+        // GD.Print("total actions: " + actionList.Count);
+        for (int i = 0; i < actionList.Count; i++)
+        {
+            actionList[i].Invoke();
+            
+        }
+
+        // CachedMesh = GetMesh();
+        // GD.Print("total action invoke time : "  + (Time.GetTicksMsec() - time) );
+
+        // Meshes.Add(GetMesh());
+        // WireframeMeshes.Add(GetWireframeMesh());
       
 
     }
@@ -169,8 +220,7 @@ public partial class ExtrudedMesh : GodotObject
         
         vertexList.Add(vertex);
         vertexDictionary[key] = vertex;
-
-        WrapPointAroundEdge(vertex, quad);
+        actionList.Add(() => WrapPointAroundEdge(vertex, quad));
 
     }
 
@@ -181,9 +231,9 @@ public partial class ExtrudedMesh : GodotObject
         Vector2 sPos = vertex.SourcePosition;
         Vector2 nearestEdgeDirection = Vector2.Zero;
 
-        var edgeList = quad.Parent != null ? quadNearbyEdgeLists[quad.Parent] : quadNearbyEdgeLists[quad]; //uses parent quads larger edge list until "nearby" is better defined in subdivision checks  
+        var edgeList = quad.Parent == null ? quadNearbyEdgeLists[quad] : quadNearbyEdgeLists[quad.Parent]; //uses parent quads larger edge list until "nearby" is better defined in subdivision checks  
 
-        List<Vector2> edgeInfluenceVectors = new();
+        
         foreach (var lineSeg in edgeList)
         {
             var norm = lineSeg.GetNormal();
@@ -238,8 +288,12 @@ public partial class ExtrudedMesh : GodotObject
     }
     
 
-    public Mesh GetMesh(float quadSizeLimit = -1)
+    public async Task<Mesh> GetMesh(float quadSizeLimit = -1)
     {
+        GD.Print("Started GetMeshTask");   
+        return await Task.Run(() => {
+
+        
         if (quadSizeLimit == -1) quadSizeLimit = MinimumQuadWidth;
         var vertexIndices = GetTriangleIndices_Lod(quadSizeLimit);
 
@@ -271,9 +325,11 @@ public partial class ExtrudedMesh : GodotObject
         //     st.AddVertex(vertex.Position);
         // }
 
-        st.GenerateNormals();
-        var mesh = st.Commit();
-        return mesh;
+            st.GenerateNormals();
+            var mesh = st.Commit();
+            CachedMesh = mesh;
+            return mesh;
+        });
     }
 
     public Mesh GetMeshBack()
@@ -402,7 +458,7 @@ public partial class ExtrudedMesh : GodotObject
                 var key = RoundVectorAsKey(polyPoint);
                 if (!vertexDictionary.ContainsKey(key)) 
                 {
-                    GD.Print(quad.BoundingRect.Size.X);
+                    GD.Print("duplicate indexing");
                     IndexPoint(polyPoint, quad);
                 }
                 
@@ -431,12 +487,7 @@ public partial class ExtrudedMesh : GodotObject
                 vertexIndices.AddRange(TriangulateQuad(quad));
                 continue;
             }
-            foreach (var child in quad.GetChildren())
-            {
-                if (child == null) continue;
-                if (child.Polygons[0].Length == 0) continue;
-                queue.Add(child);
-            }
+            queue.AddRange(quad.GetChildren());
                 
         }
         return vertexIndices;

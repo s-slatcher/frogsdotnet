@@ -1,7 +1,8 @@
-[gd_scene load_steps=8 format=3 uid="uid://0u10cgpxhlft"]
+[gd_scene load_steps=9 format=3 uid="uid://0u10cgpxhlft"]
 
 [ext_resource type="Script" uid="uid://jjhedjijysii" path="res://map_generation/World.cs" id="1_vdpkr"]
 [ext_resource type="Material" uid="uid://b8kwrx0bwxsks" path="res://resources/DirtWithGrassMaterial.tres" id="2_qhmyd"]
+[ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="3_ggvqs"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_qhmyd"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -114,9 +115,14 @@ environment = SubResource("Environment_bk67d")
 [node name="container" type="MeshInstance3D" parent="."]
 material_override = ExtResource("2_qhmyd")
 
-[node name="SwapMesh" type="Timer" parent="."]
-wait_time = 0.75
+[node name="timer" type="Timer" parent="."]
+wait_time = 2.0
 autostart = true
 
 [node name="wireframeContainer" type="MeshInstance3D" parent="."]
 material_override = SubResource("ShaderMaterial_ggvqs")
+
+[node name="CanvasLayer" parent="." instance=ExtResource("3_ggvqs")]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.73313, 0, 3.84795)
