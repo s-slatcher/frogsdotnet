@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.Contracts;
+using System.Drawing;
 using System.Linq;
 
 using System.Net.Http.Headers;
@@ -36,6 +37,7 @@ public partial class ExtrudedMesh : GodotObject
 
     public List<Mesh> WireframeMeshes = new();
 
+    
     
     const float targetMaximumQuadWidth = 16;
     private float MaximumQuadWidth;
@@ -152,15 +154,16 @@ public partial class ExtrudedMesh : GodotObject
             
             subdivideQueue = new List<PolygonQuad>();
         }
+
         
-        // GD.Print("total subdivide time : "  + (Time.GetTicksMsec() - time) );
+        GD.Print("total subdivide time : "  + (Time.GetTicksMsec() - time) );
+        
         // Parallel.Invoke([.. actionList]);
         // foreach (Action action in actionList)
         // {
         //     action.Invoke();
         // }
         // 
-        time = Time.GetTicksMsec();
         
         // GD.Print("total actions: " + actionList.Count);
         for (int i = 0; i < actionList.Count; i++)
@@ -311,7 +314,7 @@ public partial class ExtrudedMesh : GodotObject
             st.SetUV(UV);
             // st.SetNormal(vertex.Normal);
             
-            st.SetColor(new Color(vertex.VertexColor.X, vertex.VertexColor.Y, vertex.VertexColor.Z, 1));
+            st.SetColor(new Godot.Color(vertex.VertexColor.X, vertex.VertexColor.Y, vertex.VertexColor.Z, 1));
             st.AddVertex(vertex.Position);
         }
        
@@ -409,27 +412,7 @@ public partial class ExtrudedMesh : GodotObject
 
     }
 
-    private List<int> GetTriangleIndices()
-    {
-        var vertexIndices = new List<int>();
-
-        foreach (var quad in leafNodeQuads)
-        {
-            foreach (var polygon in quad.Polygons )
-            {
-                if (polygon.Length == 0) continue;
-                var triangleIndices = Geometry2D.TriangulatePolygon(polygon);
-                
-                var triangleIndicesList = triangleIndices.ToList();
-
-                triangleIndicesList = triangleIndices.Select(index => 
-                    vertexDictionary[ RoundVectorAsKey(polygon[index])].ArrayIndex).ToList();
-                vertexIndices.AddRange(triangleIndicesList);
-            }
-        }
-        vertexIndices.Reverse();
-        return vertexIndices;
-    }
+  
 
     private Vector2I RoundVectorAsKey(Vector2 point)
     {
@@ -439,44 +422,104 @@ public partial class ExtrudedMesh : GodotObject
         );
     }
     
+    
+
+
     private List<int> TriangulateQuad(PolygonQuad quad)
     {
         var vertexIndices = new List<int>();
         
-        foreach (var polygon in quad.Polygons )
-        {
-          
-            if (polygon.Length == 0) continue;
-            
-            var triangleIndices = Geometry2D.TriangulatePolygon(polygon);
-            
-            var convertedIndices = new List<int>(); 
+        var polygon = quad.Polygons[0];
+        if (polygon.Length == 0) return vertexIndices;
 
-            foreach (var index in triangleIndices)
+        var stitchPolygon = StitchQuadPolygon(quad);
+
+            
+        var triangleIndices = Geometry2D.TriangulatePolygon(stitchPolygon);
+        
+        var convertedIndices = new List<int>(); 
+
+        foreach (var index in triangleIndices)
+        {
+            var polyPoint = stitchPolygon[index];
+            var key = RoundVectorAsKey(polyPoint);
+            if (!vertexDictionary.ContainsKey(key)) 
             {
-                var polyPoint = polygon[index];
-                var key = RoundVectorAsKey(polyPoint);
-                if (!vertexDictionary.ContainsKey(key)) 
-                {
-                    GD.Print("duplicate indexing");
-                    IndexPoint(polyPoint, quad);
-                }
-                
-                convertedIndices.Add(vertexDictionary[key].ArrayIndex);
+                GD.Print("duplicate indexing");
+                IndexPoint(polyPoint, quad);
             }
             
-            vertexIndices.AddRange(convertedIndices);
+            convertedIndices.Add(vertexDictionary[key].ArrayIndex);
         }
+        
+        vertexIndices.AddRange(convertedIndices);
         return vertexIndices;
     }
 
+
+    private int numberOfStitches = 0;
+    private Vector2[] StitchQuadPolygon(PolygonQuad quad)
+    {
+
+        var stitchedPolygon = new List<Vector2>();
+        var region = quad.BoundingRect;
+        var polygon = quad.Polygons[0];
+        if (region.Size.X == MinimumQuadWidth) return polygon;
+        // assumes any quad that contains an edge piece will be the min quad width already
+        // and that no min sized quads will need stitching
+        var gridPoints = gUtils.PolygonFromRect(region);
+
+
+        for (int i = 0; i < polygon.Length; i++)
+        {
+            Vector2 p1 = polygon[i];
+            
+            stitchedPolygon.Add(p1);
+
+            Vector2 p2 = i+1 < polygon.Length ? polygon[i+1] : polygon[0];
+
+            if (!gridPoints.Contains(p1) || !gridPoints.Contains(p2)) continue;
+
+            var sharedAxis = p1.X == p2.X ? 0 : 1;
+            var otherAxis = sharedAxis == 0? 1 : 0;
+
+            if (p1[sharedAxis] != p2[sharedAxis])
+            {
+                GD.Print("error " + p1 + " not aligned with " + p2);
+                continue;
+            }
+            var stitchVector = sharedAxis == 0 ? new Vector2(0, MinimumQuadWidth) : new Vector2(MinimumQuadWidth, 0);
+            stitchVector *= p1[otherAxis] < p2[otherAxis]? 1 : -1;
+
+            var stitchPositions = float.Round(region.Size.X / MinimumQuadWidth) - 1;
+            for (int j = 0; j < stitchPositions; j++)
+            {
+                var pos = p1 + (stitchVector * (j + 1));
+                var key = RoundVectorAsKey(pos);
+                if (vertexDictionary.ContainsKey(key)) { stitchedPolygon.Add(pos); numberOfStitches += 1;}
+                
+            }
+            
+
+        }
+        return stitchedPolygon.ToArray();
+    }
+
+    
+    
+    
+    
+
     private List<int> GetTriangleIndices_Lod(float quadSizeLimit)
     {
+        var time = Time.GetTicksMsec();
+        
         var vertexIndices = new List<int>();
         var finalQuadSize = quadSizeLimit;
         
         var queue = new List<PolygonQuad>{ParentQuad}; 
         int queuePosition = 0;
+
         while (queue.Count > queuePosition)
         {
             var quad = queue[queuePosition];
@@ -490,6 +533,9 @@ public partial class ExtrudedMesh : GodotObject
             queue.AddRange(quad.GetChildren());
                 
         }
+
+        GD.Print("triangulation time: " + (Time.GetTicksMsec() - time).ToString());
+        GD.Print("num of stitches: " + numberOfStitches);
         return vertexIndices;
             
             
