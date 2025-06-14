@@ -40,18 +40,20 @@ public partial class World : Node3D
 
     public override void _Ready()
     {
-        
+
         terrain = new();
         terrain.MaxHeight = 80;
         terrain.MinHeight = 35;
-        
-        thread = new(GenerateMap);
-        thread.Start();
+
+        // thread = new(GenerateMap);
+        // thread.Start();
+
+        GenerateMap_v2();
     }
 
     public override void _Process(double delta)
-    {  
-
+    {
+        return;
         meshTime += delta;
         
         if (task == null || !task.IsCompleted) return;
@@ -62,7 +64,8 @@ public partial class World : Node3D
         // GD.Print(meshTime + " sec to make mesh");
         meshTime = 0;
         task = null;
-        GetTree().CreateTimer(4).Timeout += () => {
+        GetTree().CreateTimer(3).Timeout += () => {
+            GD.Print("recursions before thread breaks: " + MeshGenerators[^1].quadsDuplicated);
             thread = new(GenerateMap);
             thread.Start(); 
         };
@@ -74,6 +77,7 @@ public partial class World : Node3D
 
     public override void _PhysicsProcess(double delta)
     {
+        return;
         // check every task for completion
         var tasksToRemove = new List<Task<Mesh>>();
         foreach (var task in meshGenerationTasks.Keys)
@@ -84,28 +88,59 @@ public partial class World : Node3D
                 var meshInstance = meshGenerationTasks[task];
                 meshInstance.Mesh = task.Result;
                 tasksToRemove.Add(task);
-                
-
 
             }
         }
         foreach (var task in tasksToRemove) meshGenerationTasks.Remove(task);
     }
 
+    private void GenerateMap_v2()
+    {
+
+        var width = 100f;
+        List<Polygon2D> MapPolygonInstances = terrain.GenerateNext(width);
+        var mapPoly = MapPolygonInstances[0];
+
+        var quadMesh = new PolygonQuadMesh(mapPoly.Polygon);
+        var distorter = new EdgeWrapMeshDistort(quadMesh);
+        distorter.ApplyDistort();
+
+        var distortedQuadMesh = distorter.QuadMesh;
+
+        var polygons = distortedQuadMesh.GetPolygons();
+        GD.Print(polygons.Count);
+        foreach (Vector2[] poly in polygons)
+        {
+            var poly2d = new Polygon2D() { Polygon = poly };
+            poly2d.SelfModulate = new Color(GD.Randf(), GD.Randf(), GD.Randf(), 1);
+            AddChild(poly2d);
+        }
+
+        List<Mesh> meshList = distortedQuadMesh.GenerateMeshes();
+        foreach (Mesh mesh in meshList)
+        {
+            var meshInstance = GetNode<MeshInstance3D>("container").Duplicate() as MeshInstance3D;
+            meshInstance.Mesh = mesh;
+            var material = meshInstance.MaterialOverride.Duplicate() as ShaderMaterial;
+            meshInstance.MaterialOverride = material;
+            AddChild(meshInstance);
+
+            }
+
+
+    }
 
     private void GenerateMap()
     {
-     
-        var width = 300f;
 
-        
+        var width = 300f;
         List<Polygon2D> MapPolygonInstances = terrain.GenerateNext(width);
-        
+
         var wireframeMat = GD.Load("uid://ccgh4ycc7mj5e") as StandardMaterial3D;
-        
+
         var poly2D = MapPolygonInstances[0];
         // AddChild(poly2D);
-        
+
         var em = new ExtrudedMesh(poly2D.Polygon, 0.25f, 1f, 3);
         em.EdgeCutOffHeight = 7f;
         MeshGenerators.Add(em);
@@ -113,32 +148,32 @@ public partial class World : Node3D
         // GD.Print("init task time: " + (Time.GetTicksMsec() - time));        
         var meshInstance = GetNode<MeshInstance3D>("container").Duplicate() as MeshInstance3D;
         meshInstance.Position = nextMeshPosition;
-        nextMeshPosition += new Vector3(width + 10, 0 ,0);
+        nextMeshPosition += new Vector3(width + 10, 0, 0);
         MeshInstances.Add(meshInstance);
 
         // var meshPosition = new Godot.Vector3(poly2D.Position.X, poly2D.Position.Y, 0);
         // meshInstance.Position = meshPosition;
         var material = meshInstance.MaterialOverride.Duplicate() as ShaderMaterial;
         meshInstance.MaterialOverride = material;
-        
+
         var tex = GetEdgeTexture(poly2D.Polygon);
         material.SetShaderParameter("texture_edge", tex);
         CallDeferred("add_child", meshInstance);
-            
-            
-            // meshInstance.Mesh = em.Meshes[index];
-            // meshInstance.Mesh = em.GetMesh();
-            
 
-            // var sprite2d = new Sprite2D(){Texture = tex, Position = poly2D.Position, Scale = new Vector2(1/8f, 1/8f), Centered = false};
-            // sprite2d.Modulate = new Color(1,1,1,0.5f);
-            // AddChild(sprite2d);
 
-            // var meshInstanceWireframe = new MeshInstance3D(){Position = meshPosition + new Godot.Vector3(0,0,0.5f), MaterialOverride = wireframeMat};
-            // AddChild(meshInstanceWireframe);         
-            // WireMeshInstances.Add(meshInstanceWireframe);   
+        // meshInstance.Mesh = em.Meshes[index];
+        // meshInstance.Mesh = em.GetMesh();
 
-        
+
+        // var sprite2d = new Sprite2D(){Texture = tex, Position = poly2D.Position, Scale = new Vector2(1/8f, 1/8f), Centered = false};
+        // sprite2d.Modulate = new Color(1,1,1,0.5f);
+        // AddChild(sprite2d);
+
+        // var meshInstanceWireframe = new MeshInstance3D(){Position = meshPosition + new Godot.Vector3(0,0,0.5f), MaterialOverride = wireframeMat};
+        // AddChild(meshInstanceWireframe);         
+        // WireMeshInstances.Add(meshInstanceWireframe);   
+
+
     }
 
     void GenerateMesh(ExtrudedMesh extrudedMesh)

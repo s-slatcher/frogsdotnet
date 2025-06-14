@@ -35,7 +35,7 @@ varying vec3 vertex_pos;
 void vertex() {
 	vec3 normal = NORMAL;
 	vertex_pos = VERTEX.xyz;
-	
+
 	TANGENT = vec3(0.0, 0.0, -1.0) * abs(normal.x);
 	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.y);
 	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.z);
@@ -72,18 +72,18 @@ void fragment() {
 	//ALBEDO = edge_color.rgb;
 	//ALBEDO = noise_mask_color.rgb;
 	//elements, grass texture, grass noise mask, and edge texture
-	// grass noise mask decides how much grass texture shines through based on black threshold 
+	// grass noise mask decides how much grass texture shines through based on black threshold
 	// black threshold lowers (down to 0) based on the edge texture
-	
+
 	float grass_noise_threshold = pow(1.0f - smoothstep(0, 0.25, edge_color.r),0.5);
 	float grass_color_step = step(grass_noise_threshold, noise_mask_color.r);
 	vec4 grass_tex = triplanar_texture(texture_grass, uv1_power_normal, uv1_triplanar_pos);
 	ALBEDO = mix(ALBEDO, grass_tex.rgb, grass_color_step);
-	
+
 	//ALBEDO = edge_color.rgb;
 	//ALBEDO = vec3(UV, 1);
 	//ALBEDO = debug_color.rgb;
-	
+
 	float metallic_tex = dot(triplanar_texture(texture_metallic, uv1_power_normal, uv1_triplanar_pos), metallic_texture_channel);
 	METALLIC = metallic_tex * metallic;
 	SPECULAR = specular;

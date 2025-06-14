@@ -37,7 +37,7 @@ public partial class ExtrudedMesh : GodotObject
 
     public List<Mesh> WireframeMeshes = new();
 
-    
+    public int quadsDuplicated = 0;
     
     const float targetMaximumQuadWidth = 16;
     private float MaximumQuadWidth;
@@ -66,8 +66,8 @@ public partial class ExtrudedMesh : GodotObject
         MinimumQuadWidth = minimumQuadWidth;
 
         // set max quad width to be closest value to target max while still cleanly dividing into min quad width
-        var maxQuadWithExponent = Math.Log2(targetMaximumQuadWidth / minimumQuadWidth );
-        var roundedExponent = Math.Round(maxQuadWithExponent);
+        var maxQuadWidthExponent = Math.Log2(targetMaximumQuadWidth / minimumQuadWidth );
+        var roundedExponent = Math.Round(maxQuadWidthExponent);
         MaximumQuadWidth = minimumQuadWidth * (float)Math.Pow(2, roundedExponent);
 
         EdgeRadius = edgeRadius;
@@ -81,16 +81,19 @@ public partial class ExtrudedMesh : GodotObject
 
     
 
+
     public void SetupPolygonQuad()
     {
+        GD.Print("setup quad:");
         ParentQuad = PolygonQuad.CreateRootQuad(Polygon, MinimumQuadWidth);
         // trim off bottom edges that will be obscured. 
         quadNearbyEdgeLists[ParentQuad] = gUtils.LineSegmentsFromPolygon(Polygon).Where( lineSeg => {
             bool isBottomEdge = lineSeg.Start.Y < EdgeCutOffHeight && lineSeg.End.Y < EdgeCutOffHeight;
             return !isBottomEdge;
         }).ToList();
-
+        
         SubdivideQuads();
+        
     }
 
     private void SetupCurve2D()
@@ -457,6 +460,7 @@ public partial class ExtrudedMesh : GodotObject
     }
 
 
+
     private int numberOfStitches = 0;
     private Vector2[] StitchQuadPolygon(PolygonQuad quad)
     {
@@ -491,6 +495,9 @@ public partial class ExtrudedMesh : GodotObject
             var stitchVector = sharedAxis == 0 ? new Vector2(0, MinimumQuadWidth) : new Vector2(MinimumQuadWidth, 0);
             stitchVector *= p1[otherAxis] < p2[otherAxis]? 1 : -1;
 
+
+            // loop over the possible stitch postiions based on the grid dimensions
+            // if those points exist already in other faces, stitch them into this face 
             var stitchPositions = float.Round(region.Size.X / MinimumQuadWidth) - 1;
             for (int j = 0; j < stitchPositions; j++)
             {

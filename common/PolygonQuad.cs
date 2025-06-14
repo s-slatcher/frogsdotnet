@@ -17,18 +17,15 @@ using Vector3 = Godot.Vector3;
 public partial class PolygonQuad : GodotObject
 {
 
-    private PolygonQuad(List<Vector2[]> polygons, Rect2 boundingRect)
+    private PolygonQuad(List<Vector2[]> polygons, Rect2 boundingRect, float minimumQuadWidth)
     {
         Polygons = polygons;
         BoundingRect = boundingRect;
+        MinimumQuadWidth = minimumQuadWidth;
 
     }
 
-    public PolygonQuad(PolygonQuad polyQuad)
-    {
-        
-    }
-    
+
     public Action Updated;
 
     public List<Vector2[]> Polygons;
@@ -37,28 +34,20 @@ public partial class PolygonQuad : GodotObject
     public PolygonQuad Parent;
     public PolygonQuad Root;
     public Rect2 BoundingRect;
-    private float minimumQuadWidth;
+    public readonly float MinimumQuadWidth;
     private GeometryUtils gUtils = new();
     private bool containsEdgePolygon = true; 
 
-    public Dictionary<string, PolygonQuad> Children = new()
-    {   
-        {"TL", null},
-        {"TR", null},
-        {"BL", null},
-        {"BR", null}
-    };
+    public List<PolygonQuad> Children = new();
     
 
     public static PolygonQuad CreateRootQuad(Vector2[] polygon, float minQuadWidth = 20)
     {
         
         var polyRect = GetRootQuadRect(polygon, minQuadWidth);
+
+        var quad = new PolygonQuad([polygon], polyRect, minQuadWidth);
     
-        var quad = new PolygonQuad([polygon], polyRect)
-        {
-            minimumQuadWidth = minQuadWidth
-        };
         quad.Root = quad;
         return quad;
 
@@ -68,11 +57,11 @@ public partial class PolygonQuad : GodotObject
     {
         var gUtils = new GeometryUtils();
         var polyRect = gUtils.RectFromPolygon(rootPolygon);
-        polyRect = polyRect.Grow(1);
+        // polyRect = polyRect.Grow(1);
         polyRect = new Rect2
         (
             new((int)polyRect.Position.X, (int)polyRect.Position.Y), 
-            new((int)polyRect.Size.X, (int)polyRect.Size.X)
+            new((int)(polyRect.Size.X+1), (int)(polyRect.Size.X+1))
         );
         
         float targetQuadWidth = Math.Max(polyRect.Size.X, polyRect.Size.Y);
@@ -84,7 +73,15 @@ public partial class PolygonQuad : GodotObject
 
     }
 
-
+    public PolygonQuad Duplicate()
+    {
+        var dupedPolyList = new List<Vector2[]>();
+        foreach (var poly in Polygons) dupedPolyList.Add((Vector2[])poly.Clone());
+        
+        var quad = new PolygonQuad(dupedPolyList, this.BoundingRect, this.MinimumQuadWidth);
+        quad.Children = new(Children);
+        return quad;
+    }
 
     public void Subdivide()
     {
@@ -92,10 +89,10 @@ public partial class PolygonQuad : GodotObject
         var baseVector = BoundingRect.Position;
         
         if (containsEdgePolygon) containsEdgePolygon = HasEdgePoly();
-        if (offsetVector.X < minimumQuadWidth ) return;
+        if (offsetVector.X < MinimumQuadWidth ) return;
 
         
-        List<string> positionKeys = new(){"TL", "TR", "BR", "BL"};
+        
         List<Vector2> keyOrderedPositionOffsets = new(){
             new(0,0),
             new(offsetVector.X, 0),
@@ -113,62 +110,20 @@ public partial class PolygonQuad : GodotObject
             if (childPolyList.Count == 0) continue; 
             // else childPolyList = [gUtils.PolygonFromRectI(childRect)];
 
-            PolygonQuad childQuad = new(childPolyList, childRect)
+            PolygonQuad childQuad = new(childPolyList, childRect, MinimumQuadWidth)
             {
                 containsEdgePolygon = containsEdgePolygon,
-                minimumQuadWidth = minimumQuadWidth,
                 QuadManager = QuadManager,
                 Parent = this,
                 Root = Root
             };
             
-            Children[positionKeys[i]] = childQuad;
+            Children.Add(childQuad);
         };
         
-        // stitching could run *after* full subdividing, so stitched aren't wasted on nodes that will end up subdividing themselves 
-        //StitchPointsOnNeighborPolygons();
-        
-
     }
 
     
-    // public void StitchPointsOnNeighborPolygons()
-    // {
-    //     var start = BoundingRect.Position;
-    //     var end = BoundingRect.End;
-    //     float halfWidth = BoundingRect.Size.X/2;
-        
-    //     List<Vector2> stitchPoints = new()
-    //     {
-    //         start + new Vector2(halfWidth, 0),
-    //         start + new Vector2(0, halfWidth),
-    //         end - new Vector2(halfWidth, 0),
-    //         end - new Vector2(0, halfWidth)
-    //     };
-
-    //     // search for target quad using point offset out of own bounds 
-    //     var delta = minimumQuadWidth/2f;
-    //     List<Vector2> stitchOffset = new()
-    //     {
-    //         new(0, -delta),
-    //         new(-delta, 0),
-    //         new(0, delta),
-    //         new(delta, 0)
-    //     };
-        
-    //     for (int i = 0; i < stitchPoints.Count; i++)
-    //     {
-    //         var quad = FindQuadWithPoint(stitchPoints[i] + stitchOffset[i]);
-    //         if (quad == null) continue; 
-
-    //         if (quad.BoundingRect.Size >= BoundingRect.Size)
-    //         {
-    //             quad.InsertPointOnPolygons(stitchPoints[i]);
-                
-    //         }
-    //     }  
-        
-    // }
 
     public void SimplifyPolygon(){
         var onlyEdgesPoly = new List<Vector2>();
@@ -186,8 +141,6 @@ public partial class PolygonQuad : GodotObject
         
         if (!containsEdgePolygon) 
         {
-            if (Polygons[0].Length == 0) GD.Print("empty poly");
-        
             return new List<Vector2[]>(){childRectPoly}; 
             
         }
@@ -229,89 +182,17 @@ public partial class PolygonQuad : GodotObject
         
     }
 
-    public List<PolygonQuad> GetChildren()
+    public float GetWidth()
     {
-        return Children.Values.Where(child => child != null).ToList();
+        return BoundingRect.Size.X;
     }
 
-    // assumes point is NOT on edge of quad bounds, so returns only one quad (or none).
-    // private PolygonQuad FindQuadWithPoint(Vector2 point)
-    // {
-        
-    //     int queuePosition = 0;
-    //     var queue = new List<PolygonQuad>{Root};
-    //     while (queue.Count > queuePosition)
-    //     {
-            
-    //         var quad = queue[queuePosition];
-    //         queuePosition +=1;
-    //         var floatRect = new Rect2(quad.BoundingRect.Position, quad.BoundingRect.Size);
-    //         if (!floatRect.HasPoint(point)) continue;
-            
-    //         if (!quad.HasChildren()) return quad; 
-
-    //         foreach (var child in quad.GetChildren()) if (child != null) queue.Add(child);
-                
-    //     }
-    //     return null;
-    // }  
-
-    
-
-    // public void InsertPointOnPolygons(Vector2 point)
-    // {
-        
-    //     for (int i = 0; i < Polygons.Count; i++)
-    //     {
-    //         var polygon = Polygons[i];
-    //         var length = polygon.Length;
-    //         for (int j = 0; j < length; j++)
-    //         {
-    //             Vector2 p1 = polygon[j];
-    //             int p2Index = j+1 < length ? j+1 : 0;
-    //             Vector2 p2 = polygon[p2Index];
-                
-    //             if (PointSitsOnEdgeLine(p1, p2, point))
-    //             {
-    //                 List<Vector2> insertPoly = polygon.ToList();
-    //                 insertPoly.Insert(p2Index, point);
-
-    //                 Polygons[i] = insertPoly.ToArray();
-    //                 break;
-    //             }
+    public List<PolygonQuad> GetChildren()
+    {
+        return Children;
+    }
 
 
-    //         }
-    //     }
-
-    // }
-
-
-    // private bool PointSitsOnEdgeLine(Vector2 polyPoint1, Vector2 polyPoint2, Vector2 newPoint)
-    // {
-    //     if (polyPoint1.IsEqualApprox(newPoint) || polyPoint2.IsEqualApprox(newPoint)) return false;
-    //     int vecAxis = SharedVectorAxis(polyPoint1, polyPoint2);
-    //     if (vecAxis == -1) 
-    //     {
-    //         return false; 
-    //     }
-    //     int otherAxis = vecAxis == 1? 0: 1;
-
-    //     if (SharedVectorAxis(polyPoint1, newPoint) == vecAxis 
-    //     && newPoint[otherAxis] < Math.Max(polyPoint1[otherAxis], polyPoint2[otherAxis])
-    //     && newPoint[otherAxis] > Math.Min(polyPoint1[otherAxis], polyPoint2[otherAxis])) return true;
-        
-    //     return false;
-
-    // }
-
-    // private int SharedVectorAxis(Vector2 p1, Vector2 p2)
-    // {
-    //     if (Math.Abs(p1[0] - p2[0]) < 0.001 ) return 0;
-    //     if (Math.Abs(p1[1] - p2[1]) < 0.001 ) return 1;
-    //     return -1; 
-
-    // }
 
   
 
