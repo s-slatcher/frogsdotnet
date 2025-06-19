@@ -62,7 +62,7 @@ public partial class ExtrudedMesh : GodotObject
     {
         var time = Time.GetTicksMsec();
         Polygon = polygon;
-        polygonSize = gUtils.RectFromPolygon(polygon).Size;
+        polygonSize = GeometryUtils.RectFromPolygon(polygon).Size;
         MinimumQuadWidth = minimumQuadWidth;
 
         // set max quad width to be closest value to target max while still cleanly dividing into min quad width
@@ -315,9 +315,10 @@ public partial class ExtrudedMesh : GodotObject
             var UV = (new Vector2(vertex.Position.X, vertex.Position.Y)) / polyRect.Size;
             
             st.SetUV(UV);
-            // st.SetNormal(vertex.Normal);
             
-            st.SetColor(new Godot.Color(vertex.VertexColor.X, vertex.VertexColor.Y, vertex.VertexColor.Z, 1));
+            // st.SetNormal(vertex.Normal);
+
+                st.SetColor(new Godot.Color(vertex.VertexColor.X, vertex.VertexColor.Y, vertex.VertexColor.Z, 1));
             st.AddVertex(vertex.Position);
         }
        

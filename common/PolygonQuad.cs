@@ -26,7 +26,7 @@ public partial class PolygonQuad : GodotObject
     }
 
 
-    public Action Updated;
+  
 
     public List<Vector2[]> Polygons;
     public List<Vector3[]> Vertices;
@@ -56,7 +56,7 @@ public partial class PolygonQuad : GodotObject
     private static Rect2 GetRootQuadRect(Vector2[] rootPolygon, float minQuadWidth)
     {
         var gUtils = new GeometryUtils();
-        var polyRect = gUtils.RectFromPolygon(rootPolygon);
+        var polyRect = GeometryUtils.RectFromPolygon(rootPolygon);
         // polyRect = polyRect.Grow(1);
         polyRect = new Rect2
         (
@@ -75,10 +75,9 @@ public partial class PolygonQuad : GodotObject
 
     public PolygonQuad Duplicate()
     {
-        var dupedPolyList = new List<Vector2[]>();
-        foreach (var poly in Polygons) dupedPolyList.Add((Vector2[])poly.Clone());
         
-        var quad = new PolygonQuad(dupedPolyList, this.BoundingRect, this.MinimumQuadWidth);
+        
+        var quad = new PolygonQuad(this.Polygons, this.BoundingRect, this.MinimumQuadWidth);
         quad.Children = new(Children);
         return quad;
     }

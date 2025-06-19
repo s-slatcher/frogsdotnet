@@ -20,7 +20,7 @@ public partial class GeometryUtils : GodotObject
         return (x%m + m)%m;
     }
 
-    public Rect2 RectFromPolygon(Vector2[] polygon)
+    public static Rect2 RectFromPolygon(Vector2[] polygon)
     {
         Rect2 rect = new();
         
@@ -90,6 +90,7 @@ public partial class GeometryUtils : GodotObject
 
     public Vector2[] RotatePolygon(Vector2[] polygon, float rotation)
     {
+        new Transform2D();
         return polygon.Select(point => point.Rotated(rotation)).ToArray();
     }
 

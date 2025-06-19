@@ -98,7 +98,7 @@ public partial class TerrainMap : GodotObject
 
     private Polygon2D ConvertToPolygonInstance(Vector2[] polygon)
     {
-        var rect = gu.RectFromPolygon(polygon);
+        var rect = GeometryUtils.RectFromPolygon(polygon);
         var normalizedPoly = gu.TranslatePolygon(polygon, -rect.Position);
         // var smallPoly = Geometry2D.OffsetPolygon(normalizedPoly, -5)[0];
         // normalizedPoly = Geometry2D.MergePolygons(normalizedPoly, smallPoly)[0];
@@ -216,7 +216,7 @@ public partial class TerrainMap : GodotObject
 
         // convert to curve and smooth, then tesselate back into polygon
         var smoothCurve = gu.PointsToCurve(combinedUnitPoly, 0.75f, false);
-        var tesselatePoly = smoothCurve.Tessellate(5, 8);
+        var tesselatePoly = smoothCurve.Tessellate(5, 4);
 
         return gu.TranslatePolygon(tesselatePoly, rect.Position);        
     

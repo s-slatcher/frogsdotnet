@@ -12,6 +12,7 @@ public partial class PolygonQuadMesh : GodotObject
     public const int VectorRoundingDecimal = 3;
 
     public PolygonQuad RootQuad;
+    public Rect2I BoundingRect;
     public Dictionary<Vector2, IndexedVertex> Vector2ToVertexMap;
     public List<IndexedVertex> VertexList;
 
@@ -20,7 +21,7 @@ public partial class PolygonQuadMesh : GodotObject
 
     private GeometryUtils gUtils = new();
 
-
+    private int leafNodeCounter = 0;
     
 
 
@@ -34,48 +35,62 @@ public partial class PolygonQuadMesh : GodotObject
         RootQuad = PolygonQuad.CreateRootQuad(polygon, minimumQuadWidth);
         Vector2ToVertexMap = new();
         VertexList = new();
+        BoundingRect = gUtils.RectIFromPolygon(polygon);
+        GD.Print("bounding rect pos: ", BoundingRect.Position);
 
     }
+    
 
     public PolygonQuadMesh(PolygonQuadMesh polyMesh)
     {
         // constructor that shallow duplicates another polymesh by ref to same quad tree
         // duplicates the list of vertices and their mappings to 2d vectors
-        RootQuad = polyMesh.RootQuad;
+        RootQuad = polyMesh.RootQuad.Duplicate();
         Vector2ToVertexMap = new(polyMesh.Vector2ToVertexMap);
         VertexList = new(polyMesh.VertexList);
+        BoundingRect = polyMesh.BoundingRect;
     }
 
 
-    public void IndexPoint(Vector2 point, Vector3 VertexPosition)
+    public void IndexPoint(Vector2 polygonPoint, Vector3 vertexPosition)
     {
-        var vertex = new IndexedVertex()
-        {
-            Position = VertexPosition,
-            ArrayIndex = VertexList.Count
-        };
-
+        var key = RoundVector2(polygonPoint, VectorRoundingDecimal);
+        var vertex = new IndexedVertex() { SourcePosition = polygonPoint, Position = vertexPosition};
         VertexList.Add(vertex);
-        Vector2ToVertexMap[RoundVector2(point, VectorRoundingDecimal)] = vertex;
+        vertex.ArrayIndex = VertexList.Count - 1;
+        Vector2ToVertexMap[RoundVector2(polygonPoint, VectorRoundingDecimal)] = vertex;
     }
 
+    public Vector3? GetVertex(Vector2 point)
+    {
+        if (Vector2ToVertexMap.ContainsKey(RoundVector2(point, VectorRoundingDecimal)))
+        {
+            return Vector2ToVertexMap[RoundVector2(point, VectorRoundingDecimal)].Position;
+        }
+        return null;
+    }
 
     public List<Mesh> GenerateMeshes()
     {
 
-        GD.Print("total vertices", VertexList.Count);
+       
         // set max quad width to be closest value to target max while still cleanly dividing into min quad width
         var maxQuadWidthExponent = Math.Log2(TargetMeshSize / RootQuad.MinimumQuadWidth);
 
         var roundedExponent = Math.Round(maxQuadWidthExponent);
         var meshTargetSize = RootQuad.MinimumQuadWidth * (float)Math.Pow(2, roundedExponent);
 
-        
+
         var meshStartQuads = GetQuadsAtTargetDepth(RootQuad, meshTargetSize);
         GD.Print("num of mesh roots: ", meshStartQuads.Count);
         var meshes = new List<Mesh>();
+
+        GD.Print("Vertex list length: ", VertexList.Count);
+
         foreach (PolygonQuad quad in meshStartQuads) meshes.Add(GenerateMeshFromQuad(quad));
 
+        // return new List<Mesh>() { meshes[4] };
+        GD.Print("total leaf nodes = ", leafNodeCounter);
         return meshes;
 
     }
@@ -84,11 +99,25 @@ public partial class PolygonQuadMesh : GodotObject
     {
         // searches max depth to collect all leaf nodes that descend from passed quad
         var leafNodes = GetQuadsAtTargetDepth(quad, 0);
+        leafNodeCounter += leafNodes.Count;
         var vertexIndices = leafNodes.SelectMany(quad => TriangulateQuad(quad).ToList());
 
         var st = new SurfaceTool();
         st.Begin(Mesh.PrimitiveType.Triangles);
-        foreach (int index in vertexIndices) st.AddVertex(VertexList[index].Position);
+
+        
+        foreach (int index in vertexIndices)
+        {
+
+            var vertex = VertexList[index];
+
+
+            var UV = (new Vector2(vertex.Position.X, vertex.Position.Y)) / BoundingRect.Size;
+            // if (UV.X > 1 || UV.Y > 1) GD.Print(vertex.Position);
+            st.SetUV(UV);
+            st.AddVertex(vertex.Position);
+        }
+
         st.GenerateNormals();
         st.Index();
 
@@ -114,11 +143,11 @@ public partial class PolygonQuadMesh : GodotObject
             var polyPoint = stitchPolygon[index];
             var key = RoundVector2(polyPoint, VectorRoundingDecimal);
             // IndexPoint(polyPoint, new Vector3(polyPoint.X, polyPoint.Y, 0));
-            if (!Vector2ToVertexMap.ContainsKey(key)) 
-            {
-                // GD.Print("missing vertice");
-                IndexPoint(polyPoint, new Vector3(polyPoint.X, polyPoint.Y , 0));
-            }
+            // if (!Vector2ToVertexMap.ContainsKey(key)) 
+            // {
+            //     GD.Print("missing vertice");
+            //     IndexPoint(polyPoint, new Vector3(polyPoint.X, polyPoint.Y , 0));
+            // }
 
             convertedIndices.Add(Vector2ToVertexMap[key].ArrayIndex);
         }
