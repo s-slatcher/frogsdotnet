@@ -16,12 +16,14 @@ public partial class PolygonQuadMesh : GodotObject
     public Dictionary<Vector2, IndexedVertex> Vector2ToVertexMap;
     public List<IndexedVertex> VertexList;
 
+    
     public List<Mesh> Meshes = new();
     public int TargetMeshSize = 16;
 
     private GeometryUtils gUtils = new();
 
     private int leafNodeCounter = 0;
+    private List<PolygonQuad> leafNodeCache = new();
     
 
 
@@ -39,7 +41,11 @@ public partial class PolygonQuadMesh : GodotObject
         GD.Print("bounding rect pos: ", BoundingRect.Position);
 
     }
-    
+
+    public void CacheLeafNodes()
+    {
+        
+    }
 
     public PolygonQuadMesh(PolygonQuadMesh polyMesh)
     {
@@ -73,7 +79,7 @@ public partial class PolygonQuadMesh : GodotObject
     public List<Mesh> GenerateMeshes()
     {
 
-       
+        var time = Time.GetTicksMsec();
         // set max quad width to be closest value to target max while still cleanly dividing into min quad width
         var maxQuadWidthExponent = Math.Log2(TargetMeshSize / RootQuad.MinimumQuadWidth);
 
@@ -82,7 +88,6 @@ public partial class PolygonQuadMesh : GodotObject
 
 
         var meshStartQuads = GetQuadsAtTargetDepth(RootQuad, meshTargetSize);
-        GD.Print("num of mesh roots: ", meshStartQuads.Count);
         var meshes = new List<Mesh>();
 
         GD.Print("Vertex list length: ", VertexList.Count);
@@ -90,7 +95,7 @@ public partial class PolygonQuadMesh : GodotObject
         foreach (PolygonQuad quad in meshStartQuads) meshes.Add(GenerateMeshFromQuad(quad));
 
         // return new List<Mesh>() { meshes[4] };
-        GD.Print("total leaf nodes = ", leafNodeCounter);
+        GD.Print($"mesh of {VertexList.Count} vertices genned in {Time.GetTicksMsec() - time}ms");
         return meshes;
 
     }
@@ -100,6 +105,7 @@ public partial class PolygonQuadMesh : GodotObject
         // searches max depth to collect all leaf nodes that descend from passed quad
         var leafNodes = GetQuadsAtTargetDepth(quad, 0);
         leafNodeCounter += leafNodes.Count;
+        
         var vertexIndices = leafNodes.SelectMany(quad => TriangulateQuad(quad).ToList());
 
         var st = new SurfaceTool();
@@ -126,6 +132,7 @@ public partial class PolygonQuadMesh : GodotObject
 
     private List<int> TriangulateQuad(PolygonQuad quad)
     {
+        
         var vertexIndices = new List<int>();
         
         
@@ -145,7 +152,8 @@ public partial class PolygonQuadMesh : GodotObject
             // IndexPoint(polyPoint, new Vector3(polyPoint.X, polyPoint.Y, 0));
             // if (!Vector2ToVertexMap.ContainsKey(key)) 
             // {
-            //     GD.Print("missing vertice");
+
+            //     GD.Print(quad.HasEdgePoly());
             //     IndexPoint(polyPoint, new Vector3(polyPoint.X, polyPoint.Y , 0));
             // }
 

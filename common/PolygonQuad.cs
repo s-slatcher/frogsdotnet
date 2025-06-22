@@ -75,10 +75,9 @@ public partial class PolygonQuad : GodotObject
 
     public PolygonQuad Duplicate()
     {
-        
-        
         var quad = new PolygonQuad(this.Polygons, this.BoundingRect, this.MinimumQuadWidth);
         quad.Children = new(Children);
+        quad.Root = Root == this ? quad : Root; // when duplicating a root quad, replace self-reference in 'Root' field
         return quad;
     }
 
@@ -156,7 +155,7 @@ public partial class PolygonQuad : GodotObject
     }
 
 
-    private bool HasEdgePoly()
+    public bool HasEdgePoly()
     {
         if (Polygons.Count > 1) return true;
         var poly = gUtils.PolygonFromRect(BoundingRect);

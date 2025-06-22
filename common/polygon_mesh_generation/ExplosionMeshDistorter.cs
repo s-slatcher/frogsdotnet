@@ -27,7 +27,6 @@ public partial class ExplosionMeshDistorter : QuadTreeMeshDistorter
         var vertex = QuadMesh.GetVertex(point) ?? new Godot.Vector3(point.X, point.Y, 0);
         return DamageVertex(vertex);
 
-
     }
 
     protected override float GetTargetDetailLevel(PolygonQuad node)

@@ -65,35 +65,46 @@ public partial class World : Node3D
     private void GenerateMap_v2()
     {
 
-        var width = 80f;
+        var width = 200f;
         List<Polygon2D> MapPolygonInstances = terrain.GenerateNext(width);
         var mapPoly = MapPolygonInstances[0];
         var tex = GetEdgeTexture(mapPoly.Polygon);
 
 
         var quadMesh = new PolygonQuadMesh(mapPoly.Polygon);
-        var distorter = new EdgeWrapMeshDistorter(quadMesh);
-        distorter.ApplyDistort();
+        QuadMeshDistortionApplier quadMeshDistortionApplier = new(quadMesh);
 
-        distorter.QuadMesh.GenerateMeshes();
+        var time = Time.GetTicksMsec();
+        quadMeshDistortionApplier.AddMeshDistorter(new EdgeWrapDistorter(1, 2));
 
-        var distorter_2 = new ExplosionMeshDistorter(distorter.QuadMesh, new Vector2(3, 3), 10);
-        distorter_2.ApplyDistort();
+        
+        // quadMeshDistortionApplier.AddMeshDistorter(new ExplosionDistorter(new Vector2(10, 20), 15));
+       
+        GD.Print("edge wrap distort time: ", Time.GetTicksMsec() - time);
+        time = Time.GetTicksMsec();
 
-        var distorter_3 = new ExplosionMeshDistorter(distorter_2.QuadMesh, new Vector2(0, 15), 8);
-        distorter_3.ApplyDistort();
+        quadMeshDistortionApplier.AddMeshDistorter(new ExplosionDistorter(new Vector2(25, 25), 5));
+        quadMeshDistortionApplier.AddMeshDistorter(new ExplosionDistorter(new Vector2(33, 25), 8));
+        quadMeshDistortionApplier.AddMeshDistorter(new ExplosionDistorter(new Vector2(15, 35), 12));
+        
+        GD.Print(" explosions distort time: ", Time.GetTicksMsec() - time);
+        
 
+        var distortedQuadMesh = quadMeshDistortionApplier.QuadMeshHistory[^1];
 
-        var polygons = distorter_3.QuadMesh.GetPolygons();
-        GD.Print(polygons.Count);
-        foreach (Vector2[] poly in polygons)
-        {
-            var poly2d = new Polygon2D() { Polygon = poly };
-            poly2d.SelfModulate = new Color(GD.Randf(), GD.Randf(), GD.Randf(), 1);
-            AddChild(poly2d);
-        }
+        // var polygons = distortedQuadMesh.GetPolygons();
+        // GD.Print(polygons.Count);
+        // foreach (Vector2[] poly in polygons)
+        // {
+        //     var poly2d = new Polygon2D() { Polygon = poly };
+        //     poly2d.SelfModulate = new Color(GD.Randf(), GD.Randf(), GD.Randf(), 1);
+        //     AddChild(poly2d);
+        // }
 
-        List<Mesh> meshList = distorter_3.QuadMesh.GenerateMeshes();
+        List<Mesh> meshList = distortedQuadMesh.GenerateMeshes();
+        
+        
+        
         // meshList = distorter.QuadMesh.GenerateMeshes();
         foreach (Mesh mesh in meshList)
         {
