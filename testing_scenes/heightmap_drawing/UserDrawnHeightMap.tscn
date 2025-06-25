@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3 uid="uid://bfpotbb2g8kpi"]
+
+[ext_resource type="Script" uid="uid://kytafbktoslf" path="res://testing_scenes/heightmap_drawing/UserDrawnHeightMap.cs" id="1_s0i6a"]
+
+[node name="UserDrawnHeightMap" type="Node3D"]
+script = ExtResource("1_s0i6a")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="NewDraw" type="Button" parent="CanvasLayer"]
+offset_left = 11.0
+offset_top = 14.0
+offset_right = 368.0
+offset_bottom = 75.0
+text = "Start new Drawing"

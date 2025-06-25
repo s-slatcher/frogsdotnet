@@ -40,39 +40,6 @@ public partial class QuadMeshDistortionApplier : GodotObject
     }
 
 
-
-    // private void DistortFacesRecursive(PolygonQuad node, IQuadMeshDistorter newDistorter)
-    // {
-
-    //     UpdateActiveDistortersForNode(node, newDistorter);
-
-    //     if (!ActiveDistortersMap[node.BoundingRect].Contains(newDistorter)) return;
-
-
-    //     if (node.HasChildren())
-    //     {
-    //         for (int i = 0; i < node.Children.Count; i++)
-    //         {
-    //             var duplicateChild = node.Children[i].Duplicate();
-    //             // duplicateChild.Parent = node;
-    //             node.Children[i] = duplicateChild;
-    //         }
-    //     }
-    //     else if (newDistorter.DoSubdivide(node))
-    //     {
-    //         node.Subdivide();
-    //     }
-    //     else
-    //     {
-    //         DistortFace(node);
-    //     }
-
-
-    //     foreach (var child in node.Children) DistortFacesRecursive(child, newDistorter);
-
-
-    // }
-
     private void ParentNodeDistortRecursive(PolygonQuad node, IQuadMeshDistorter newDistorter)
     {
         
@@ -87,11 +54,11 @@ public partial class QuadMeshDistortionApplier : GodotObject
         }
         
         for (int i = 0; i < node.Children.Count; i++)
-            {
-                var dupeChild = node.Children[i].Duplicate();
-                node.Children[i] = dupeChild;
-                ParentNodeDistortRecursive(dupeChild, newDistorter);
-            }
+        {
+            var dupeChild = node.Children[i].Duplicate();
+            node.Children[i] = dupeChild;
+            ParentNodeDistortRecursive(dupeChild, newDistorter);
+        }
 
     }
 
@@ -171,34 +138,6 @@ public partial class QuadMeshDistortionApplier : GodotObject
 
     
 
-    // private void UpdateActiveDistortersForNode(PolygonQuad node, IQuadMeshDistorter newDistorter)
-    // {
-        
-    //     List<IQuadMeshDistorter> activeDistorters = new();
-    //     bool nodeIsNew = !ActiveDistortersMap.ContainsKey(node.BoundingRect);
-
-
-    //     // if new subdivide, tries to apply parent nodes distorter list
-    //     if (nodeIsNew)
-    //     {
-    //         var parentList = ActiveDistortersMap[node.Parent.BoundingRect];
-
-    //         foreach (IQuadMeshDistorter distorter in parentList)
-    //         {
-    //             if (distorter.IsActiveForNode(node)) activeDistorters.Add(distorter);
-    //         }
-    //     }
-    //     else
-    //     {
-    //         activeDistorters = ActiveDistortersMap[node.BoundingRect];
-    //     }
-
-    //     //checks newest distorter
-
-    //     if (newDistorter.IsActiveForNode(node)) activeDistorters.Add(newDistorter);
-
-    //     ActiveDistortersMap[node.BoundingRect] = activeDistorters;
-
-    // }
+ 
 
 }

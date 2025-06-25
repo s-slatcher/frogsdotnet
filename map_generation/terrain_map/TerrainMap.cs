@@ -33,13 +33,13 @@ public partial class TerrainMap : GodotObject
     public TerrainMap(int seed = 0)
     {
         rand = new(seed);
-        heightMap = new(seed);
+        heightMap = new(seed, 0.025f);
         heightMap.RemapToHeightRange = true; 
 
         var distortFreq = 0.04f;
         var distortLayers = 3;
         var layerFrequencyMult = 2.25f;
-        var layerStrengthMult = 0.45f;
+        var layerStrengthMult = 0.55f;
         landDistortionMap = new(seed, distortFreq, distortLayers, layerFrequencyMult, layerStrengthMult);
         
         
@@ -55,22 +55,30 @@ public partial class TerrainMap : GodotObject
         landDistortionMap.MinHeight = landDistortionMap.MaxHeight - CliffSideNoiseWidth;
     }
 
-   
 
+    public List<Polygon2D> GenerateFromPointList(List<Vector2> pointList)
+    {
+        List<Rect2> towerRects = GroupPoints(pointList);
+        var towerPolygons = towerRects.Select(GetTowerPolygon).ToList();
+        ArrangeTowers(towerPolygons);
+        var mergedList = ReduceMergePolygons(towerPolygons);
+        return mergedList;
+    }
+    
     public List<Polygon2D> GenerateNext(float width)
     {
-        
+
         UpdateHeightMaps();
 
         var points = heightMap.GetNextHeights(width);
 
-        
+
         List<Rect2> towerRects = GroupPoints(points);
         var towerPolygons = towerRects.Select(GetTowerPolygon).ToList();
         ArrangeTowers(towerPolygons);
         var mergedList = ReduceMergePolygons(towerPolygons);
         return mergedList;
-        
+
     }
     private List<Polygon2D> ReduceMergePolygons(List<Vector2[]> towerPolygons)
     {

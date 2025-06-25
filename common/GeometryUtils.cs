@@ -20,24 +20,29 @@ public partial class GeometryUtils : GodotObject
         return (x%m + m)%m;
     }
 
+    public Vector3 AddDepth(Vector2 vec2, float depth = 0f)
+    {
+        return new Vector3(vec2.X, vec2.Y, 0);
+    }
+    
     public static Rect2 RectFromPolygon(Vector2[] polygon)
     {
         Rect2 rect = new();
-        
+
         Vector2 min = new(int.MaxValue, int.MaxValue);
         Vector2 max = min * -1;
 
-        foreach(Vector2 point in polygon)
+        foreach (Vector2 point in polygon)
         {
             max.X = Math.Max(max.X, point.X);
             max.Y = Math.Max(max.Y, point.Y);
-            
+
             min.X = Math.Min(min.X, point.X);
             min.Y = Math.Min(min.Y, point.Y);
         }
         rect.Position = min;
         rect.End = max;
-        
+
         return rect;
     }
 
@@ -285,10 +290,18 @@ public partial class GeometryUtils : GodotObject
         return (closestPoints[0] - closestPoints[1]).Length();
     } 
 
-    public Vector3 AddDepth(Vector2 vec2, float depth = 0f)
+    
+    public bool CircleOverlapsRect(Rect2 rect, Vector2 center, float radius)
     {
-        return new Vector3(vec2.X, vec2.Y, 0);
+        
+        var clampedX = Math.Clamp(center.X, rect.Position.X, rect.End.X);
+        var clampedY = Math.Clamp(center.Y, rect.Position.Y, rect.End.Y);
+        var closestPoint = new Vector2(clampedX, clampedY);
+        var dist = (center - closestPoint).Length();
+        return dist <= radius;
     }
+
+    
 
     public bool IsPolygonsEqualApprox(Vector2[] poly1, Vector2[] poly2)
     {

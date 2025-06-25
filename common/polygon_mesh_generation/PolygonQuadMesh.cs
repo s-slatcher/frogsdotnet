@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 public partial class PolygonQuadMesh : GodotObject
 {
 
+
     public const int VectorRoundingDecimal = 3;
 
     public PolygonQuad RootQuad;
@@ -16,20 +17,29 @@ public partial class PolygonQuadMesh : GodotObject
     public Dictionary<Vector2, IndexedVertex> Vector2ToVertexMap;
     public List<IndexedVertex> VertexList;
 
-    
+
     public List<Mesh> Meshes = new();
     public int TargetMeshSize = 16;
+    public float MeshSize;
 
     private GeometryUtils gUtils = new();
 
     private int leafNodeCounter = 0;
     private List<PolygonQuad> leafNodeCache = new();
-    
+
 
 
     static Vector2 RoundVector2(Vector2 vec2, int roundingDecimal)
     {
         return new Vector2(float.Round(vec2.X, roundingDecimal), float.Round(vec2.Y, roundingDecimal));
+    }
+
+    private void SetMeshSize()
+    {
+        var maxQuadWidthExponent = Math.Log2(TargetMeshSize / RootQuad.MinimumQuadWidth);
+        var roundedExponent = Math.Round(maxQuadWidthExponent);
+        MeshSize = RootQuad.MinimumQuadWidth * (float)Math.Pow(2, roundedExponent);
+
     }
 
     public PolygonQuadMesh(Vector2[] polygon, float minimumQuadWidth = 0.25f)
@@ -39,13 +49,12 @@ public partial class PolygonQuadMesh : GodotObject
         VertexList = new();
         BoundingRect = gUtils.RectIFromPolygon(polygon);
         GD.Print("bounding rect pos: ", BoundingRect.Position);
+        SetMeshSize();
 
     }
 
-    public void CacheLeafNodes()
-    {
-        
-    }
+
+
 
     public PolygonQuadMesh(PolygonQuadMesh polyMesh)
     {
@@ -55,13 +64,15 @@ public partial class PolygonQuadMesh : GodotObject
         Vector2ToVertexMap = new(polyMesh.Vector2ToVertexMap);
         VertexList = new(polyMesh.VertexList);
         BoundingRect = polyMesh.BoundingRect;
+        MeshSize = polyMesh.MeshSize;
+        
     }
 
 
     public void IndexPoint(Vector2 polygonPoint, Vector3 vertexPosition)
     {
         var key = RoundVector2(polygonPoint, VectorRoundingDecimal);
-        var vertex = new IndexedVertex() { SourcePosition = polygonPoint, Position = vertexPosition};
+        var vertex = new IndexedVertex() { SourcePosition = polygonPoint, Position = vertexPosition };
         VertexList.Add(vertex);
         vertex.ArrayIndex = VertexList.Count - 1;
         Vector2ToVertexMap[RoundVector2(polygonPoint, VectorRoundingDecimal)] = vertex;
@@ -76,28 +87,35 @@ public partial class PolygonQuadMesh : GodotObject
         return null;
     }
 
-    public List<Mesh> GenerateMeshes()
+    
+    public Dictionary<Rect2, Mesh> GenerateMeshes(Rect2? region = null)
     {
 
         var time = Time.GetTicksMsec();
-        // set max quad width to be closest value to target max while still cleanly dividing into min quad width
-        var maxQuadWidthExponent = Math.Log2(TargetMeshSize / RootQuad.MinimumQuadWidth);
+        // set max quad width to be closest value to target max while still cleanly dividing into min quad widt
 
-        var roundedExponent = Math.Round(maxQuadWidthExponent);
-        var meshTargetSize = RootQuad.MinimumQuadWidth * (float)Math.Pow(2, roundedExponent);
+        
 
+        var meshStartQuads = GetQuadsAtTargetDepth(RootQuad, MeshSize);
+        GD.Print(meshStartQuads[0].BoundingRect, " first mesh bounding rect");
+        if (region != null)
+        {
+            meshStartQuads = meshStartQuads.Where(quad => quad.BoundingRect == region).ToList();
+        }
 
-        var meshStartQuads = GetQuadsAtTargetDepth(RootQuad, meshTargetSize);
-        var meshes = new List<Mesh>();
+        var meshMap = new Dictionary<Rect2, Mesh>();
 
         GD.Print("Vertex list length: ", VertexList.Count);
 
-        foreach (PolygonQuad quad in meshStartQuads) meshes.Add(GenerateMeshFromQuad(quad));
-
+        foreach (PolygonQuad quad in meshStartQuads)
+        {
+            var mesh = GenerateMeshFromQuad(quad);
+            meshMap[quad.BoundingRect] = mesh;
+        }
         // return new List<Mesh>() { meshes[4] };
         GD.Print($"mesh of {VertexList.Count} vertices genned in {Time.GetTicksMsec() - time}ms");
-        return meshes;
-
+        // return meshes;
+        return meshMap;
     }
 
     public Mesh GenerateMeshFromQuad(PolygonQuad quad)
@@ -105,13 +123,13 @@ public partial class PolygonQuadMesh : GodotObject
         // searches max depth to collect all leaf nodes that descend from passed quad
         var leafNodes = GetQuadsAtTargetDepth(quad, 0);
         leafNodeCounter += leafNodes.Count;
-        
+
         var vertexIndices = leafNodes.SelectMany(quad => TriangulateQuad(quad).ToList());
 
         var st = new SurfaceTool();
         st.Begin(Mesh.PrimitiveType.Triangles);
 
-        
+
         foreach (int index in vertexIndices)
         {
 
@@ -125,25 +143,25 @@ public partial class PolygonQuadMesh : GodotObject
         }
 
         st.GenerateNormals();
-        st.Index();
+        // st.Index();
 
         return st.Commit();
     }
 
     private List<int> TriangulateQuad(PolygonQuad quad)
     {
-        
+
         var vertexIndices = new List<int>();
-        
-        
+
+
         var polygon = quad.Polygons[0];
         if (polygon.Length == 0) return vertexIndices;
 
         var stitchPolygon = StitchQuadPolygon(quad);
         // var stitchPolygon = quad.Polygons[0];
-            
+
         var triangleIndices = Geometry2D.TriangulatePolygon(stitchPolygon);
-        
+
         var convertedIndices = new List<int>();
         foreach (var index in triangleIndices)
         {
@@ -159,7 +177,7 @@ public partial class PolygonQuadMesh : GodotObject
 
             convertedIndices.Add(Vector2ToVertexMap[key].ArrayIndex);
         }
-        
+
         vertexIndices.AddRange(convertedIndices);
         return vertexIndices;
     }
@@ -175,22 +193,22 @@ public partial class PolygonQuadMesh : GodotObject
         if (region.Size.X == minWidth) return polygon;
 
         // only tries stitching on poly sides match the grid (works for now, but will be made more robust in future)
-        
+
         var gridPoints = gUtils.PolygonFromRect(region);
 
 
         for (int i = 0; i < polygon.Length; i++)
         {
             Vector2 p1 = polygon[i];
-            
+
             stitchedPolygon.Add(p1);
 
-            Vector2 p2 = i+1 < polygon.Length ? polygon[i+1] : polygon[0];
+            Vector2 p2 = i + 1 < polygon.Length ? polygon[i + 1] : polygon[0];
 
             if (!gridPoints.Contains(p1) || !gridPoints.Contains(p2)) continue;
 
             var sharedAxis = p1.X == p2.X ? 0 : 1;
-            var otherAxis = sharedAxis == 0? 1 : 0;
+            var otherAxis = sharedAxis == 0 ? 1 : 0;
 
             // if (p1[sharedAxis] != p2[sharedAxis])
             // {
@@ -198,7 +216,7 @@ public partial class PolygonQuadMesh : GodotObject
             //     continue;
             // }
             var stitchVector = sharedAxis == 0 ? new Vector2(0, minWidth) : new Vector2(minWidth, 0);
-            stitchVector *= p1[otherAxis] < p2[otherAxis]? 1 : -1;
+            stitchVector *= p1[otherAxis] < p2[otherAxis] ? 1 : -1;
 
 
             // loop over the possible stitch postiions based on the grid dimensions
@@ -209,9 +227,9 @@ public partial class PolygonQuadMesh : GodotObject
                 var pos = p1 + (stitchVector * (j + 1));
                 var key = RoundVector2(pos, VectorRoundingDecimal);
                 if (Vector2ToVertexMap.ContainsKey(key)) stitchedPolygon.Add(pos);
-                
+
             }
-            
+
 
         }
         return stitchedPolygon.ToArray();
@@ -229,9 +247,9 @@ public partial class PolygonQuadMesh : GodotObject
         }
 
 
-        return polyList; 
+        return polyList;
     }
-    
+
     public List<PolygonQuad> GetQuadsAtTargetDepth(PolygonQuad startQuad, float widthAtTargetDepth = 0)
     {
         List<PolygonQuad> quadList = new();
@@ -255,6 +273,26 @@ public partial class PolygonQuadMesh : GodotObject
 
         return quadList;
     }
+
+    // public PolygonQuad GetQuadByRegion(PolygonQuad startQuad, Rect2 targetRect)
+    // {
+    //     var queue = new List<PolygonQuad>() { startQuad };
+    //     var queuePos = 0;
+
+    //     while (queuePos < queue.Count)
+    //     {
+    //         var quad = queue[queuePos];
+    //         var rect = quad.BoundingRect;
+    //         if (rect == targetRect) return quad;
+    //         if (rect.Encloses(targetRect.Grow(-0.1f)))
+    //         {
+    //             queue.AddRange(quad.GetChildren());
+    //         }
+    //     }
+
+    //     return null;
+
+    // }
 
     
 
