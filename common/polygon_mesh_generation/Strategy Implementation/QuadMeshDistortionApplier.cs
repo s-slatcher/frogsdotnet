@@ -30,6 +30,16 @@ public partial class QuadMeshDistortionApplier : GodotObject
         return QuadMeshHistory[^1];
     }
 
+    public List<IQuadMeshDistorter> DistortersActiveOnQuad(Rect2 QuadRegion)
+    {
+        if (!ActiveDistortersMap.ContainsKey(QuadRegion))
+        {
+            GD.Print("region not linked to quad node");
+            return new();
+        }
+        return ActiveDistortersMap[QuadRegion];
+    }
+
     public void AddMeshDistorter(IQuadMeshDistorter meshDistorter)
     {
         DistorterList.Add(meshDistorter);

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 public partial class PolygonQuadMesh : GodotObject
@@ -25,7 +26,7 @@ public partial class PolygonQuadMesh : GodotObject
     private GeometryUtils gUtils = new();
 
     private int leafNodeCounter = 0;
-    private List<PolygonQuad> leafNodeCache = new();
+
 
 
 
@@ -48,7 +49,6 @@ public partial class PolygonQuadMesh : GodotObject
         Vector2ToVertexMap = new();
         VertexList = new();
         BoundingRect = gUtils.RectIFromPolygon(polygon);
-        GD.Print("bounding rect pos: ", BoundingRect.Position);
         SetMeshSize();
 
     }
@@ -97,7 +97,6 @@ public partial class PolygonQuadMesh : GodotObject
         
 
         var meshStartQuads = GetQuadsAtTargetDepth(RootQuad, MeshSize);
-        GD.Print(meshStartQuads[0].BoundingRect, " first mesh bounding rect");
         if (region != null)
         {
             meshStartQuads = meshStartQuads.Where(quad => quad.BoundingRect == region).ToList();
@@ -117,6 +116,11 @@ public partial class PolygonQuadMesh : GodotObject
         // return meshes;
         return meshMap;
     }
+    
+
+    int Mod(int x, int m) {
+        return (x%m + m)%m;
+    }
 
     public Mesh GenerateMeshFromQuad(PolygonQuad quad)
     {
@@ -124,21 +128,25 @@ public partial class PolygonQuadMesh : GodotObject
         var leafNodes = GetQuadsAtTargetDepth(quad, 0);
         leafNodeCounter += leafNodes.Count;
 
-        var vertexIndices = leafNodes.SelectMany(quad => TriangulateQuad(quad).ToList());
+        var vertexIndices = leafNodes.SelectMany(quad => TriangulateQuad(quad).ToList()).ToList();
 
         var st = new SurfaceTool();
         st.Begin(Mesh.PrimitiveType.Triangles);
 
 
-        foreach (int index in vertexIndices)
+        Vector3 triCenter = new();
+        GD.Print("triangle indices / 3 = ", vertexIndices.Count / 3);
+        for (int i = 0; i < vertexIndices.Count; i++)
         {
-
+            var index = vertexIndices[i];
             var vertex = VertexList[index];
 
+            if (Mod(i, 3) == 0)  triCenter = GetTriangleCenter(index, vertexIndices[i+1], vertexIndices[i+2]) / 100;
 
             var UV = (new Vector2(vertex.Position.X, vertex.Position.Y)) / BoundingRect.Size;
             // if (UV.X > 1 || UV.Y > 1) GD.Print(vertex.Position);
             st.SetUV(UV);
+            st.SetColor(new Godot.Color(triCenter.X, triCenter.Y, triCenter.Z, 1));
             st.AddVertex(vertex.Position);
         }
 
@@ -146,6 +154,16 @@ public partial class PolygonQuadMesh : GodotObject
         // st.Index();
 
         return st.Commit();
+    }
+
+    private Vector3 GetTriangleCenter(int index1, int index2, int index3)
+    {
+        Vector3 center = Vector3.Zero;
+
+        center += VertexList[index1].Position;
+        center += VertexList[index2].Position;
+        center += VertexList[index3].Position;
+        return center / 3;
     }
 
     private List<int> TriangulateQuad(PolygonQuad quad)
@@ -161,7 +179,7 @@ public partial class PolygonQuadMesh : GodotObject
         // var stitchPolygon = quad.Polygons[0];
 
         var triangleIndices = Geometry2D.TriangulatePolygon(stitchPolygon);
-
+        triangleIndices = triangleIndices.Reverse().ToArray();
         var convertedIndices = new List<int>();
         foreach (var index in triangleIndices)
         {
@@ -274,25 +292,6 @@ public partial class PolygonQuadMesh : GodotObject
         return quadList;
     }
 
-    // public PolygonQuad GetQuadByRegion(PolygonQuad startQuad, Rect2 targetRect)
-    // {
-    //     var queue = new List<PolygonQuad>() { startQuad };
-    //     var queuePos = 0;
-
-    //     while (queuePos < queue.Count)
-    //     {
-    //         var quad = queue[queuePos];
-    //         var rect = quad.BoundingRect;
-    //         if (rect == targetRect) return quad;
-    //         if (rect.Encloses(targetRect.Grow(-0.1f)))
-    //         {
-    //             queue.AddRange(quad.GetChildren());
-    //         }
-    //     }
-
-    //     return null;
-
-    // }
 
     
 

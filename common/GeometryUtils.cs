@@ -81,7 +81,18 @@ public partial class GeometryUtils : GodotObject
 
         return vecArray;
 
-    } 
+    }
+
+    public Rect2 RectFromCircle(Vector2 center, float radius)
+    {
+        var rad_vec = new Vector2(radius, radius);
+        var rect2 = new Rect2();
+        rect2.Position = center + rad_vec;
+        rect2.End = center - rad_vec;
+        rect2 = rect2.Abs();
+        // GD.Print("center", center, " rad: ", radius, " rect size", rect2.Size, " rect start", rect2.Position);
+        return rect2;
+    }
 
     public Vector2[] ScalePolygon(Vector2[] polygon, Vector2 scaling)
     {

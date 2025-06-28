@@ -106,13 +106,8 @@ public partial class UserDrawnHeightMap : Node3D
     private void TerrainFromPointList(List<Vector2> points)
     {
         var terrain = new TerrainMap();
-        // List<Vector2> pointList = new()
-        // {
-        //     new Vector2(0, 20), new Vector2(10,40), new Vector2(20, 20), new Vector2(30, 25),
-        //     new Vector2(40, 20), new Vector2(50,40), new Vector2(60, 100), new Vector2(80, 0)
-        // };
         var polys = terrain.GenerateFromPointList(points);
-
+        var polys_regular = terrain.GenerateNext(100);
         foreach (var poly in polys)
         {
             poly.Scale = new Vector2(-1, 1);

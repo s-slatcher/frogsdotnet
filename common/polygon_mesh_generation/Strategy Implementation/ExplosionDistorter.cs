@@ -67,10 +67,10 @@ public partial class ExplosionDistorter(Vector2 center, float radius) : GodotObj
         var closestPoint = new Vector2(clampedX, clampedY);
         // if (closestPoint == Center) return true;
 
-
+        var allowance = 0.1f;
         var dist = (Center - closestPoint).Length();
 
-        return dist <= Radius;
+        return dist <= Radius + allowance;
     }
 
 }

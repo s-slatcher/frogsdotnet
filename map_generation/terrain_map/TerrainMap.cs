@@ -64,14 +64,14 @@ public partial class TerrainMap : GodotObject
         var mergedList = ReduceMergePolygons(towerPolygons);
         return mergedList;
     }
-    
+
     public List<Polygon2D> GenerateNext(float width)
     {
 
         UpdateHeightMaps();
 
         var points = heightMap.GetNextHeights(width);
-
+        GD.Print(width, " width height map --- ", points.Count, " total points");
 
         List<Rect2> towerRects = GroupPoints(points);
         var towerPolygons = towerRects.Select(GetTowerPolygon).ToList();

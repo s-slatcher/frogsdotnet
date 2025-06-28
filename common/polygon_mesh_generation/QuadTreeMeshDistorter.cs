@@ -10,8 +10,11 @@ public partial class QuadTreeMeshDistorter : GodotObject
 
     public PolygonQuadMesh QuadMesh;
     
-    public HashSet<Vector2> VerticesUpdated = new(); 
-    
+    public HashSet<Vector2> VerticesUpdated = new();
+
+    public List<Rect2> MeshRegionsDistorted = new();
+
+
 
     public QuadTreeMeshDistorter(PolygonQuadMesh quadMesh)
     {
@@ -22,12 +25,15 @@ public partial class QuadTreeMeshDistorter : GodotObject
 
     public void ApplyDistort()
     {
-        DistortFacesRecurisive(QuadMesh.RootQuad);
+        MeshRegionsDistorted = new();
+
+        DistortFacesRecursive(QuadMesh.RootQuad);
+
     }
 
+   
 
-
-    private void DistortFacesRecurisive(PolygonQuad node)
+    private void DistortFacesRecursive(PolygonQuad node)
     {
 
         if (!DoTraverseNode(node))
@@ -35,7 +41,7 @@ public partial class QuadTreeMeshDistorter : GodotObject
             foreach (var point in node.Polygons.SelectMany(poly => poly)) TryDistortPoint(point, node);
             return;
         }
-       
+
         // replace nodes children with duplicates if children already exist
         if (node.HasChildren()) for (int i = 0; i < node.Children.Count; i++) node.Children[i] = node.Children[i].Duplicate();
         //else checks if subdivsion needed to reach target detail level
@@ -46,11 +52,11 @@ public partial class QuadTreeMeshDistorter : GodotObject
             foreach (var point in node.Polygons.SelectMany(poly => poly)) TryDistortPoint(point, node);
             return;
         }
-        
+
         // if not returned yet -- quad must have children to recurse further 
-        foreach (var child in node.Children) DistortFacesRecurisive(child);
-            
-        
+        foreach (var child in node.Children) DistortFacesRecursive(child);
+
+
     }
 
     private void TryDistortPoint(Vector2 point, PolygonQuad node)

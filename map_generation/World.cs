@@ -1,4 +1,5 @@
 using Godot;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -21,10 +22,7 @@ public partial class World : Node3D
 {
 
     [Export] ShaderMaterial meshMaterial;
-
-    public Task task = Task.CompletedTask;
-    private List<Rect2> TaskedExplosionRegions = new(); 
-
+    
     public Dictionary<Rect2, MeshInstance3D> MeshInstanceMap = new();
     public QuadMeshDistortionApplier quadMeshDistortionApplier;
 
@@ -32,66 +30,66 @@ public partial class World : Node3D
     GeometryUtils gUtils = new();
     private Vector3 nextMeshPosition = new Vector3(0, 0, 0);
 
+    private Vector2 nextTunnelStart = new Vector2(30, 0);
+    private float accumTunnelRotation = 0;
+
+    private List<IQuadMeshDistorter> distortionQueue = new();
+    private IQuadMeshDistorter activeDistort;
+    public Task task;
 
     public override void _Ready()
     {
-
         terrain = new(100);
         terrain.MaxHeight = 80;
         terrain.MinHeight = 15;
 
-        // thread = new(GenerateMap);
-        // thread.Start();
-
         GenerateMap_v2();
-        GetNode<Godot.Timer>("ExplodeTimer").Timeout += () => RandomExplosion();
+
+        // GetNode<Godot.Timer>("ExplodeTimer").Timeout += () => DrawTunnel();
+        // GetNode<Godot.Timer>("ExplodeTimer").Timeout += () => DrawTunnel();
+        GetTree().CreateTimer(1).Timeout += () => DisplayQuadMeshPolygons(quadMeshDistortionApplier.GetQuadMesh());
+
     }
+
+    private void DrawTunnel()
+    {
+        var tunnelStart = nextTunnelStart;
+        var tunnelEnd = new Vector2(1, 0.5f).Rotated(accumTunnelRotation) + tunnelStart;
+        nextTunnelStart = tunnelEnd;
+        accumTunnelRotation += 0.1f;
+
+        distortionQueue.Add(new TunnelDistorter(tunnelStart, tunnelEnd, 2));
+    }
+
 
     public override void _PhysicsProcess(double delta)
     {
-        if (task.IsCompleted)
+        if (task != null && task.IsCompleted)
         {
-            
-            var quadMesh = quadMeshDistortionApplier.GetQuadMesh();
-            foreach (Rect2 region in TaskedExplosionRegions)
+
+            var affectedAreas = MeshInstanceMap.Keys.Where(rect => quadMeshDistortionApplier.DistortersActiveOnQuad(rect).Contains(activeDistort));
+            foreach (var rect in affectedAreas)
             {
-                var meshMap = quadMesh.GenerateMeshes(region);
-                MeshInstanceMap[region].Mesh = meshMap[region];
+                var meshInstance = MeshInstanceMap[rect];
+                var mesh = quadMeshDistortionApplier.GetQuadMesh().GenerateMeshes(rect)[rect];
+                meshInstance.Mesh = mesh;
             }
-            TaskedExplosionRegions = new();
-
+            task = null;
+            activeDistort = null;
         }
-    }
 
-
-
-    public void RandomExplosion()
-    {
-        ExplodeTerrain(new Vector2(GD.Randf() * 50, GD.Randf() * 60), GD.RandRange(3, 10));
-    }
-
-    private void ExplodeTerrain(Vector2 center, float radius)
-    {
-        if (task.Status == TaskStatus.Running)
+        if (distortionQueue.Count > 0 && activeDistort == null)
         {
-            GD.Print("task still active");
-            return;
+            activeDistort = distortionQueue[0];
+            distortionQueue.RemoveAt(0);
+
+            task = new Task(() => quadMeshDistortionApplier.AddMeshDistorter(activeDistort));
+            task.Start();
         }
-
-        task = new Task(() => quadMeshDistortionApplier.AddMeshDistorter(new ExplosionDistorter(center, radius)));
-        task.Start();
-
-        // quadMeshDistortionApplier.AddMeshDistorter(new ExplosionDistorter(center, radius));
-        var quadMesh = quadMeshDistortionApplier.GetQuadMesh();
-
-        TaskedExplosionRegions = MeshInstanceMap.Keys.Where(rect => gUtils.CircleOverlapsRect(rect, center, radius)).ToList();
-
-
     }
 
     private void GenerateMap_v2()
     {
-
         var width = 40f;
         List<Polygon2D> MapPolygonInstances = terrain.GenerateNext(width);
         var mapPoly = MapPolygonInstances[0];
@@ -99,63 +97,51 @@ public partial class World : Node3D
         var quadMesh = new PolygonQuadMesh(mapPoly.Polygon);
         quadMeshDistortionApplier = new(quadMesh);
 
-        var time = Time.GetTicksMsec();
-        quadMeshDistortionApplier.AddMeshDistorter(new BaseTerrainDistorter(16));
         quadMeshDistortionApplier.AddMeshDistorter(new EdgeWrapDistorter(1, 2));
-
-        GD.Print("edge wrap distort time: ", Time.GetTicksMsec() - time);
-        time = Time.GetTicksMsec();
-
-        // quadMeshDistortionApplier.AddMeshDistorter(new ExplosionDistorter(new Vector2(25, 25), 5));
-        // quadMeshDistortionApplier.AddMeshDistorter(new ExplosionDistorter(new Vector2(33, 25), 8));
-        // quadMeshDistortionApplier.AddMeshDistorter(new ExplosionDistorter(new Vector2(15, 35), 12));
-
-        GD.Print(" explosions distort time: ", Time.GetTicksMsec() - time);
-
+        quadMeshDistortionApplier.AddMeshDistorter(new BaseTerrainDistorter(4));
+        
 
         var distortedQuadMesh = quadMeshDistortionApplier.QuadMeshHistory[^1];
 
-        // var polygons = distortedQuadMesh.GetPolygons();
-        // GD.Print(polygons.Count);
-        // var polyContainer = new Node2D();
-        // polyContainer.RotationDegrees = 180;
-        // polyContainer.Scale = new Vector2(-10, 10);
-        // polyContainer.Position = new Vector2(100, 500);
-        // AddChild(polyContainer);
-        // foreach (Vector2[] poly in polygons)
-        // {
-        //     var poly2d = new Polygon2D() { Polygon = poly };
-        //     poly2d.SelfModulate = new Color(GD.Randf(), GD.Randf(), GD.Randf(), 1);
-        //     polyContainer.AddChild(poly2d);
-        // }
-
         var meshMap = distortedQuadMesh.GenerateMeshes();
 
-
-
-        // meshList = distorter.QuadMesh.GenerateMeshes();
         foreach (Rect2 rect in meshMap.Keys)
         {
             var mesh = meshMap[rect];
-            var meshInstance = GetNode<MeshInstance3D>("wireframeContainer").Duplicate() as MeshInstance3D;
-
-            // var meshInstance = GetNode<MeshInstance3D>("container").Duplicate() as MeshInstance3D;
-            // var material = meshInstance.MaterialOverride.Duplicate() as ShaderMaterial;
-            // material.SetShaderParameter("texture_edge", tex);
-            // meshInstance.MaterialOverride = material;
-
+            var meshInstance = GetNode<MeshInstance3D>("container").Duplicate() as MeshInstance3D;
+            var material = meshInstance.MaterialOverride.Duplicate() as ShaderMaterial;
+            material.SetShaderParameter("texture_edge", tex);
+            meshInstance.MaterialOverride = material;
 
             meshInstance.Mesh = mesh;
 
             MeshInstanceMap[rect] = meshInstance;
 
             AddChild(meshInstance);
-
         }
 
+        distortionQueue.Add(new ExplosionDistorter(new Vector2(19, 20), 10));
+        distortionQueue.Add(new ExplosionDistorter(new Vector2(29, 30), 7));
 
     }
 
+    public void DisplayQuadMeshPolygons(PolygonQuadMesh quadMesh)
+    {
+        var polygons = quadMesh.GetPolygons();
+        GD.Print(polygons.Count);
+        var polyContainer = new Node2D();
+        polyContainer.RotationDegrees = 180;
+        polyContainer.Scale = new Vector2(-10, 10);
+        polyContainer.Position = new Vector2(100, 500);
+        AddChild(polyContainer);
+
+        foreach (Vector2[] poly in polygons)
+        {
+            var poly2d = new Polygon2D() { Polygon = poly };
+            poly2d.SelfModulate = new Color(GD.Randf(), GD.Randf(), GD.Randf(), 1);
+            polyContainer.AddChild(poly2d);
+        }
+    }
 
     ImageTexture GetEdgeTexture(Vector2[] polygon)
     {
