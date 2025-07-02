@@ -1,8 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://0u10cgpxhlft"]
+[gd_scene load_steps=12 format=3 uid="uid://0u10cgpxhlft"]
 
 [ext_resource type="Script" uid="uid://jjhedjijysii" path="res://map_generation/World.cs" id="1_vdpkr"]
 [ext_resource type="Material" uid="uid://b8kwrx0bwxsks" path="res://resources/DirtWithGrassMaterial.tres" id="2_qhmyd"]
 [ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="3_ggvqs"]
+[ext_resource type="PackedScene" uid="uid://i888mvag6wjg" path="res://common/InputCapture/PlaneMouseCapture.tscn" id="4_bk67d"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_qhmyd"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -15,8 +16,90 @@ sky_material = SubResource("ProceduralSkyMaterial_qhmyd")
 background_mode = 2
 sky = SubResource("Sky_ggvqs")
 ambient_light_source = 2
+reflected_light_source = 2
 tonemap_mode = 2
 glow_enabled = true
+
+[sub_resource type="SphereMesh" id="SphereMesh_ggvqs"]
+radius = 1.033
+height = 1.795
+
+[sub_resource type="Shader" id="Shader_bk67d"]
+code = "// NOTE: Shader automatically converted from Godot Engine 4.4.stable.mono's StandardMaterial3D.
+
+shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+
+uniform vec4 albedo : source_color;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+
+uniform float distance_fade_min : hint_range(0.0, 4096.0, 0.01);
+uniform float distance_fade_max : hint_range(0.0, 4096.0, 0.01);
+uniform ivec2 albedo_texture_size;
+uniform float point_size : hint_range(0.1, 128.0, 0.1);
+
+uniform float roughness : hint_range(0.0, 1.0);
+uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec4 metallic_texture_channel;
+uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
+
+uniform float specular : hint_range(0.0, 1.0, 0.01);
+uniform float metallic : hint_range(0.0, 1.0, 0.01);
+
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+void vertex() {
+	UV = UV * uv1_scale.xy + uv1_offset.xy;
+}
+
+void fragment() {
+	vec2 base_uv = UV;
+
+	vec4 albedo_tex = texture(texture_albedo, base_uv);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+
+	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
+	METALLIC = metallic_tex * metallic;
+	SPECULAR = specular;
+
+	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
+	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
+	ROUGHNESS = roughness_tex * roughness;
+
+	{
+		// Distance Fade: Pixel Dither
+		float fade_distance = length(VERTEX);
+
+		// Use interleaved gradient noise, which is fast but still looks good.
+		const vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
+		float fade = clamp(smoothstep(distance_fade_min, distance_fade_max, fade_distance), 0.0, 1.0);
+		// Use a hard cap to prevent a few stray pixels from remaining when past the fade-out distance.
+		if (fade < 0.001 || fade < fract(magic.z * fract(dot(FRAGCOORD.xy, magic.xy)))) {
+			discard;
+		}
+	}
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cfn36"]
+render_priority = 0
+shader = SubResource("Shader_bk67d")
+shader_parameter/albedo = Color(1, 1, 1, 1)
+shader_parameter/distance_fade_min = 0.0
+shader_parameter/distance_fade_max = 10.0
+shader_parameter/albedo_texture_size = Vector2i(0, 0)
+shader_parameter/point_size = 1.0
+shader_parameter/roughness = 1.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/specular = 0.5
+shader_parameter/metallic = 0.0
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
 
 [sub_resource type="Curve3D" id="Curve3D_ggvqs"]
 
@@ -24,8 +107,8 @@ glow_enabled = true
 script = ExtResource("1_vdpkr")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.999945, 0.000548051, 0.0104574, 0, 0.99863, -0.052336, -0.0104718, 0.0523331, 0.998575, 0, 0, 0)
-light_energy = 0.1
+transform = Transform3D(0.862454, 0.495344, 0.103956, -0.504758, 0.856909, 0.104528, -0.0373032, -0.142624, 0.989074, 0, 0, 0)
+light_indirect_energy = 8.807
 shadow_enabled = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
@@ -33,6 +116,7 @@ environment = SubResource("Environment_bk67d")
 
 [node name="container" type="MeshInstance3D" parent="."]
 material_override = ExtResource("2_qhmyd")
+mesh = SubResource("SphereMesh_ggvqs")
 
 [node name="ExplodeTimer" type="Timer" parent="."]
 wait_time = 0.1
@@ -43,11 +127,15 @@ autostart = true
 [node name="CanvasLayer" parent="." instance=ExtResource("3_ggvqs")]
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.25843, 28.9021, 58.9402)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 71.6585, 39.4197, 67.1918)
 
 [node name="CSGPolygon3D" type="CSGPolygon3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.92558)
 visible = false
+material_override = SubResource("ShaderMaterial_cfn36")
 
 [node name="Path3D" type="Path3D" parent="."]
 curve = SubResource("Curve3D_ggvqs")
+
+[node name="PlaneMouseCapture" parent="." node_paths=PackedStringArray("camera") instance=ExtResource("4_bk67d")]
+camera = NodePath("../Camera3D")

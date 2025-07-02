@@ -30,12 +30,13 @@ public partial class World : Node3D
     GeometryUtils gUtils = new();
     private Vector3 nextMeshPosition = new Vector3(0, 0, 0);
 
-    private Vector2 nextTunnelStart = new Vector2(30, 0);
+    private Vector2 nextTunnelStart = new Vector2(0, 30);
     private float accumTunnelRotation = 0;
 
     private List<IQuadMeshDistorter> distortionQueue = new();
     private IQuadMeshDistorter activeDistort;
     public Task task;
+    public float taskTime = 0;
 
     public override void _Ready()
     {
@@ -45,20 +46,26 @@ public partial class World : Node3D
 
         GenerateMap_v2();
 
-        // GetNode<Godot.Timer>("ExplodeTimer").Timeout += () => DrawTunnel();
-        // GetNode<Godot.Timer>("ExplodeTimer").Timeout += () => DrawTunnel();
-        GetTree().CreateTimer(1).Timeout += () => DisplayQuadMeshPolygons(quadMeshDistortionApplier.GetQuadMesh());
-
+        // GetNode<Godot.Timer>("ExplodeTimer").Timeout += DrawTunnel;
+        // GetTree().CreateTimer(1).Timeout += () => DisplayQuadMeshPolygons(quadMeshDistortionApplier.GetQuadMesh());
+        GetNode<PlaneMouseCapture>("PlaneMouseCapture").PlaneClicked += OnPlaneClicked;
     }
+
+    private void OnPlaneClicked(Vector3 vector)
+    {
+        var vec2 = new Vector2(vector.X, vector.Y);
+        distortionQueue.Add(new TunnelDistorter(vec2, vec2, (float)GD.RandRange(4f, 8)));
+    }
+
 
     private void DrawTunnel()
     {
         var tunnelStart = nextTunnelStart;
-        var tunnelEnd = new Vector2(1, 0.5f).Rotated(accumTunnelRotation) + tunnelStart;
+        var tunnelEnd = new Vector2(1.5f, 0f).Rotated(accumTunnelRotation) + tunnelStart;
         nextTunnelStart = tunnelEnd;
-        accumTunnelRotation += 0.1f;
+        accumTunnelRotation += 0.005f;
 
-        distortionQueue.Add(new TunnelDistorter(tunnelStart, tunnelEnd, 2));
+        distortionQueue.Add(new TunnelDistorter(tunnelStart, tunnelEnd, 4));
     }
 
 
@@ -68,6 +75,7 @@ public partial class World : Node3D
         {
 
             var affectedAreas = MeshInstanceMap.Keys.Where(rect => quadMeshDistortionApplier.DistortersActiveOnQuad(rect).Contains(activeDistort));
+            var affectLength = affectedAreas.ToList().Count;
             foreach (var rect in affectedAreas)
             {
                 var meshInstance = MeshInstanceMap[rect];
@@ -76,6 +84,7 @@ public partial class World : Node3D
             }
             task = null;
             activeDistort = null;
+            GD.Print("affected areas: ", affectLength, "   Subdivide time: ", Time.GetTicksMsec() - taskTime);
         }
 
         if (distortionQueue.Count > 0 && activeDistort == null)
@@ -85,21 +94,33 @@ public partial class World : Node3D
 
             task = new Task(() => quadMeshDistortionApplier.AddMeshDistorter(activeDistort));
             task.Start();
+            taskTime = Time.GetTicksMsec();
+
+        }
+
+        //update quad meshes parameters
+        var mouse_pos = GetNode<PlaneMouseCapture>("PlaneMouseCapture").LastMousePos;
+        foreach (var meshInstance in MeshInstanceMap.Values)
+        {
+            var mat = (ShaderMaterial)meshInstance.MaterialOverride;
+            mat.SetShaderParameter("circle_center", mouse_pos);
+
+
         }
     }
 
     private void GenerateMap_v2()
     {
-        var width = 40f;
+        var width = 80f;
         List<Polygon2D> MapPolygonInstances = terrain.GenerateNext(width);
         var mapPoly = MapPolygonInstances[0];
         var tex = GetEdgeTexture(mapPoly.Polygon);
         var quadMesh = new PolygonQuadMesh(mapPoly.Polygon);
         quadMeshDistortionApplier = new(quadMesh);
 
-        quadMeshDistortionApplier.AddMeshDistorter(new EdgeWrapDistorter(1, 2));
+        quadMeshDistortionApplier.AddMeshDistorter(new EdgeWrapDistorter(1, 6));
         quadMeshDistortionApplier.AddMeshDistorter(new BaseTerrainDistorter(4));
-        
+
 
         var distortedQuadMesh = quadMeshDistortionApplier.QuadMeshHistory[^1];
 
@@ -120,15 +141,17 @@ public partial class World : Node3D
             AddChild(meshInstance);
         }
 
-        distortionQueue.Add(new ExplosionDistorter(new Vector2(19, 20), 10));
-        distortionQueue.Add(new ExplosionDistorter(new Vector2(29, 30), 7));
+        distortionQueue.Add(new TunnelDistorter(new Vector2(30, 20),new Vector2(10, 20), 7));
+        // distortionQueue.Add(new ExplosionDistorter(new Vector2(29, 30), 4));
+
+        // distortionQueue.Add(new TunnelDistorter(new Vector2(20, 15),new Vector2(10, 15), 4));
+        // distortionQueue.Add(new TunnelDistorter(new Vector2(20, 15), new Vector2(30, 15), 4, true));
 
     }
 
     public void DisplayQuadMeshPolygons(PolygonQuadMesh quadMesh)
     {
         var polygons = quadMesh.GetPolygons();
-        GD.Print(polygons.Count);
         var polyContainer = new Node2D();
         polyContainer.RotationDegrees = 180;
         polyContainer.Scale = new Vector2(-10, 10);

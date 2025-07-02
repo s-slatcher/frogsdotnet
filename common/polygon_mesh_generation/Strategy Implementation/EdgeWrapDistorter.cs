@@ -22,6 +22,12 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
         SetupCurve();
     }
 
+    public bool IndexNode(PolygonQuad node, List<IQuadMeshDistorter> activeDistortersList)
+    {
+        SetNodeEdgeData(node);
+        return EdgesByRectMap[node.BoundingRect].Count > 0;
+    }
+
     private void SetupCurve()
     {
         edgeRadiusCurve.SetPointOut(0, edgeRadiusCurve.GetPointOut(0) * EdgeRadius);
@@ -144,6 +150,10 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
        
     }
 
+    public bool DoWipeChildren(PolygonQuad node)
+    {
+        return false;
+    }
 
-
+    
 }

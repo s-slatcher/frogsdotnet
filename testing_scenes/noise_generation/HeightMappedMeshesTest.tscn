@@ -43,3 +43,4 @@ mesh = SubResource("BoxMesh_apksy")
 scale = Vector2(0.205, 0.205)
 
 [node name="ExplodeTimer" type="Timer" parent="."]
+one_shot = true

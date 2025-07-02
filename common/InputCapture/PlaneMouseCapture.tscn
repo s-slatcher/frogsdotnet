@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://i888mvag6wjg"]
+
+[ext_resource type="Script" uid="uid://dfi281q7hh8vl" path="res://common/InputCapture/PlaneMouseCapture.cs" id="1_yv0rj"]
+
+[node name="PlaneMouseCapture" type="Node3D"]
+script = ExtResource("1_yv0rj")

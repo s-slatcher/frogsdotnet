@@ -27,7 +27,7 @@ public partial class PolygonQuadMesh : GodotObject
 
     private int leafNodeCounter = 0;
 
-
+    private float triangulationTimeCount = 0;
 
 
     static Vector2 RoundVector2(Vector2 vec2, int roundingDecimal)
@@ -91,10 +91,6 @@ public partial class PolygonQuadMesh : GodotObject
     public Dictionary<Rect2, Mesh> GenerateMeshes(Rect2? region = null)
     {
 
-        var time = Time.GetTicksMsec();
-        // set max quad width to be closest value to target max while still cleanly dividing into min quad widt
-
-        
 
         var meshStartQuads = GetQuadsAtTargetDepth(RootQuad, MeshSize);
         if (region != null)
@@ -103,17 +99,18 @@ public partial class PolygonQuadMesh : GodotObject
         }
 
         var meshMap = new Dictionary<Rect2, Mesh>();
-
-        GD.Print("Vertex list length: ", VertexList.Count);
+        // GD.Print(VertexList.Count);
+        
 
         foreach (PolygonQuad quad in meshStartQuads)
         {
             var mesh = GenerateMeshFromQuad(quad);
             meshMap[quad.BoundingRect] = mesh;
         }
-        // return new List<Mesh>() { meshes[4] };
-        GD.Print($"mesh of {VertexList.Count} vertices genned in {Time.GetTicksMsec() - time}ms");
-        // return meshes;
+
+        // GD.Print("total triangulation time: ", triangulationTimeCount);
+        triangulationTimeCount = 0;
+
         return meshMap;
     }
     
@@ -125,17 +122,20 @@ public partial class PolygonQuadMesh : GodotObject
     public Mesh GenerateMeshFromQuad(PolygonQuad quad)
     {
         // searches max depth to collect all leaf nodes that descend from passed quad
+        var tri_time = Time.GetTicksMsec();
+
         var leafNodes = GetQuadsAtTargetDepth(quad, 0);
         leafNodeCounter += leafNodes.Count;
 
         var vertexIndices = leafNodes.SelectMany(quad => TriangulateQuad(quad).ToList()).ToList();
+
+        triangulationTimeCount += Time.GetTicksMsec() - tri_time;
 
         var st = new SurfaceTool();
         st.Begin(Mesh.PrimitiveType.Triangles);
 
 
         Vector3 triCenter = new();
-        GD.Print("triangle indices / 3 = ", vertexIndices.Count / 3);
         for (int i = 0; i < vertexIndices.Count; i++)
         {
             var index = vertexIndices[i];
@@ -150,8 +150,8 @@ public partial class PolygonQuadMesh : GodotObject
             st.AddVertex(vertex.Position);
         }
 
+        st.Index();
         st.GenerateNormals();
-        // st.Index();
 
         return st.Commit();
     }
@@ -292,7 +292,9 @@ public partial class PolygonQuadMesh : GodotObject
         return quadList;
     }
 
-
-    
+    public void DeIndexPoint(Vector2 point)
+    {
+        Vector2ToVertexMap.Remove(RoundVector2(point, VectorRoundingDecimal));
+    }
 
 }

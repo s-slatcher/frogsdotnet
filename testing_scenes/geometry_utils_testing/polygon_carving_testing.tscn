@@ -7,7 +7,7 @@ script = ExtResource("1_fw7mf")
 
 [node name="base" type="Polygon2D" parent="."]
 color = Color(0.32549, 1, 1, 1)
-polygon = PackedVector2Array(85, 55.5, 80, 195.5, 221, 217.5, 291, 114.5, 142, 35.5)
+polygon = PackedVector2Array(85, 55.5, 80, 195.5, 300, 73, 345, 48, 142, 35.5)
 uv = PackedVector2Array(-418, -163.5, -423, -23.5, -282, -1.5, -212, -104.5, -361, -183.5)
 
 [node name="base2" type="Polygon2D" parent="."]

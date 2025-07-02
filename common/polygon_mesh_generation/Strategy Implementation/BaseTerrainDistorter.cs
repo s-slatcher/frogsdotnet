@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 using System.Dynamic;
 
 public partial class BaseTerrainDistorter (float targetSubdivideWidth) : GodotObject, IQuadMeshDistorter
@@ -14,6 +15,16 @@ public partial class BaseTerrainDistorter (float targetSubdivideWidth) : GodotOb
     public bool DoSubdivide(PolygonQuad node)
     {
         return node.GetWidth() > TargetSubdivideWidth;
+    }
+
+    public bool DoWipeChildren(PolygonQuad node)
+    {
+        return false;
+    }
+
+    public bool IndexNode(PolygonQuad node, List<IQuadMeshDistorter> activeDistortersList)
+    {
+        return DoSubdivide(node);
     }
 
     public bool IsActiveForNode(PolygonQuad node)

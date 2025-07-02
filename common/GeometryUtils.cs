@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Xml.Serialization;
 using Vector2 = Godot.Vector2;
 using Vector3 = Godot.Vector3;
 
@@ -261,6 +262,22 @@ public partial class GeometryUtils : GodotObject
         return closestDistance;
     }
 
+    public Vector2 ClosestPointOnRectFromSegment(Rect2 rect, LineSegment lineSeg)
+    {
+        var segments = LineSegmentsFromPolygon(PolygonFromRect(rect));
+        Vector2 closePoint = Vector2.Zero;
+        var closeDistance = float.MaxValue;
+        foreach (var seg in segments)
+        {
+            var points = Geometry2D.GetClosestPointsBetweenSegments(seg.Start, seg.End, lineSeg.Start, lineSeg.End);
+            var dist = (points[0] - points[1]).Length();
+            closeDistance = Math.Min(dist, closeDistance);
+            if (dist == closeDistance) closePoint = points[0];
+        }
+
+        return closePoint;
+    }
+
     public List<LineSegment> SortLineSegmentsByDistanceToRect(Rect2 rect, List<LineSegment> lineSegments, float maxDistance)
     {
         List<LineSegment> reducedLineSegList = new();
@@ -270,7 +287,7 @@ public partial class GeometryUtils : GodotObject
 
         foreach (var lineSeg in lineSegments)
         {
-            
+
             var nearestEdgeDistance = double.MaxValue;
             if (rect.HasPoint(lineSeg.Start) || rect.HasPoint(lineSeg.End))
             {
@@ -282,15 +299,15 @@ public partial class GeometryUtils : GodotObject
                 nearestEdgeDistance = ShortestDistanceBetweenSegmentAndRect(rect, lineSeg);
             }
 
-            if (nearestEdgeDistance < maxDistance) 
+            if (nearestEdgeDistance < maxDistance)
             {
-               reducedLineSegList.Add(lineSeg);
-               lineSegDistances[lineSeg] = (float)nearestEdgeDistance;
-               
-            } 
+                reducedLineSegList.Add(lineSeg);
+                lineSegDistances[lineSeg] = (float)nearestEdgeDistance;
+
+            }
 
         }
-        
+
         return reducedLineSegList.OrderBy(el => lineSegDistances[el]).ToList();
 
     }
