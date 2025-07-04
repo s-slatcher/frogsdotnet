@@ -62,7 +62,7 @@ public partial class World : Node3D
     private void OnPlaneClicked(Vector3 vector)
     {
         var vec2 = new Vector2(vector.X, vector.Y);
-        distortionQueue.Add(new TunnelDistorter(vec2, vec2, (float)GD.RandRange(4f, 8)));
+        distortionQueue.Add(new TunnelDistorter(vec2, vec2, (float)GD.RandRange(8f, 8)));
     }
 
 

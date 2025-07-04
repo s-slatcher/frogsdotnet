@@ -15,25 +15,25 @@ public partial class TunnelDistorter : GodotObject, IQuadMeshDistorter
     public float MaxDepthDifference = 1.75f;
 
     public Dictionary<Vector2, Vector3> DistortedVertices = new();
-    public Dictionary<Rect2, Vector2> NodeDepthRangeMap = new();
+    public Dictionary<Rect2, Vector2> DepthRangeMap = new();
     public Dictionary<Rect2, bool> DoWipeChildrenMap = new();
 
     public Dictionary<Vector2, float> PointDepthMap = new();
-   
+
 
 
     public GeometryUtils gUtils = new();
 
-     
+
 
     public TunnelDistorter(Vector2 center1, Vector2 center2, float radius)
     {
-        
+
         Center1 = center1;
         Center2 = center2;
         CenterLine = new LineSegment(Center1, Center2);
         Radius = radius;
-        
+
         if (Center1 != Center2) SetMiddlePoly();
 
     }
@@ -45,19 +45,19 @@ public partial class TunnelDistorter : GodotObject, IQuadMeshDistorter
         Radius = radius;
     }
 
-    
+
     // total re-write of this needed
     public bool IndexNode(PolygonQuad node, List<IQuadMeshDistorter> activeDistortersList)
     {
-        var depthRange = SetDepthRange(node.BoundingRect);
-        var TunnelDistorters = new List<TunnelDistorter>();
-        bool hasEdge = false;
-        foreach (var distorter in activeDistortersList)
-        {
-            if (distorter is TunnelDistorter distorter1) TunnelDistorters.Add(distorter1);
-            else hasEdge = true;
-        }
-        var depthRanges = TunnelDistorters.Select(tunnel => tunnel.NodeDepthRangeMap[node.BoundingRect]);
+        var depthRange = SetDepthRange(node);
+        // var TunnelDistorters = new List<TunnelDistorter>();
+        // bool hasEdge = false;
+        // foreach (var distorter in activeDistortersList)
+        // {
+        //     if (distorter is TunnelDistorter distorter1) TunnelDistorters.Add(distorter1);
+        //     else hasEdge = true;
+        // }
+        var depthRanges = activeDistortersList.Select(tunnel => tunnel.GetDepthRange(node));
 
         var isEnclosed = false;
         var doesEnclose = true;
@@ -69,19 +69,20 @@ public partial class TunnelDistorter : GodotObject, IQuadMeshDistorter
 
 
         DoWipeChildrenMap[node.BoundingRect] = doesEnclose;
-        if (hasEdge) DoWipeChildrenMap[node.BoundingRect] = false;
+        // if (hasEdge) DoWipeChildrenMap[node.BoundingRect] = false;
         if (isEnclosed) return false;
-        return IsActiveForNode(node);
+        return depthRange.X != 0 || depthRange.Y != 0;
     }
 
     private bool RangeEnclosesRange(Vector2 range1, Vector2 range2)
     {
         // shallow end (X axis) of first range is still deeper (lower) than deepest end of range2
-        return range1.X < range2.Y;
+        return range1.X - range2.Y < -0.01f;
     }
 
-    private Vector2 SetDepthRange(Rect2 region)
+    private Vector2 SetDepthRange(PolygonQuad node)
     {
+        var region = node.BoundingRect;
         float shallow;
         float deep;
 
@@ -100,7 +101,7 @@ public partial class TunnelDistorter : GodotObject, IQuadMeshDistorter
         cornerDepths.Sort();
         shallow = cornerDepths[^1];
         var depthRange = new Vector2(shallow, deep);
-        NodeDepthRangeMap[region] = depthRange;
+        DepthRangeMap[region] = depthRange;
         return depthRange;
     }
 
@@ -124,8 +125,8 @@ public partial class TunnelDistorter : GodotObject, IQuadMeshDistorter
     {
 
         if (DistortedVertices.ContainsKey(point)) return DistortedVertices[point];
-      
-        
+
+
 
         var depth = GetDepthAtPoint(point, true);
 
@@ -150,7 +151,7 @@ public partial class TunnelDistorter : GodotObject, IQuadMeshDistorter
             var edgeSmooth = float.Clamp((Radius - dist) / 1f, 0, 1);
             depth *= edgeSmooth;
         }
-        
+
         return depth;
     }
 
@@ -158,30 +159,21 @@ public partial class TunnelDistorter : GodotObject, IQuadMeshDistorter
     public bool DoSubdivide(PolygonQuad node)
     {
         
-        var depthRange = NodeDepthRangeMap[node.BoundingRect];
+        var depthRange = DepthRangeMap[node.BoundingRect];
         var depthDifference = Math.Abs(depthRange.X - depthRange.Y);
         return depthDifference > MaxDepthDifference && node.GetWidth() > node.MinimumQuadWidth;
     }
     public bool DoWipeChildren(PolygonQuad node)
     {
-        return DoWipeChildrenMap[node.BoundingRect];        
+        return DoWipeChildrenMap[node.BoundingRect];
 
     }
+
     
-
-
-    public bool IsActiveForNode(PolygonQuad node)
+    public Vector2 GetDepthRange(PolygonQuad node)
     {
-        bool overlapsC1 = gUtils.CircleOverlapsRect(node.BoundingRect, Center1, Radius);
-        if (overlapsC1) return true; 
-        if (Center1 == Center2) { return false; }
-
-        bool overlapsC2 = gUtils.CircleOverlapsRect(node.BoundingRect, Center2, Radius);
-        if (overlapsC2) return true;
-
-        var mergeResult = Geometry2D.MergePolygons(gUtils.PolygonFromRect(node.BoundingRect), MiddlePoly);
-        return mergeResult.Count == 1; 
-
+        if (!DepthRangeMap.ContainsKey(node.BoundingRect)) SetDepthRange(node);
+        return DepthRangeMap[node.BoundingRect]; 
     }
 
     

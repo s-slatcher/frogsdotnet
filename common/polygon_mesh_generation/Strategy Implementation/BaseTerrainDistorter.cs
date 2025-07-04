@@ -25,16 +25,16 @@ public partial class BaseTerrainDistorter(float targetSubdivideWidth, Rect2? reg
 
     public bool IndexNode(PolygonQuad node, List<IQuadMeshDistorter> activeDistortersList)
     {
-        return IsActiveForNode(node);
-    }
-
-    public bool IsActiveForNode(PolygonQuad node)
-    {
         if (Region == null) return node.GetWidth() > TargetSubdivideWidth;
         var reg = (Rect2)Region;
         return node.BoundingRect.Intersects(reg);
     }
-    
+
+    public Vector2 GetDepthRange(PolygonQuad node)
+    {
+        // depth range that will never override and never be overridden
+        return new Vector2(10000, -10000);
+    }
     
 
 }

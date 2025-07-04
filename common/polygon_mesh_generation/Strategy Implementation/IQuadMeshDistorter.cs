@@ -13,6 +13,7 @@ public interface IQuadMeshDistorter
 
     bool DoWipeChildren(PolygonQuad node);
 
+    Vector2 GetDepthRange(PolygonQuad node);
 
     Vector3 DistortVertex(Vector2 point, Vector3 currentVertex, PolygonQuad node);
 }

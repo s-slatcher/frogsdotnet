@@ -14,6 +14,7 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
 
 
     public Dictionary<Rect2, List<LineSegment>> EdgesByRectMap = new();
+    public float MaxDepthDifference = 0.5f;
 
     public Dictionary<Rect2, Vector2> DepthRangeMap = new();
 
@@ -25,9 +26,12 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
         SetupCurve();
     }
 
+
+    // SETS DEPTH RANGE BEFORE KNOW IF ACTIVE OR NOT.. WHICH IS WHY IT IS SOMETIMES EMPTY WHEN CHECKED IN INDEXING
     public bool IndexNode(PolygonQuad node, List<IQuadMeshDistorter> activeDistortersList)
     {
         SetNodeEdgeData(node);
+        SetDepthRange(node);
         return EdgesByRectMap[node.BoundingRect].Count > 0;
     }
 
@@ -116,7 +120,11 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
 
     public bool DoSubdivide(PolygonQuad node)
     {
-        return node.GetWidth() > GetTargetWidth(node) && node.GetWidth() > node.MinimumQuadWidth;
+ 
+        var depthRange = DepthRangeMap[node.BoundingRect];
+        var depthDifference = Math.Abs(depthRange.X - depthRange.Y);
+        return depthDifference > MaxDepthDifference && node.GetWidth() > node.MinimumQuadWidth;
+        // return node.GetWidth() > GetTargetWidth(node) && node.GetWidth() > node.MinimumQuadWidth;
     }
 
     private float GetTargetWidth(PolygonQuad node)
@@ -158,12 +166,21 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
         return false;
     }
 
-    private void SetDepthRange(PolygonQuad node)
+    
+
+    //TODO : this is ugly and messy, doesn't deal well with empty edge lists
+    private Vector2 SetDepthRange(PolygonQuad node)
     {
         float shallow;
         float deep;
         Vector2 depthRange;
-        
+
+        if (EdgesByRectMap[node.BoundingRect].Count == 0)
+        {
+            depthRange = new Vector2(0, 0);
+            DepthRangeMap[node.BoundingRect] = depthRange;
+            return depthRange;
+        }
 
         Vector2[] closePoints = gUtils.ClosestPointsOnRectAndSegment(node.BoundingRect, EdgesByRectMap[node.BoundingRect][0]);
         var dist = (closePoints[0] - closePoints[1]).Length();
@@ -177,15 +194,23 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
             var minEdgeProgress = (EdgeRadius - maxDistFromEdge) * edgeRatio;
             minEdgeProgress = float.Max(0, minEdgeProgress);
 
+
             shallow = edgeRadiusCurve.SampleBaked(minEdgeProgress).Z;
             deep = edgeRadiusCurve.SampleBaked(maxEdgeProgress).Z;
+            if (dist < 0.05) deep -= 1000;
             depthRange = new Vector2(shallow, deep);
-            
+
         }
 
         DepthRangeMap[node.BoundingRect] = depthRange;
-        
+        return depthRange;
+
     }
 
-    
+    public Vector2 GetDepthRange(PolygonQuad node)
+    {
+        if (!DepthRangeMap.ContainsKey(node.BoundingRect)) SetDepthRange(node);
+        return DepthRangeMap[node.BoundingRect]; 
+    }
+
 }

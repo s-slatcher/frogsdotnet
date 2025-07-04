@@ -21,6 +21,7 @@ public partial class QuadMeshDistortionApplier : GodotObject
 
     public List<PolygonQuadMesh> QuadMeshHistory = new();
 
+
     public QuadMeshDistortionApplier(PolygonQuadMesh polygonQuadMesh)
     {
         QuadMeshHistory.Add(polygonQuadMesh);
@@ -67,7 +68,7 @@ public partial class QuadMeshDistortionApplier : GodotObject
         
         foreach (var point in PointsToRemoveThisLoop)
         {
-            if (!PointsDistortedThisLoop.Contains((point)))
+            if (!PointsDistortedThisLoop.Contains(RoundVec(point)))
             {
                 quadMesh.DeIndexPoint(point);
             }
@@ -175,8 +176,8 @@ public partial class QuadMeshDistortionApplier : GodotObject
         for (int i = 0; i < pointList.Count(); i++)
         {
             var point = pointList[i];
-            if (PointsDistortedThisLoop.Contains((point))) continue;
-            PointsDistortedThisLoop.Add((point));
+            if (PointsDistortedThisLoop.Contains(RoundVec(point))) continue;
+            PointsDistortedThisLoop.Add(RoundVec(point));
 
             var vertexOrNull = quadMesh.GetVertex(point);
             var vertex = new Vector3(point.X, point.Y, 0);
