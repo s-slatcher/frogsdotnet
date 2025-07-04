@@ -5,15 +5,18 @@ using System.Collections.Generic;
 public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
 {
 
-    public float EdgeRadius = 1; 
-    public float EdgeExtension = 2; 
+    public float EdgeRadius = 1;
+    public float EdgeExtension = 2;
     private float edgeRatio;
     private Curve3D edgeRadiusCurve = (Curve3D)GD.Load("uid://c6avem4lbyumt").Duplicate();
     GeometryUtils gUtils = new();
     public HashSet<Vector2> DistortedVertices = new();
 
-    
+
     public Dictionary<Rect2, List<LineSegment>> EdgesByRectMap = new();
+
+    public Dictionary<Rect2, Vector2> DepthRangeMap = new();
+
 
     public EdgeWrapDistorter(float edgeRadius = 1, float edgeExtension = 1)
     {
@@ -38,7 +41,7 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
         var length = edgeRadiusCurve.GetBakedLength();
         edgeRatio = length / EdgeRadius;
     }
-    
+
     public Vector3 DistortVertex(Vector2 point, Vector3 currentVertex, PolygonQuad node)
     {
 
@@ -52,9 +55,9 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
         Vector2 nearestEdgeDirection = Vector2.Zero;
 
         var edgeList = EdgesByRectMap[node.BoundingRect];
-        
 
-        
+
+
         var newVertex = currentVertex;
 
         foreach (var lineSeg in edgeList)
@@ -133,7 +136,7 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
         SetNodeEdgeData(node);
         // GD.Print(node.BoundingRect);
         return EdgesByRectMap[node.BoundingRect].Count > 0;
-        
+
     }
 
     private void SetNodeEdgeData(PolygonQuad node)
@@ -147,12 +150,41 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
             var edgeMap = gUtils.SortLineSegmentsByDistanceToRect(node.BoundingRect, EdgesByRectMap[node.Parent.BoundingRect], EdgeRadius);
             EdgesByRectMap[node.BoundingRect] = edgeMap;
         }
-       
+
     }
 
     public bool DoWipeChildren(PolygonQuad node)
     {
         return false;
+    }
+
+    private void SetDepthRange(PolygonQuad node)
+    {
+        float shallow;
+        float deep;
+        Vector2 depthRange;
+        
+
+        Vector2[] closePoints = gUtils.ClosestPointsOnRectAndSegment(node.BoundingRect, EdgesByRectMap[node.BoundingRect][0]);
+        var dist = (closePoints[0] - closePoints[1]).Length();
+        var maxEdgeProgress = (EdgeRadius - dist) * edgeRatio;
+        maxEdgeProgress = float.Min(maxEdgeProgress, 1);
+
+        if (maxEdgeProgress < 0) depthRange = Vector2.Zero;
+        else
+        {
+            float maxDistFromEdge = dist + node.GetWidth() * float.Sqrt(2);
+            var minEdgeProgress = (EdgeRadius - maxDistFromEdge) * edgeRatio;
+            minEdgeProgress = float.Max(0, minEdgeProgress);
+
+            shallow = edgeRadiusCurve.SampleBaked(minEdgeProgress).Z;
+            deep = edgeRadiusCurve.SampleBaked(maxEdgeProgress).Z;
+            depthRange = new Vector2(shallow, deep);
+            
+        }
+
+        DepthRangeMap[node.BoundingRect] = depthRange;
+        
     }
 
     

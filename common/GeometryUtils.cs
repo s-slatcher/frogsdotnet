@@ -262,20 +262,22 @@ public partial class GeometryUtils : GodotObject
         return closestDistance;
     }
 
-    public Vector2 ClosestPointOnRectFromSegment(Rect2 rect, LineSegment lineSeg)
+
+    // should just handle two groups of line segments, run nested loop
+    public Vector2[] ClosestPointsOnRectAndSegment(Rect2 rect, LineSegment lineSeg)
     {
         var segments = LineSegmentsFromPolygon(PolygonFromRect(rect));
-        Vector2 closePoint = Vector2.Zero;
+        Vector2[] closePoints = [Vector2.Zero, Vector2.Zero];
         var closeDistance = float.MaxValue;
         foreach (var seg in segments)
         {
             var points = Geometry2D.GetClosestPointsBetweenSegments(seg.Start, seg.End, lineSeg.Start, lineSeg.End);
             var dist = (points[0] - points[1]).Length();
             closeDistance = Math.Min(dist, closeDistance);
-            if (dist == closeDistance) closePoint = points[0];
+            if (dist == closeDistance) closePoints = points;
         }
 
-        return closePoint;
+        return closePoints;
     }
 
     public List<LineSegment> SortLineSegmentsByDistanceToRect(Rect2 rect, List<LineSegment> lineSegments, float maxDistance)

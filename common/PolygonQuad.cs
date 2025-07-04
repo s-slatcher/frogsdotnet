@@ -90,7 +90,6 @@ public partial class PolygonQuad : GodotObject
         if (offsetVector.X < MinimumQuadWidth ) return;
 
         
-        
         List<Vector2> keyOrderedPositionOffsets = new(){
             new(0,0),
             new(offsetVector.X, 0),
@@ -144,10 +143,10 @@ public partial class PolygonQuad : GodotObject
         }
 
         foreach (var polygon in Polygons)
-            {
-                var intersectResults = Geometry2D.IntersectPolygons(polygon, childRectPoly);
-                childPolyList.AddRange(intersectResults);
-            }
+        {
+            var intersectResults = Geometry2D.IntersectPolygons(polygon, childRectPoly);
+            childPolyList.AddRange(intersectResults);
+        }
         // empty polygon added so Polygons array is safe to access
        
         return childPolyList; 

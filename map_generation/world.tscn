@@ -1,9 +1,10 @@
-[gd_scene load_steps=12 format=3 uid="uid://0u10cgpxhlft"]
+[gd_scene load_steps=13 format=3 uid="uid://0u10cgpxhlft"]
 
 [ext_resource type="Script" uid="uid://jjhedjijysii" path="res://map_generation/World.cs" id="1_vdpkr"]
 [ext_resource type="Material" uid="uid://b8kwrx0bwxsks" path="res://resources/DirtWithGrassMaterial.tres" id="2_qhmyd"]
 [ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="3_ggvqs"]
 [ext_resource type="PackedScene" uid="uid://i888mvag6wjg" path="res://common/InputCapture/PlaneMouseCapture.tscn" id="4_bk67d"]
+[ext_resource type="PackedScene" uid="uid://esxnxo61jdal" path="res://common/InputCapture/line_drawing.tscn" id="5_cfn36"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_qhmyd"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -16,7 +17,6 @@ sky_material = SubResource("ProceduralSkyMaterial_qhmyd")
 background_mode = 2
 sky = SubResource("Sky_ggvqs")
 ambient_light_source = 2
-reflected_light_source = 2
 tonemap_mode = 2
 glow_enabled = true
 
@@ -139,3 +139,6 @@ curve = SubResource("Curve3D_ggvqs")
 
 [node name="PlaneMouseCapture" parent="." node_paths=PackedStringArray("camera") instance=ExtResource("4_bk67d")]
 camera = NodePath("../Camera3D")
+
+[node name="LineDrawing" parent="." node_paths=PackedStringArray("planeMouseScene") instance=ExtResource("5_cfn36")]
+planeMouseScene = NodePath("../PlaneMouseCapture")

@@ -36,6 +36,7 @@ public partial class World : Node3D
     private List<IQuadMeshDistorter> distortionQueue = new();
     private IQuadMeshDistorter activeDistort;
     public Task task;
+    public Task MeshTask;
     public float taskTime = 0;
 
     public override void _Ready()
@@ -43,13 +44,20 @@ public partial class World : Node3D
         terrain = new(100);
         terrain.MaxHeight = 80;
         terrain.MinHeight = 15;
-
+        GetNode<LineDrawing>("LineDrawing").lineDrawn += OnLineDrawn;
         GenerateMap_v2();
 
         // GetNode<Godot.Timer>("ExplodeTimer").Timeout += DrawTunnel;
         // GetTree().CreateTimer(1).Timeout += () => DisplayQuadMeshPolygons(quadMeshDistortionApplier.GetQuadMesh());
+        // GetTree().CreateTimer(3).Timeout += () => distortionQueue.Add(new BaseTerrainDistorter(0.25f, new Rect2(new Vector2(50,30), new Vector2(20,20))));
         GetNode<PlaneMouseCapture>("PlaneMouseCapture").PlaneClicked += OnPlaneClicked;
     }
+
+    private void OnLineDrawn(Vector3[] line)
+    {
+        distortionQueue.Add(new TunnelDistorter(new Vector2(line[0].X, line[0].Y), new Vector2(line[1].X, line[1].Y), 3));
+    }
+
 
     private void OnPlaneClicked(Vector3 vector)
     {
@@ -73,18 +81,24 @@ public partial class World : Node3D
     {
         if (task != null && task.IsCompleted)
         {
-
+            var quadMesh = quadMeshDistortionApplier.GetQuadMesh();
+            var totalTaskTime = Time.GetTicksMsec() - taskTime;
+             
+            var meshTime = Time.GetTicksMsec();
             var affectedAreas = MeshInstanceMap.Keys.Where(rect => quadMeshDistortionApplier.DistortersActiveOnQuad(rect).Contains(activeDistort));
             var affectLength = affectedAreas.ToList().Count;
             foreach (var rect in affectedAreas)
             {
                 var meshInstance = MeshInstanceMap[rect];
-                var mesh = quadMeshDistortionApplier.GetQuadMesh().GenerateMeshes(rect)[rect];
+                var mesh = quadMesh.GenerateMeshes(rect)[rect];
                 meshInstance.Mesh = mesh;
             }
+            
             task = null;
             activeDistort = null;
-            GD.Print("affected areas: ", affectLength, "   Subdivide time: ", Time.GetTicksMsec() - taskTime);
+            GD.Print("total triangulation time: ",  quadMesh.triangulationTimeCount);
+            quadMesh.triangulationTimeCount = 0;
+            GD.Print("affected areas: ", affectLength, "time for task: ", totalTaskTime, "  time for mesh gen: ", Time.GetTicksMsec() - meshTime );
         }
 
         if (distortionQueue.Count > 0 && activeDistort == null)

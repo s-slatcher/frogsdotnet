@@ -22,5 +22,15 @@
 			"List<Vector2[]>()"
 		],
 		"description": "alias for the type of List of Vector2 Arrays for Godot Polygons"
+	},
+
+	"Godot time in ms":{
+		"prefix": "time",
+		"body": [
+			"Time.GetTicksMsec()"
+		],
+		"description": ""
 	}
+
+	
 }

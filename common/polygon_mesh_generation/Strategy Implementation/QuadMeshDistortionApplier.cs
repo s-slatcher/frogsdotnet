@@ -49,7 +49,6 @@ public partial class QuadMeshDistortionApplier : GodotObject
 
     public void AddMeshDistorter(IQuadMeshDistorter meshDistorter)
     {
-        GD.Print("new mesh distorted added");
         PointsDistortedThisLoop = new();
         PointsToRemoveThisLoop = new();
 
@@ -65,23 +64,28 @@ public partial class QuadMeshDistortionApplier : GodotObject
     private void FilterAndRemovePoints()
     {
         var quadMesh = GetQuadMesh();
-        var totalRemoved = 0;
+        
         foreach (var point in PointsToRemoveThisLoop)
         {
-            if (!PointsDistortedThisLoop.Contains(RoundVec(point))) quadMesh.DeIndexPoint(RoundVec(point)); totalRemoved += 1;
+            if (!PointsDistortedThisLoop.Contains((point)))
+            {
+                quadMesh.DeIndexPoint(point);
+            }
         }
-        GD.Print("total points removed: ", totalRemoved);
     }
+
+
+    
 
     private void ParentNodeDistortRecursive(PolygonQuad node, IQuadMeshDistorter newDistorter)
     {
-         
+
         bool isActive = newDistorter.IndexNode(node, ActiveDistortersMap[node.BoundingRect]);
         if (!isActive) return;
-       
+
         ActiveDistortersMap[node.BoundingRect].Add(newDistorter);
 
-        if ( ! node.HasChildren())
+        if (!node.HasChildren())
         {
             LeafNodeDistortRecursive(node, newDistorter);
             return;
@@ -89,7 +93,9 @@ public partial class QuadMeshDistortionApplier : GodotObject
 
         if (newDistorter.DoWipeChildren(node) && !newDistorter.DoSubdivide(node))
         {
+           
             GroupDescendantPointsToRemove(node);
+            GD.Print("add points 2 remove");
             node.Children = new();
             LeafNodeDistortRecursive(node, newDistorter);
             return;
@@ -133,7 +139,7 @@ public partial class QuadMeshDistortionApplier : GodotObject
 
     private void GroupDescendantPointsToRemove(PolygonQuad node)
     {
-        var time = Time.GetTicksMsec();
+
         var hash = new HashSet<Vector2>();
         var queue = new List<PolygonQuad>() { node };
         int queuePos = 0;
@@ -141,12 +147,11 @@ public partial class QuadMeshDistortionApplier : GodotObject
         {
             var qnode = queue[queuePos];
             queuePos += 1;
-            for (int i = 0; i < qnode.Polygons.Count; i++) foreach (var point in qnode.Polygons[i]) hash.Add(RoundVec(point));
+
+            for (int i = 0; i < qnode.Polygons.Count; i++) foreach (var point in qnode.Polygons[i]) hash.Add(point);
             queue.AddRange(qnode.Children);
         }
         PointsToRemoveThisLoop.UnionWith(hash);
-        GD.Print("total points grouped: ", hash.Count);
-        GD.Print("time to loop: ", Time.GetTicksMsec() - time);
     }
 
     private void SetChildNodeDistorters(PolygonQuad childNode)
@@ -170,8 +175,8 @@ public partial class QuadMeshDistortionApplier : GodotObject
         for (int i = 0; i < pointList.Count(); i++)
         {
             var point = pointList[i];
-            if (PointsDistortedThisLoop.Contains(RoundVec(point))) continue;
-            PointsDistortedThisLoop.Add(RoundVec(point));
+            if (PointsDistortedThisLoop.Contains((point))) continue;
+            PointsDistortedThisLoop.Add((point));
 
             var vertexOrNull = quadMesh.GetVertex(point);
             var vertex = new Vector3(point.X, point.Y, 0);

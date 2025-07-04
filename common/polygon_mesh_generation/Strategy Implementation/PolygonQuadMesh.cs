@@ -16,18 +16,17 @@ public partial class PolygonQuadMesh : GodotObject
     public PolygonQuad RootQuad;
     public Rect2I BoundingRect;
     public Dictionary<Vector2, IndexedVertex> Vector2ToVertexMap;
-    public List<IndexedVertex> VertexList;
 
 
     public List<Mesh> Meshes = new();
-    public int TargetMeshSize = 16;
+    public int TargetMeshSize = 8;
     public float MeshSize;
 
     private GeometryUtils gUtils = new();
 
     private int leafNodeCounter = 0;
 
-    private float triangulationTimeCount = 0;
+    public float triangulationTimeCount = 0;
 
 
     static Vector2 RoundVector2(Vector2 vec2, int roundingDecimal)
@@ -45,11 +44,12 @@ public partial class PolygonQuadMesh : GodotObject
 
     public PolygonQuadMesh(Vector2[] polygon, float minimumQuadWidth = 0.25f)
     {
+        
         RootQuad = PolygonQuad.CreateRootQuad(polygon, minimumQuadWidth);
         Vector2ToVertexMap = new();
-        VertexList = new();
         BoundingRect = gUtils.RectIFromPolygon(polygon);
         SetMeshSize();
+        
 
     }
 
@@ -58,13 +58,14 @@ public partial class PolygonQuadMesh : GodotObject
 
     public PolygonQuadMesh(PolygonQuadMesh polyMesh)
     {
+        var time = Time.GetTicksMsec();
         // constructor that shallow duplicates another polymesh by ref to same quad tree
         // duplicates the list of vertices and their mappings to 2d vectors
         RootQuad = polyMesh.RootQuad.Duplicate();
         Vector2ToVertexMap = new(polyMesh.Vector2ToVertexMap);
-        VertexList = new(polyMesh.VertexList);
         BoundingRect = polyMesh.BoundingRect;
         MeshSize = polyMesh.MeshSize;
+        GD.Print("duplicate quad mesh time: ", Time.GetTicksMsec() - time);
         
     }
 
@@ -73,8 +74,8 @@ public partial class PolygonQuadMesh : GodotObject
     {
         var key = RoundVector2(polygonPoint, VectorRoundingDecimal);
         var vertex = new IndexedVertex() { SourcePosition = polygonPoint, Position = vertexPosition };
-        VertexList.Add(vertex);
-        vertex.ArrayIndex = VertexList.Count - 1;
+        // VertexList.Add(vertex);
+        // vertex.ArrayIndex = VertexList.Count - 1;
         Vector2ToVertexMap[RoundVector2(polygonPoint, VectorRoundingDecimal)] = vertex;
     }
 
@@ -108,8 +109,6 @@ public partial class PolygonQuadMesh : GodotObject
             meshMap[quad.BoundingRect] = mesh;
         }
 
-        // GD.Print("total triangulation time: ", triangulationTimeCount);
-        triangulationTimeCount = 0;
 
         return meshMap;
     }
@@ -138,10 +137,9 @@ public partial class PolygonQuadMesh : GodotObject
         Vector3 triCenter = new();
         for (int i = 0; i < vertexIndices.Count; i++)
         {
-            var index = vertexIndices[i];
-            var vertex = VertexList[index];
+            var vertex = vertexIndices[i];
 
-            if (Mod(i, 3) == 0)  triCenter = GetTriangleCenter(index, vertexIndices[i+1], vertexIndices[i+2]) / 100;
+            if (Mod(i, 3) == 0)  triCenter = GetTriangleCenter(vertex, vertexIndices[i+1], vertexIndices[i+2]) / 100;
 
             var UV = (new Vector2(vertex.Position.X, vertex.Position.Y)) / BoundingRect.Size;
             // if (UV.X > 1 || UV.Y > 1) GD.Print(vertex.Position);
@@ -156,48 +154,38 @@ public partial class PolygonQuadMesh : GodotObject
         return st.Commit();
     }
 
-    private Vector3 GetTriangleCenter(int index1, int index2, int index3)
+    private Vector3 GetTriangleCenter(IndexedVertex vert1, IndexedVertex vert2, IndexedVertex vert3)
     {
         Vector3 center = Vector3.Zero;
 
-        center += VertexList[index1].Position;
-        center += VertexList[index2].Position;
-        center += VertexList[index3].Position;
+        center += vert1.Position;
+        center += vert2.Position;
+        center += vert3.Position;
         return center / 3;
     }
 
-    private List<int> TriangulateQuad(PolygonQuad quad)
+    private List<IndexedVertex> TriangulateQuad(PolygonQuad quad)
     {
 
-        var vertexIndices = new List<int>();
-
-
+        var totalVertices = new List<IndexedVertex>();
         var polygon = quad.Polygons[0];
-        if (polygon.Length == 0) return vertexIndices;
+        if (polygon.Length == 0) return totalVertices;
 
         var stitchPolygon = StitchQuadPolygon(quad);
-        // var stitchPolygon = quad.Polygons[0];
+        // var stitchPolygon = quad.Polygons[0];  
 
         var triangleIndices = Geometry2D.TriangulatePolygon(stitchPolygon);
         triangleIndices = triangleIndices.Reverse().ToArray();
-        var convertedIndices = new List<int>();
+        var vertices = new List<IndexedVertex>();
         foreach (var index in triangleIndices)
         {
             var polyPoint = stitchPolygon[index];
             var key = RoundVector2(polyPoint, VectorRoundingDecimal);
-            // IndexPoint(polyPoint, new Vector3(polyPoint.X, polyPoint.Y, 0));
-            // if (!Vector2ToVertexMap.ContainsKey(key)) 
-            // {
-
-            //     GD.Print(quad.HasEdgePoly());
-            //     IndexPoint(polyPoint, new Vector3(polyPoint.X, polyPoint.Y , 0));
-            // }
-
-            convertedIndices.Add(Vector2ToVertexMap[key].ArrayIndex);
+            vertices.Add(Vector2ToVertexMap[key]);
         }
 
-        vertexIndices.AddRange(convertedIndices);
-        return vertexIndices;
+        totalVertices.AddRange(vertices);
+        return totalVertices;
     }
 
     private Vector2[] StitchQuadPolygon(PolygonQuad quad)
@@ -218,26 +206,18 @@ public partial class PolygonQuadMesh : GodotObject
         for (int i = 0; i < polygon.Length; i++)
         {
             Vector2 p1 = polygon[i];
+            Vector2 p2 = i + 1 < polygon.Length ? polygon[i + 1] : polygon[0];
 
             stitchedPolygon.Add(p1);
-
-            Vector2 p2 = i + 1 < polygon.Length ? polygon[i + 1] : polygon[0];
 
             if (!gridPoints.Contains(p1) || !gridPoints.Contains(p2)) continue;
 
             var sharedAxis = p1.X == p2.X ? 0 : 1;
             var otherAxis = sharedAxis == 0 ? 1 : 0;
-
-            // if (p1[sharedAxis] != p2[sharedAxis])
-            // {
-            //     GD.Print("error " + p1 + " not aligned with " + p2);
-            //     continue;
-            // }
             var stitchVector = sharedAxis == 0 ? new Vector2(0, minWidth) : new Vector2(minWidth, 0);
             stitchVector *= p1[otherAxis] < p2[otherAxis] ? 1 : -1;
 
-
-            // loop over the possible stitch postiions based on the grid dimensions
+            // loop over the possible stitch positions based on the grid dimensions
             // if those points exist already in other faces, stitch them into this face 
             var stitchPositions = float.Round(region.Size.X / minWidth) - 1;
             for (int j = 0; j < stitchPositions; j++)
@@ -247,7 +227,6 @@ public partial class PolygonQuadMesh : GodotObject
                 if (Vector2ToVertexMap.ContainsKey(key)) stitchedPolygon.Add(pos);
 
             }
-
 
         }
         return stitchedPolygon.ToArray();

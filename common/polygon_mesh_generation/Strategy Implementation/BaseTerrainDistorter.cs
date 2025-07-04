@@ -3,9 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Dynamic;
 
-public partial class BaseTerrainDistorter (float targetSubdivideWidth) : GodotObject, IQuadMeshDistorter
+public partial class BaseTerrainDistorter(float targetSubdivideWidth, Rect2? region = null) : GodotObject, IQuadMeshDistorter
 {
     public float TargetSubdivideWidth = targetSubdivideWidth;
+    public Rect2? Region = region;
 
     public Vector3 DistortVertex(Vector2 point, Vector3 currentVertex, PolygonQuad node)
     {
@@ -24,12 +25,16 @@ public partial class BaseTerrainDistorter (float targetSubdivideWidth) : GodotOb
 
     public bool IndexNode(PolygonQuad node, List<IQuadMeshDistorter> activeDistortersList)
     {
-        return DoSubdivide(node);
+        return IsActiveForNode(node);
     }
 
     public bool IsActiveForNode(PolygonQuad node)
     {
-        return true;
+        if (Region == null) return node.GetWidth() > TargetSubdivideWidth;
+        var reg = (Rect2)Region;
+        return node.BoundingRect.Intersects(reg);
     }
+    
+    
 
 }
