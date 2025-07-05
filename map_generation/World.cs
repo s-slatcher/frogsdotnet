@@ -39,6 +39,8 @@ public partial class World : Node3D
     public Task MeshTask;
     public float taskTime = 0;
 
+    public List< Task<Dictionary<Rect2, Mesh>>> meshTaskDictList = new();
+
     public override void _Ready()
     {
         terrain = new(100);
@@ -52,17 +54,34 @@ public partial class World : Node3D
         // GetTree().CreateTimer(3).Timeout += () => distortionQueue.Add(new BaseTerrainDistorter(0.25f, new Rect2(new Vector2(50,30), new Vector2(20,20))));
         GetNode<PlaneMouseCapture>("PlaneMouseCapture").PlaneClicked += OnPlaneClicked;
     }
-
+    
     private void OnLineDrawn(Vector3[] line)
     {
         distortionQueue.Add(new TunnelDistorter(new Vector2(line[0].X, line[0].Y), new Vector2(line[1].X, line[1].Y), 3));
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        if (Input.IsActionJustPressed("ui_accept")) TestOldMeshOnSpace();
+    }
+
+    private void TestOldMeshOnSpace()
+    {
+        var oldQuadMesh = quadMeshDistortionApplier.QuadMeshHistory[2];
+        foreach (var rect in MeshInstanceMap.Keys)
+        {
+            var meshInstance = MeshInstanceMap[rect];
+            meshTaskDictList.Add(
+                Task.Run(() => oldQuadMesh.GenerateMeshes(rect))
+            );
+        }
     }
 
 
     private void OnPlaneClicked(Vector3 vector)
     {
         var vec2 = new Vector2(vector.X, vector.Y);
-        distortionQueue.Add(new TunnelDistorter(vec2, vec2, (float)GD.RandRange(8f, 8)));
+        distortionQueue.Add(new TunnelDistorter(vec2, vec2, (float)GD.RandRange(5f, 5)));
     }
 
 
@@ -79,26 +98,38 @@ public partial class World : Node3D
 
     public override void _PhysicsProcess(double delta)
     {
+        if (meshTaskDictList.Count > 0) GD.Print("mesh task queue: ", meshTaskDictList.Count);
+        foreach (var dictTask in meshTaskDictList){
+            if (!dictTask.IsCompleted) continue;
+            var dict = dictTask.Result;
+            foreach (Rect2 rect in dict.Keys) MeshInstanceMap[rect].Mesh = dict[rect];
+        }
+        meshTaskDictList = meshTaskDictList.Where(task => !task.IsCompleted).ToList();
+        
+
         if (task != null && task.IsCompleted)
         {
             var quadMesh = quadMeshDistortionApplier.GetQuadMesh();
             var totalTaskTime = Time.GetTicksMsec() - taskTime;
-             
+
             var meshTime = Time.GetTicksMsec();
             var affectedAreas = MeshInstanceMap.Keys.Where(rect => quadMeshDistortionApplier.DistortersActiveOnQuad(rect).Contains(activeDistort));
             var affectLength = affectedAreas.ToList().Count;
             foreach (var rect in affectedAreas)
             {
                 var meshInstance = MeshInstanceMap[rect];
-                var mesh = quadMesh.GenerateMeshes(rect)[rect];
-                meshInstance.Mesh = mesh;
+                meshTaskDictList.Add(
+                    Task.Run(() => quadMesh.GenerateMeshes(rect))
+                );
+                
+
             }
-            
+
             task = null;
             activeDistort = null;
-            GD.Print("total triangulation time: ",  quadMesh.triangulationTimeCount);
+            // GD.Print("total triangulation time: ",  quadMesh.triangulationTimeCount);
             quadMesh.triangulationTimeCount = 0;
-            GD.Print("affected areas: ", affectLength, "time for task: ", totalTaskTime, "  time for mesh gen: ", Time.GetTicksMsec() - meshTime );
+            // GD.Print("affected areas: ", affectLength, "time for task: ", totalTaskTime, "  time for mesh gen: ", Time.GetTicksMsec() - meshTime );
         }
 
         if (distortionQueue.Count > 0 && activeDistort == null)
@@ -155,7 +186,7 @@ public partial class World : Node3D
             AddChild(meshInstance);
         }
 
-        distortionQueue.Add(new TunnelDistorter(new Vector2(30, 20),new Vector2(10, 20), 7));
+        // distortionQueue.Add();
         // distortionQueue.Add(new ExplosionDistorter(new Vector2(29, 30), 4));
 
         // distortionQueue.Add(new TunnelDistorter(new Vector2(20, 15),new Vector2(10, 15), 4));

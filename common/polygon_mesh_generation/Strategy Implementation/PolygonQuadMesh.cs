@@ -97,6 +97,7 @@ public partial class PolygonQuadMesh : GodotObject
         if (region != null)
         {
             meshStartQuads = meshStartQuads.Where(quad => quad.BoundingRect == region).ToList();
+            if (meshStartQuads.Count == 0) GD.Print("region mesh size not found: ", region);
         }
 
         var meshMap = new Dictionary<Rect2, Mesh>();
@@ -265,9 +266,13 @@ public partial class PolygonQuadMesh : GodotObject
                 continue;
             }
             if (quad.HasChildren()) queue.AddRange(quad.GetChildren());
-            else quadList.Add(quad);
+            else
+            {
+                quadList.Add(quad);
+                if (widthAtTargetDepth == MeshSize) GD.Print("off-sized mesh: ", quad.GetWidth());
+            }   
         }
-
+        
         return quadList;
     }
 

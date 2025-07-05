@@ -46,39 +46,14 @@ public partial class TunnelDistorter : GodotObject, IQuadMeshDistorter
     }
 
 
-    // total re-write of this needed
+    
     public bool IndexNode(PolygonQuad node, List<IQuadMeshDistorter> activeDistortersList)
     {
         var depthRange = SetDepthRange(node);
-        // var TunnelDistorters = new List<TunnelDistorter>();
-        // bool hasEdge = false;
-        // foreach (var distorter in activeDistortersList)
-        // {
-        //     if (distorter is TunnelDistorter distorter1) TunnelDistorters.Add(distorter1);
-        //     else hasEdge = true;
-        // }
-        var depthRanges = activeDistortersList.Select(tunnel => tunnel.GetDepthRange(node));
-
-        var isEnclosed = false;
-        var doesEnclose = true;
-        foreach (var range in depthRanges)
-        {
-            if (!RangeEnclosesRange(depthRange, range)) doesEnclose = false;
-            if (range.X < depthRange.Y) isEnclosed = true;
-        }
-
-
-        DoWipeChildrenMap[node.BoundingRect] = doesEnclose;
-        // if (hasEdge) DoWipeChildrenMap[node.BoundingRect] = false;
-        if (isEnclosed) return false;
         return depthRange.X != 0 || depthRange.Y != 0;
     }
 
-    private bool RangeEnclosesRange(Vector2 range1, Vector2 range2)
-    {
-        // shallow end (X axis) of first range is still deeper (lower) than deepest end of range2
-        return range1.X - range2.Y < -0.01f;
-    }
+    
 
     private Vector2 SetDepthRange(PolygonQuad node)
     {
