@@ -14,9 +14,11 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
 
 
     public Dictionary<Rect2, List<LineSegment>> EdgesByRectMap = new();
-    public float MaxDepthDifference = 0.5f;
+    public float MaxDepthDifference = 0.9f;
 
     public Dictionary<Rect2, Vector2> DepthRangeMap = new();
+
+    
 
 
     public EdgeWrapDistorter(float edgeRadius = 1, float edgeExtension = 1)
@@ -44,13 +46,14 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
         edgeRadiusCurve.BakeInterval = EdgeRadius / 100f;
         var length = edgeRadiusCurve.GetBakedLength();
         edgeRatio = length / EdgeRadius;
+        GD.Print("edge ratio = ", edgeRatio);
     }
 
-    public Vector3 DistortVertex(Vector2 point, Vector3 currentVertex, PolygonQuad node)
+    public Vertex DistortVertex(Vector2 point, Vertex currentVertex, PolygonQuad node)
     {
 
-        if (DistortedVertices.Contains(point)) return currentVertex;
-        else DistortedVertices.Add(point);
+        // if (DistortedVertices.Contains(point)) return currentVertex;
+        // else DistortedVertices.Add(point);
 
 
         double nearestEdgeSqr = double.MaxValue;
@@ -59,10 +62,6 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
         Vector2 nearestEdgeDirection = Vector2.Zero;
 
         var edgeList = EdgesByRectMap[node.BoundingRect];
-
-
-
-        var newVertex = currentVertex;
 
         foreach (var lineSeg in edgeList)
         {
@@ -105,38 +104,42 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
 
             var curveNormal = curvePointTransform.Basis.X;
             var rotatedNormal = curveNormal.Rotated(Vector3.Back, Vector2.Right.AngleTo(nearestEdgeDirection));
-            newVertex = rotatedCurvePos + curveOrigin3D;
-            // vertex.Normal = rotatedNormal.Normalized();
+            currentVertex.Position = rotatedCurvePos + curveOrigin3D;
+            currentVertex.Normal = rotatedNormal.Normalized();
             // vertex.VertexColor = (vertex.Normal + new Vector3(1, 1, 1)) / 2;
             if (nearestEdgeDelta < 0.005)
             {
-                newVertex.Z -= EdgeExtension;
+                currentVertex.Position.Z -= EdgeExtension;
             }
 
         }
 
-        return newVertex;
+        return currentVertex;
     }
+
+
+ 
+
 
     public bool DoSubdivide(PolygonQuad node)
     {
- 
+
         var depthRange = DepthRangeMap[node.BoundingRect];
         var depthDifference = Math.Abs(depthRange.X - depthRange.Y);
         return depthDifference > MaxDepthDifference && node.GetWidth() > node.MinimumQuadWidth;
         // return node.GetWidth() > GetTargetWidth(node) && node.GetWidth() > node.MinimumQuadWidth;
     }
 
-    private float GetTargetWidth(PolygonQuad node)
-    {
-        var closestEdgeDelta = gUtils.ShortestDistanceBetweenSegmentAndRect(node.BoundingRect, EdgesByRectMap[node.BoundingRect][0]);
-        var edgeProgress = (float)(EdgeRadius - closestEdgeDelta) * edgeRatio;
-        edgeProgress = (float)Math.Pow(float.Clamp(edgeProgress, 0, 1), 2);
+    // private float GetTargetWidth(PolygonQuad node)
+    // {
+    //     var closestEdgeDelta = gUtils.ShortestDistanceBetweenSegmentAndRect(node.BoundingRect, EdgesByRectMap[node.BoundingRect][0]);
+    //     var edgeProgress = (float)(EdgeRadius - closestEdgeDelta) * edgeRatio;
+    //     edgeProgress = (float)Math.Pow(float.Clamp(edgeProgress, 0, 1), 2);
 
-        // lerps from 0 (min quad size) to 8
-        var widthTarget = float.Lerp(0, 8, 1 - edgeProgress);
-        return widthTarget;
-    }
+    //     // lerps from 0 (min quad size) to 8
+    //     var widthTarget = float.Lerp(0, 8, 1 - edgeProgress);
+    //     return widthTarget;
+    // }
 
 
     public bool IsActiveForNode(PolygonQuad node)
@@ -150,7 +153,6 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
     private void SetNodeEdgeData(PolygonQuad node)
     {
         if (EdgesByRectMap.ContainsKey(node.BoundingRect)) return;
-
         else if (node.Parent == null) EdgesByRectMap[node.BoundingRect] = gUtils.LineSegmentsFromPolygon(node.Root.Polygons[0]);
 
         else
@@ -168,7 +170,7 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
 
     
 
-    //TODO : this is ugly and messy, doesn't deal well with empty edge lists
+    
     private Vector2 SetDepthRange(PolygonQuad node)
     {
         float shallow;
@@ -185,23 +187,22 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
         Vector2[] closePoints = gUtils.ClosestPointsOnRectAndSegment(node.BoundingRect, EdgesByRectMap[node.BoundingRect][0]);
         var dist = (closePoints[0] - closePoints[1]).Length();
         var maxEdgeProgress = (EdgeRadius - dist) * edgeRatio;
-        maxEdgeProgress = float.Min(maxEdgeProgress, 1);
+        // maxEdgeProgress = float.Max(maxEdgeProgress, 0);
+        
+        if (maxEdgeProgress < 0) maxEdgeProgress = 0;
+    
+        float maxDistFromEdge = dist + node.GetWidth() * float.Sqrt(2);
+        var minEdgeProgress = (EdgeRadius - maxDistFromEdge) * edgeRatio;
+        // minEdgeProgress = float.Max(0, minEdgeProgress);
 
-        if (maxEdgeProgress < 0) depthRange = Vector2.Zero;
-        else
-        {
-            float maxDistFromEdge = dist + node.GetWidth() * float.Sqrt(2);
-            var minEdgeProgress = (EdgeRadius - maxDistFromEdge) * edgeRatio;
-            minEdgeProgress = float.Max(0, minEdgeProgress);
 
-
-            shallow = edgeRadiusCurve.SampleBaked(minEdgeProgress).Z;
-            deep = edgeRadiusCurve.SampleBaked(maxEdgeProgress).Z;
-            if (dist < 0.05) deep -= 1000;
-            depthRange = new Vector2(shallow, deep);
-
-        }
-
+        shallow = edgeRadiusCurve.SampleBaked(minEdgeProgress).Z;
+        deep = edgeRadiusCurve.SampleBaked(maxEdgeProgress).Z;
+        if (dist < 0.005 ) { shallow = 1000; deep = -1000; }
+        
+        if (minEdgeProgress > maxEdgeProgress) GD.Print("close dist: ",dist, " = edge progress: ", maxEdgeProgress, "       ", "max dist: ", maxDistFromEdge, " = edge progress: ", minEdgeProgress);
+        
+        depthRange = new Vector2(shallow, deep);
         DepthRangeMap[node.BoundingRect] = depthRange;
         return depthRange;
 

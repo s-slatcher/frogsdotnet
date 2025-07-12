@@ -36,7 +36,8 @@ public partial class QuadMeshDistortionApplier : GodotObject
 
     public Vector2 RoundVec(Vector2 vec)
     {
-        return new Vector2(float.Round(vec.X, 3), float.Round(vec.Y, 3));      
+        return PolygonQuadMesh.RoundVector2(vec);
+        // return new Vector2(float.Round(vec.X, 3), float.Round(vec.Y, 3));      
     }
 
     public List<IQuadMeshDistorter> DistortersActiveOnQuad(Rect2 QuadRegion)
@@ -49,7 +50,7 @@ public partial class QuadMeshDistortionApplier : GodotObject
         return ActiveDistortersMap[QuadRegion];
     }
 
-    public async Task AddMeshDistorter(IQuadMeshDistorter meshDistorter)
+    public void AddMeshDistorter(IQuadMeshDistorter meshDistorter)
     {
         PointsDistortedThisLoop = new();
         PointsToRemoveThisLoop = new();
@@ -78,6 +79,21 @@ public partial class QuadMeshDistortionApplier : GodotObject
 
 
     
+    private int DepthRangeSort(Vector2 a, Vector2 b) { return (int)(a.X - b.X); }
+    private bool DepthEnclosesDepth(Vector2 a, Vector2 b) { return a.X < b.Y; }
+
+    private void FilterDistorters(PolygonQuad node)
+    {
+        var distortList = ActiveDistortersMap[node.BoundingRect];
+        if (distortList.Count == 0) return;
+
+
+        var sortCol = distortList.OrderBy((dist) => dist.GetDepthRange(node).X);
+        var lowestRange = sortCol.ToArray()[0].GetDepthRange(node);
+
+        distortList = distortList.Where((distorter) => !DepthEnclosesDepth(lowestRange, distorter.GetDepthRange(node))).ToList();
+        ActiveDistortersMap[node.BoundingRect] = distortList;
+    }
 
     private void ParentNodeDistortRecursive(PolygonQuad node, IQuadMeshDistorter newDistorter)
     {
@@ -85,10 +101,10 @@ public partial class QuadMeshDistortionApplier : GodotObject
         bool isActive = newDistorter.IndexNode(node, ActiveDistortersMap[node.BoundingRect]);
         if (!isActive) return;
 
-        bool addedSuccessfully = AddDistorterToNode(node, newDistorter);
-        if (!addedSuccessfully) return;
+        ActiveDistortersMap[node.BoundingRect].Add(newDistorter);
+        FilterDistorters(node);
+        if ( ! ActiveDistortersMap[node.BoundingRect].Contains(newDistorter) ) return;
         
-        // ActiveDistortersMap[node.BoundingRect].Add(newDistorter);
 
         if (!node.HasChildren())
         {
@@ -114,31 +130,7 @@ public partial class QuadMeshDistortionApplier : GodotObject
 
     }
 
-    private bool AddDistorterToNode(PolygonQuad node, IQuadMeshDistorter newDistorter)
-    {
-        var prevDistorters = ActiveDistortersMap[node.BoundingRect];
-        var newRange = newDistorter.GetDepthRange(node);
-
-        // check if new distorter wipes out data from old distorter, or is wiped out by old ones
-        var isEnclosed = false;
-        var refinedDistorters = new List<IQuadMeshDistorter>();
-        for (int i = 0; i < prevDistorters.Count; i++)
-        {
-            var distorter = prevDistorters[i];
-            var range = distorter.GetDepthRange(node);
-
-            if (newRange.X >= range.Y) refinedDistorters.Add(distorter);  // old distorter is not dominated by new range
-            if (range.X < newRange.Y) isEnclosed = true;
-        }
-
-        if (!isEnclosed) refinedDistorters.Add(newDistorter);
-        ActiveDistortersMap[node.BoundingRect] = refinedDistorters;
-
-        return !isEnclosed;
-
-    }
-
-
+ 
     private void LeafNodeDistortRecursive(PolygonQuad node, IQuadMeshDistorter newDistorter)
     {
         if (!ActiveDistortersMap[node.BoundingRect].Contains(newDistorter))
@@ -156,6 +148,7 @@ public partial class QuadMeshDistortionApplier : GodotObject
             foreach (var child in node.GetChildren())
             {
                 SetChildNodeDistorters(child);
+
                 LeafNodeDistortRecursive(child, newDistorter);
             }
         }
@@ -173,11 +166,11 @@ public partial class QuadMeshDistortionApplier : GodotObject
         int queuePos = 0;
         while (queue.Count > queuePos)
         {
-            var qnode = queue[queuePos];
+            var qNode = queue[queuePos];
             queuePos += 1;
 
-            for (int i = 0; i < qnode.Polygons.Count; i++) foreach (var point in qnode.Polygons[i]) hash.Add(point);
-            queue.AddRange(qnode.Children);
+            for (int i = 0; i < qNode.Polygons.Count; i++) foreach (var point in qNode.Polygons[i]) hash.Add(point);
+            queue.AddRange(qNode.Children);
         }
         PointsToRemoveThisLoop.UnionWith(hash);
     }
@@ -192,6 +185,9 @@ public partial class QuadMeshDistortionApplier : GodotObject
             if (isActive) childList.Add(distorter);
         }
         ActiveDistortersMap[childNode.BoundingRect] = childList;
+        FilterDistorters(childNode);
+
+        
     }
 
     private void DistortFace(PolygonQuad node)
@@ -200,40 +196,30 @@ public partial class QuadMeshDistortionApplier : GodotObject
         var distortList = ActiveDistortersMap[node.BoundingRect];
         var pointList = node.Polygons.SelectMany(poly => poly).ToList();
 
-        for (int i = 0; i < pointList.Count(); i++)
+        for (int i = 0; i < pointList.Count; i++)
         {
             var point = pointList[i];
             if (PointsDistortedThisLoop.Contains(RoundVec(point))) continue;
             PointsDistortedThisLoop.Add(RoundVec(point));
 
-            var vertexOrNull = quadMesh.GetVertex(point);
-            var vertex = new Vector3(point.X, point.Y, 0);
-
-            // new point, create a default vertex and apply all previous applicable distortions on top of latest
-            if (vertexOrNull == null)
-            {
-                vertex = ApplyDistorts(point, vertex, node, distortList);
-                
-            }
-            // existing point, just apply latest distorter
-            else
-            {
-                if (distortList.Count > 0) vertex = ApplyDistorts(point, (Vector3)vertexOrNull, node, new() { distortList[^1] });
-            }
+            var vertex = new Vertex() { SourcePosition = point, Normal = Vector3.Back, Position = new Vector3(point.X, point.Y, 0) } ;
+            ApplyDistorts(point, vertex, node);
             quadMesh.IndexPoint(pointList[i], vertex);
         }
 
     }
 
-    private Vector3 ApplyDistorts(Vector2 point, Vector3 vertex, PolygonQuad node, List<IQuadMeshDistorter> distorterList)
+    private void ApplyDistorts(Vector2 point, Vertex vertex, PolygonQuad node)
     {
-        var currentVertex = vertex;
-        for (int i = 0; i < distorterList.Count; i++)
-        {
-            var newVert = distorterList[i].DistortVertex(point, currentVertex, node);
-            currentVertex = newVert;
-        }
-        return currentVertex;
+        foreach (IQuadMeshDistorter d in ActiveDistortersMap[node.BoundingRect]) d.DistortVertex(point, vertex, node);
+        // var currentVertex = vertex;
+        // var distortList = ActiveDistortersMap[node.BoundingRect];
+        // for (int i = 0; i < distortList.Count; i++)
+        // {
+        //     distortList[i].DistortVertex(point, vertex, node);
+        //     // currentVertex = newVert;
+        // }
+        
     }
 
     

@@ -41,8 +41,11 @@ public partial class World : Node3D
 
     public List< Task<Dictionary<Rect2, Mesh>>> meshTaskDictList = new();
 
+    public MeshInstance3D defaultContainer;
+
     public override void _Ready()
     {
+        defaultContainer = GetNode<MeshInstance3D>("container");
         terrain = new(100);
         terrain.MaxHeight = 80;
         terrain.MinHeight = 15;
@@ -81,7 +84,7 @@ public partial class World : Node3D
     private void OnPlaneClicked(Vector3 vector)
     {
         var vec2 = new Vector2(vector.X, vector.Y);
-        distortionQueue.Add(new TunnelDistorter(vec2, vec2, (float)GD.RandRange(5f, 5)));
+        distortionQueue.Add(new TunnelDistorter(vec2, vec2, (float)GD.RandRange(4, 7)));
     }
 
 
@@ -96,9 +99,8 @@ public partial class World : Node3D
     }
 
 
-    public override void _PhysicsProcess(double delta)
+    public override void _Process(double delta)
     {
-        if (meshTaskDictList.Count > 0) GD.Print("mesh task queue: ", meshTaskDictList.Count);
         foreach (var dictTask in meshTaskDictList){
             if (!dictTask.IsCompleted) continue;
             var dict = dictTask.Result;
@@ -129,7 +131,7 @@ public partial class World : Node3D
             activeDistort = null;
             // GD.Print("total triangulation time: ",  quadMesh.triangulationTimeCount);
             quadMesh.triangulationTimeCount = 0;
-            // GD.Print("affected areas: ", affectLength, "time for task: ", totalTaskTime, "  time for mesh gen: ", Time.GetTicksMsec() - meshTime );
+            GD.Print("affected areas: ", affectLength, "time for task: ", totalTaskTime, "  time for mesh gen: ", Time.GetTicksMsec() - meshTime );
         }
 
         if (distortionQueue.Count > 0 && activeDistort == null)
@@ -160,10 +162,11 @@ public partial class World : Node3D
         List<Polygon2D> MapPolygonInstances = terrain.GenerateNext(width);
         var mapPoly = MapPolygonInstances[0];
         var tex = GetEdgeTexture(mapPoly.Polygon);
-        var quadMesh = new PolygonQuadMesh(mapPoly.Polygon);
+       
+        var quadMesh = new PolygonQuadMesh(mapPoly.Polygon, 0.25f);
         quadMeshDistortionApplier = new(quadMesh);
-
-        quadMeshDistortionApplier.AddMeshDistorter(new EdgeWrapDistorter(1, 6));
+        quadMeshDistortionApplier.AddMeshDistorter(new EdgeWrapDistorter(2f, 3));
+        
         quadMeshDistortionApplier.AddMeshDistorter(new BaseTerrainDistorter(4));
 
 
@@ -174,7 +177,7 @@ public partial class World : Node3D
         foreach (Rect2 rect in meshMap.Keys)
         {
             var mesh = meshMap[rect];
-            var meshInstance = GetNode<MeshInstance3D>("container").Duplicate() as MeshInstance3D;
+            var meshInstance = defaultContainer.Duplicate() as MeshInstance3D;
             var material = meshInstance.MaterialOverride.Duplicate() as ShaderMaterial;
             material.SetShaderParameter("texture_edge", tex);
             meshInstance.MaterialOverride = material;
@@ -190,7 +193,7 @@ public partial class World : Node3D
         // distortionQueue.Add(new ExplosionDistorter(new Vector2(29, 30), 4));
 
         // distortionQueue.Add(new TunnelDistorter(new Vector2(20, 15),new Vector2(10, 15), 4));
-        // distortionQueue.Add(new TunnelDistorter(new Vector2(20, 15), new Vector2(30, 15), 4, true));
+        distortionQueue.Add(new TunnelDistorter(new Vector2(20, 15), new Vector2(30, 15), 4));
 
     }
 

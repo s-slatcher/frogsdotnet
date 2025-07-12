@@ -48,6 +48,7 @@ const vec3 vectors[3] = {
 	vec3(0.0, 0.0 ,1.0)
 };
 varying vec3 baryCoord;
+varying vec4 vertexCustom0;
 
 uniform vec4 modelColor : source_color;
 uniform vec4 wireframeColor : source_color;
@@ -68,7 +69,7 @@ void vertex() {
 	baryCoord = vectors[VERTEX_ID % 3];
 	vec3 normal = NORMAL;
 	vertex_pos = VERTEX.xyz;
-
+	vertexCustom0 = CUSTOM0;
 	TANGENT = vec3(0.0, 0.0, -1.0) * abs(normal.x);
 	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.y);
 	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.z);
@@ -139,7 +140,9 @@ void fragment() {
 	//float ripple_step_out = 1.0 - step(current_rad + current_ripple_width, dist_from_ripple_center); // comes out to zero if greater than max rad
 	//float ripple_step_in = step(current_rad, dist_from_ripple_center); // comes out to zero if less than min rad
 	//float ripple_step = ripple_step_in * ripple_step_out;
-	vec2 triangle_center = COLOR.xy * 100.;
+	
+	vec2 triangle_center = vertexCustom0.xy;
+	//vec2 triangle_center = COLOR.xy * 100.; // tri center coords divided by 1000 in mesh gen
 	float dist_to_center = length(circle_center - triangle_center);
 	float dither_edge = circle_radius;
 	float dither_full = circle_radius * 0.0;

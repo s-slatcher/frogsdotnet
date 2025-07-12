@@ -9,4 +9,5 @@ height = 2.599
 script = ExtResource("1_bnipo")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+visible = false
 mesh = SubResource("CapsuleMesh_bnipo")

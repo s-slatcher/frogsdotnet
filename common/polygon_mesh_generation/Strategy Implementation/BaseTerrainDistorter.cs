@@ -8,7 +8,7 @@ public partial class BaseTerrainDistorter(float targetSubdivideWidth, Rect2? reg
     public float TargetSubdivideWidth = targetSubdivideWidth;
     public Rect2? Region = region;
 
-    public Vector3 DistortVertex(Vector2 point, Vector3 currentVertex, PolygonQuad node)
+    public Vertex DistortVertex(Vector2 point, Vertex currentVertex, PolygonQuad node)
     {
         return currentVertex;
     }

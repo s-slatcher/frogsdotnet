@@ -15,5 +15,5 @@ public interface IQuadMeshDistorter
 
     Vector2 GetDepthRange(PolygonQuad node);
 
-    Vector3 DistortVertex(Vector2 point, Vector3 currentVertex, PolygonQuad node);
+    Vertex DistortVertex(Vector2 point, Vertex currentVertex, PolygonQuad node);
 }

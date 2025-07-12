@@ -8,5 +8,5 @@ public partial class Vertex : GodotObject
     public Vector3 Normal = Vector3.Forward;
     public Vector3 VertexColor = (Vector3.Forward + new Vector3(1,1,1)) / 2; 
     public Vector2 UV = Vector2.Zero;
-    
+
 }
