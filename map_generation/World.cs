@@ -21,209 +21,73 @@ using Vector3 = Godot.Vector3;
 public partial class World : Node3D
 {
 
-    [Export] ShaderMaterial meshMaterial;
-    
-    public Dictionary<Rect2, MeshInstance3D> MeshInstanceMap = new();
-    public QuadMeshDistortionApplier quadMeshDistortionApplier;
+    [Export] PackedScene terrainUnitScene;
+    TerrainUnit terrainUnit;
 
-    public TerrainMap terrain;
     GeometryUtils gUtils = new();
-    private Vector3 nextMeshPosition = new Vector3(0, 0, 0);
-
-    private Vector2 nextTunnelStart = new Vector2(0, 30);
-    private float accumTunnelRotation = 0;
-
-    private List<IQuadMeshDistorter> distortionQueue = new();
-    private IQuadMeshDistorter activeDistort;
-    public Task task;
-    public Task MeshTask;
-    public float taskTime = 0;
 
     public List< Task<Dictionary<Rect2, Mesh>>> meshTaskDictList = new();
 
-    public MeshInstance3D defaultContainer;
+
+    public TerrainMap terrainMap = new TerrainMap(102)
+    {
+        MaxHeight = 80,
+        MinHeight = 15
+    };
+
 
     public override void _Ready()
     {
-        defaultContainer = GetNode<MeshInstance3D>("container");
-        terrain = new(100);
-        terrain.MaxHeight = 80;
-        terrain.MinHeight = 15;
         GetNode<LineDrawing>("LineDrawing").lineDrawn += OnLineDrawn;
-        GenerateMap_v2();
+        
+        GenerateTerrain();
 
         // GetNode<Godot.Timer>("ExplodeTimer").Timeout += DrawTunnel;
         // GetTree().CreateTimer(1).Timeout += () => DisplayQuadMeshPolygons(quadMeshDistortionApplier.GetQuadMesh());
         // GetTree().CreateTimer(3).Timeout += () => distortionQueue.Add(new BaseTerrainDistorter(0.25f, new Rect2(new Vector2(50,30), new Vector2(20,20))));
         GetNode<PlaneMouseCapture>("PlaneMouseCapture").PlaneClicked += OnPlaneClicked;
+
     }
     
     private void OnLineDrawn(Vector3[] line)
     {
-        distortionQueue.Add(new TunnelDistorter(new Vector2(line[0].X, line[0].Y), new Vector2(line[1].X, line[1].Y), 3));
+        // distortionQueue.Add(new TunnelDistorter(new Vector2(line[0].X, line[0].Y), new Vector2(line[1].X, line[1].Y), 3));
     }
 
     public override void _Input(InputEvent @event)
     {
-        if (Input.IsActionJustPressed("ui_accept")) TestOldMeshOnSpace();
-    }
 
-    private void TestOldMeshOnSpace()
-    {
-        var oldQuadMesh = quadMeshDistortionApplier.QuadMeshHistory[2];
-        foreach (var rect in MeshInstanceMap.Keys)
-        {
-            var meshInstance = MeshInstanceMap[rect];
-            meshTaskDictList.Add(
-                Task.Run(() => oldQuadMesh.GenerateMeshes(rect))
-            );
-        }
     }
-
 
     private void OnPlaneClicked(Vector3 vector)
     {
         var vec2 = new Vector2(vector.X, vector.Y);
-        distortionQueue.Add(new TunnelDistorter(vec2, vec2, (float)GD.RandRange(4, 7)));
-    }
-
-
-    private void DrawTunnel()
-    {
-        var tunnelStart = nextTunnelStart;
-        var tunnelEnd = new Vector2(1.5f, 0f).Rotated(accumTunnelRotation) + tunnelStart;
-        nextTunnelStart = tunnelEnd;
-        accumTunnelRotation += 0.005f;
-
-        distortionQueue.Add(new TunnelDistorter(tunnelStart, tunnelEnd, 4));
+        terrainUnit.ExplodeTerrain(vec2, 6);
+        // distortionQueue.Add(new TunnelDistorter(vec2, vec2, (float)GD.RandRange(4, 7)));
     }
 
 
     public override void _Process(double delta)
     {
-        foreach (var dictTask in meshTaskDictList){
-            if (!dictTask.IsCompleted) continue;
-            var dict = dictTask.Result;
-            foreach (Rect2 rect in dict.Keys) MeshInstanceMap[rect].Mesh = dict[rect];
-        }
-        meshTaskDictList = meshTaskDictList.Where(task => !task.IsCompleted).ToList();
+        
         
 
-        if (task != null && task.IsCompleted)
-        {
-            var quadMesh = quadMeshDistortionApplier.GetQuadMesh();
-            var totalTaskTime = Time.GetTicksMsec() - taskTime;
-
-            var meshTime = Time.GetTicksMsec();
-            var affectedAreas = MeshInstanceMap.Keys.Where(rect => quadMeshDistortionApplier.DistortersActiveOnQuad(rect).Contains(activeDistort));
-            var affectLength = affectedAreas.ToList().Count;
-            foreach (var rect in affectedAreas)
-            {
-                var meshInstance = MeshInstanceMap[rect];
-                meshTaskDictList.Add(
-                    Task.Run(() => quadMesh.GenerateMeshes(rect))
-                );
-                
-
-            }
-
-            task = null;
-            activeDistort = null;
-            // GD.Print("total triangulation time: ",  quadMesh.triangulationTimeCount);
-            quadMesh.triangulationTimeCount = 0;
-            GD.Print("affected areas: ", affectLength, "time for task: ", totalTaskTime, "  time for mesh gen: ", Time.GetTicksMsec() - meshTime );
-        }
-
-        if (distortionQueue.Count > 0 && activeDistort == null)
-        {
-            activeDistort = distortionQueue[0];
-            distortionQueue.RemoveAt(0);
-
-            task = new Task(() => quadMeshDistortionApplier.AddMeshDistorter(activeDistort));
-            task.Start();
-            taskTime = Time.GetTicksMsec();
-
-        }
-
-        //update quad meshes parameters
-        var mouse_pos = GetNode<PlaneMouseCapture>("PlaneMouseCapture").LastMousePos;
-        foreach (var meshInstance in MeshInstanceMap.Values)
-        {
-            var mat = (ShaderMaterial)meshInstance.MaterialOverride;
-            mat.SetShaderParameter("circle_center", mouse_pos);
-
-
-        }
     }
-
-    private void GenerateMap_v2()
+    
+    
+    private void GenerateTerrain()
     {
-        var width = 80f;
-        List<Polygon2D> MapPolygonInstances = terrain.GenerateNext(width);
+        List<Polygon2D> MapPolygonInstances = terrainMap.GenerateNext(60);
         var mapPoly = MapPolygonInstances[0];
-        var tex = GetEdgeTexture(mapPoly.Polygon);
-       
-        var quadMesh = new PolygonQuadMesh(mapPoly.Polygon, 0.25f);
-        quadMeshDistortionApplier = new(quadMesh);
-        quadMeshDistortionApplier.AddMeshDistorter(new EdgeWrapDistorter(2f, 3));
+        var polygon = mapPoly.Polygon;
+        terrainUnit = terrainUnitScene.Instantiate() as TerrainUnit;
+        AddChild(terrainUnit);
         
-        quadMeshDistortionApplier.AddMeshDistorter(new BaseTerrainDistorter(4));
-
-
-        var distortedQuadMesh = quadMeshDistortionApplier.QuadMeshHistory[^1];
-
-        var meshMap = distortedQuadMesh.GenerateMeshes();
-
-        foreach (Rect2 rect in meshMap.Keys)
-        {
-            var mesh = meshMap[rect];
-            var meshInstance = defaultContainer.Duplicate() as MeshInstance3D;
-            var material = meshInstance.MaterialOverride.Duplicate() as ShaderMaterial;
-            material.SetShaderParameter("texture_edge", tex);
-            meshInstance.MaterialOverride = material;
-
-            meshInstance.Mesh = mesh;
-
-            MeshInstanceMap[rect] = meshInstance;
-
-            AddChild(meshInstance);
-        }
-
-        // distortionQueue.Add();
-        // distortionQueue.Add(new ExplosionDistorter(new Vector2(29, 30), 4));
-
-        // distortionQueue.Add(new TunnelDistorter(new Vector2(20, 15),new Vector2(10, 15), 4));
-        distortionQueue.Add(new TunnelDistorter(new Vector2(20, 15), new Vector2(30, 15), 4));
+        terrainUnit.SetPolygon(polygon);
 
     }
 
-    public void DisplayQuadMeshPolygons(PolygonQuadMesh quadMesh)
-    {
-        var polygons = quadMesh.GetPolygons();
-        var polyContainer = new Node2D();
-        polyContainer.RotationDegrees = 180;
-        polyContainer.Scale = new Vector2(-10, 10);
-        polyContainer.Position = new Vector2(100, 500);
-        AddChild(polyContainer);
-
-        foreach (Vector2[] poly in polygons)
-        {
-            var poly2d = new Polygon2D() { Polygon = poly };
-            poly2d.SelfModulate = new Color(GD.Randf(), GD.Randf(), GD.Randf(), 1);
-            polyContainer.AddChild(poly2d);
-        }
-    }
-
-    ImageTexture GetEdgeTexture(Vector2[] polygon)
-    {
-        var edgeTextureGenerator = new EdgeTextureGenerator();
-        edgeTextureGenerator.Polygon = polygon;
-        edgeTextureGenerator.edgeDistanceLimit = 6;
-        edgeTextureGenerator.edgeBuffer = 2;
-        Image image = edgeTextureGenerator.Generate();
-        var texture = ImageTexture.CreateFromImage(image);
-        return texture;
-    }
+    
 
 }
 

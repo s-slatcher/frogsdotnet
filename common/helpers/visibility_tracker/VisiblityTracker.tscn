@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cdwn4cmbrm7ym"]
+
+[ext_resource type="Script" uid="uid://blv86ah1cotfc" path="res://common/helpers/visibility_tracker/VisibleOnScreenNotifier3d.cs" id="1_gayea"]
+
+[node name="VisiblityTracker" type="VisibleOnScreenNotifier3D"]
+script = ExtResource("1_gayea")

@@ -6,6 +6,7 @@ using System.Dynamic;
 public partial class BaseTerrainDistorter(float targetSubdivideWidth, Rect2? region = null) : GodotObject, IQuadMeshDistorter
 {
     public float TargetSubdivideWidth = targetSubdivideWidth;
+    public List<Rect2> LeafNodeRegions = new(); 
     public Rect2? Region = region;
 
     public Vertex DistortVertex(Vector2 point, Vertex currentVertex, PolygonQuad node)
@@ -15,7 +16,11 @@ public partial class BaseTerrainDistorter(float targetSubdivideWidth, Rect2? reg
 
     public bool DoSubdivide(PolygonQuad node)
     {
-        return node.GetWidth() > TargetSubdivideWidth;
+        var tooBig = node.GetWidth() > TargetSubdivideWidth;
+
+        if (!tooBig) LeafNodeRegions.Add(node.BoundingRect); 
+
+        return tooBig;
     }
 
     public bool DoWipeChildren(PolygonQuad node)
@@ -25,7 +30,7 @@ public partial class BaseTerrainDistorter(float targetSubdivideWidth, Rect2? reg
 
     public bool IndexNode(PolygonQuad node, List<IQuadMeshDistorter> activeDistortersList)
     {
-        if (Region == null) return node.GetWidth() > TargetSubdivideWidth;
+        if (Region == null) return node.GetWidth() >= TargetSubdivideWidth;
         var reg = (Rect2)Region;
         return node.BoundingRect.Intersects(reg);
     }
@@ -35,6 +40,8 @@ public partial class BaseTerrainDistorter(float targetSubdivideWidth, Rect2? reg
         // depth range that will never override and never be overridden
         return new Vector2(10000, -10000);
     }
+
+    
     
 
 }

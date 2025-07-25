@@ -1,0 +1,46 @@
+[gd_scene load_steps=5 format=3 uid="uid://drvktfr62ead4"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_p57i7"]
+radius = 48.0
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_p57i7"]
+bounce = 0.88
+
+[sub_resource type="SegmentShape2D" id="SegmentShape2D_45mm7"]
+a = Vector2(594, -431)
+b = Vector2(-3, 2)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_45mm7"]
+radius = 25.65
+
+[node name="PinjointTesting" type="Node2D"]
+
+[node name="ground" type="StaticBody2D" parent="."]
+position = Vector2(-41, 276)
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="ground"]
+polygon = PackedVector2Array(25, 830, 1054, 843, 1057, 231, 1760, 237, 1770, 972, 47, 962)
+
+[node name="rope_end" type="StaticBody2D" parent="."]
+position = Vector2(667, 73)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="rope_end"]
+shape = SubResource("CircleShape2D_p57i7")
+
+[node name="rope" type="RigidBody2D" parent="."]
+position = Vector2(59, 516)
+mass = 1.516
+physics_material_override = SubResource("PhysicsMaterial_p57i7")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="rope"]
+position = Vector2(14, -8)
+shape = SubResource("SegmentShape2D_45mm7")
+
+[node name="CollisionShape2D2" type="CollisionShape2D" parent="rope"]
+position = Vector2(2, -3)
+shape = SubResource("CircleShape2D_45mm7")
+
+[node name="rope_end_joint" type="PinJoint2D" parent="."]
+position = Vector2(664, 75)
+node_a = NodePath("../rope_end")
+node_b = NodePath("../rope")

@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://bc0es7d2y4vvk"]
+
+[ext_resource type="Script" uid="uid://d34ccq16os61t" path="res://map_generation/terrain_texture/TerrainTexture.cs" id="1_5d3f7"]
+
+[node name="TerrainTexture" type="SubViewport"]
+script = ExtResource("1_5d3f7")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+centered = false
+
+[node name="ExplosionLineContainer" type="Node2D" parent="."]

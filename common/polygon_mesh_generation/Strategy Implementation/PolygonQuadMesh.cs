@@ -88,7 +88,16 @@ public partial class PolygonQuadMesh : GodotObject
         return null;
     }
 
-    
+
+
+    public Mesh GenerateMesh(Rect2 region)
+    {
+
+        var dict = GenerateMeshes(region);
+        return dict[region];
+
+    }
+
     public Dictionary<Rect2, Mesh> GenerateMeshes(Rect2? region = null)
     {
 
@@ -102,7 +111,7 @@ public partial class PolygonQuadMesh : GodotObject
 
         var meshMap = new Dictionary<Rect2, Mesh>();
         // GD.Print(VertexList.Count);
-        
+
 
         foreach (PolygonQuad quad in meshStartQuads)
         {

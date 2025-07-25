@@ -11,8 +11,6 @@ public interface IQuadMeshDistorter
 
     bool DoSubdivide(PolygonQuad node);
 
-    bool DoWipeChildren(PolygonQuad node);
-
     Vector2 GetDepthRange(PolygonQuad node);
 
     Vertex DistortVertex(Vector2 point, Vertex currentVertex, PolygonQuad node);

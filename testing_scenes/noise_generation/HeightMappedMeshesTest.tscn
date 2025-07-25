@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://nelsa2qu4ww3"]
 
 [ext_resource type="Script" uid="uid://cci6ont0xi6de" path="res://testing_scenes/noise_generation/HeightMappedMeshesTest.cs" id="1_yi4pw"]
-[ext_resource type="Material" uid="uid://b8kwrx0bwxsks" path="res://resources/DirtWithGrassMaterial.tres" id="2_1b5wf"]
+[ext_resource type="Material" uid="uid://b8kwrx0bwxsks" path="res://resources/shaders/DirtWithGrassMaterial.tres" id="2_1b5wf"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_cnvho"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)

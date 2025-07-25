@@ -16,7 +16,9 @@ public partial class EdgeTextureGenerator : GodotObject
 
     public Image Generate()
     {
+
         
+
         var lineSegments = gUtils.LineSegmentsFromPolygon(Polygon);
         
         Rect2I rectI = gUtils.RectIFromPolygon(Polygon);

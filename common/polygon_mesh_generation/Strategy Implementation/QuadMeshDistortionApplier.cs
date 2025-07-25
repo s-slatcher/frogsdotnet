@@ -52,6 +52,8 @@ public partial class QuadMeshDistortionApplier : GodotObject
 
     public void AddMeshDistorter(IQuadMeshDistorter meshDistorter)
     {
+        var time = Time.GetTicksMsec();
+
         PointsDistortedThisLoop = new();
         PointsToRemoveThisLoop = new();
 
@@ -62,6 +64,8 @@ public partial class QuadMeshDistortionApplier : GodotObject
         ParentNodeDistortRecursive(newMesh.RootQuad, meshDistorter);
 
         FilterAndRemovePoints();
+
+        GD.Print("DistortionApplier distortion time: ", (Time.GetTicksMsec() - time)); 
     }
 
     private void FilterAndRemovePoints()
@@ -88,74 +92,73 @@ public partial class QuadMeshDistortionApplier : GodotObject
         if (distortList.Count == 0) return;
 
 
-        var sortCol = distortList.OrderBy((dist) => dist.GetDepthRange(node).X);
+        var sortCol = distortList.OrderBy( distorter => distorter.GetDepthRange(node).X);
         var lowestRange = sortCol.ToArray()[0].GetDepthRange(node);
 
-        distortList = distortList.Where((distorter) => !DepthEnclosesDepth(lowestRange, distorter.GetDepthRange(node))).ToList();
+        distortList = distortList.Where( distorter => !DepthEnclosesDepth(lowestRange, distorter.GetDepthRange(node))).ToList();
         ActiveDistortersMap[node.BoundingRect] = distortList;
     }
 
     private void ParentNodeDistortRecursive(PolygonQuad node, IQuadMeshDistorter newDistorter)
     {
 
-        bool isActive = newDistorter.IndexNode(node, ActiveDistortersMap[node.BoundingRect]);
-        if (!isActive) return;
+        var distortList = ActiveDistortersMap[node.BoundingRect];
+        bool isActive = newDistorter.IndexNode(node, distortList);
+        if ( ! isActive) return;
 
-        ActiveDistortersMap[node.BoundingRect].Add(newDistorter);
+        //filter against other distorts and see if still active
+        distortList.Add(newDistorter);
         FilterDistorters(node);
-        if ( ! ActiveDistortersMap[node.BoundingRect].Contains(newDistorter) ) return;
+        if ( ! distortList.Contains(newDistorter) ) return;
         
-
+        
+        // TODO - get leaf node func back into this one, see if indexing filtering nodes new subdivides can be handled here instead
         if (!node.HasChildren())
         {
             LeafNodeDistortRecursive(node, newDistorter);
             return;
         }
 
-        if (ActiveDistortersMap[node.BoundingRect].Count == 1  && !newDistorter.DoSubdivide(node))
+        // 
+        if (distortList.Count == 1 && !newDistorter.DoSubdivide(node))
         {
             GroupDescendantPointsToRemove(node);
             node.Children = new();
-            LeafNodeDistortRecursive(node, newDistorter) ;
+            LeafNodeDistortRecursive(node, newDistorter);
             return;
         }
-       
+
+        // replace children with duplicates and recurse on duped children
         for (int i = 0; i < node.Children.Count; i++)
         {
             var dupeChild = node.Children[i].Duplicate();
+            dupeChild.Parent = node;
             node.Children[i] = dupeChild;
-            ParentNodeDistortRecursive(dupeChild, newDistorter) ;
+            ParentNodeDistortRecursive(dupeChild, newDistorter);
 
         }
 
     }
 
- 
+
     private void LeafNodeDistortRecursive(PolygonQuad node, IQuadMeshDistorter newDistorter)
     {
-        if (!ActiveDistortersMap[node.BoundingRect].Contains(newDistorter))
-        {
-            DistortFace(node);
-            return;
-        }
+        var activeDistorts = ActiveDistortersMap[node.BoundingRect];
+        bool hasNewDistort = activeDistorts.Count > 0 && activeDistorts[^1] == newDistorter;
 
-        var doSubdivide = newDistorter.DoSubdivide(node);
-
-
-        if (doSubdivide)
+        if (hasNewDistort && newDistorter.DoSubdivide(node))
         {
             node.Subdivide();
             foreach (var child in node.GetChildren())
             {
                 SetChildNodeDistorters(child);
-
                 LeafNodeDistortRecursive(child, newDistorter);
             }
         }
-        else
-        {
-            DistortFace(node);
-        }
+
+        else DistortFace(node);
+        
+        
     }
 
     private void GroupDescendantPointsToRemove(PolygonQuad node)
@@ -202,6 +205,7 @@ public partial class QuadMeshDistortionApplier : GodotObject
             if (PointsDistortedThisLoop.Contains(RoundVec(point))) continue;
             PointsDistortedThisLoop.Add(RoundVec(point));
 
+            // vertex is reset, and all previous (still valid) distorts are re-applied
             var vertex = new Vertex() { SourcePosition = point, Normal = Vector3.Back, Position = new Vector3(point.X, point.Y, 0) } ;
             ApplyDistorts(point, vertex, node);
             quadMesh.IndexPoint(pointList[i], vertex);

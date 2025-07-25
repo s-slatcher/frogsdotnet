@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://cul2ugyxndarv"]
+
+[ext_resource type="PackedScene" uid="uid://bc0es7d2y4vvk" path="res://map_generation/terrain_texture/TerrainTexture.tscn" id="1_44m1p"]
+[ext_resource type="Script" uid="uid://duaq3ut6eb4hc" path="res://testing_scenes/texture_generation/terrain_texture/TerrainTextureTesting.cs" id="1_gmjqw"]
+
+[node name="TerrainTextureTesting" type="Node2D"]
+script = ExtResource("1_gmjqw")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+centered = false
+
+[node name="TerrainTexture" parent="." instance=ExtResource("1_44m1p")]
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+position = Vector2(8, 294)
+polygon = PackedVector2Array(57, 63.5, 85, 27, 156, 20.5, 206, 78.5, 145, 137, 87, 145, 24, 131.5)
+uv = PackedVector2Array(-304, -93.5, -205, -136.5, -155, -78.5, -266, 6.5, -337, -25.5)

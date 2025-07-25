@@ -30,7 +30,6 @@ public partial class PolygonQuad : GodotObject
 
     public List<Vector2[]> Polygons;
     public List<Vector3[]> Vertices;
-    public ExtrudedMesh QuadManager;
     public PolygonQuad Parent;
     public PolygonQuad Root;
     public Rect2 BoundingRect;
@@ -75,8 +74,10 @@ public partial class PolygonQuad : GodotObject
 
     public PolygonQuad Duplicate()
     {
+
         var quad = new PolygonQuad(this.Polygons, this.BoundingRect, this.MinimumQuadWidth);
         quad.Children = new(Children);
+        quad.Parent = this.Parent;
         quad.Root = Root == this ? quad : Root; // when duplicating a root quad, replace self-reference in 'Root' field
         return quad;
     }
@@ -110,7 +111,6 @@ public partial class PolygonQuad : GodotObject
             PolygonQuad childQuad = new(childPolyList, childRect, MinimumQuadWidth)
             {
                 containsEdgePolygon = containsEdgePolygon,
-                QuadManager = QuadManager,
                 Parent = this,
                 Root = Root
             };

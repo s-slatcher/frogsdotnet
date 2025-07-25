@@ -1,0 +1,52 @@
+[gd_scene load_steps=8 format=3 uid="uid://ckikol35dhywi"]
+
+[ext_resource type="Shader" uid="uid://ggevyo1o4bg1" path="res://testing_scenes/texture_generation/viewport_texture/ViewportTexture.gdshader" id="1_8ig7q"]
+[ext_resource type="Script" uid="uid://jus1kutxu87j" path="res://testing_scenes/texture_generation/viewport_texture/ViewportTexture.cs" id="1_mywiq"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_8ig7q"]
+viewport_path = NodePath("SubViewport")
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_mywiq"]
+viewport_path = NodePath("SubViewport2")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mywiq"]
+resource_local_to_scene = true
+shader = ExtResource("1_8ig7q")
+shader_parameter/viewport_tex_1 = SubResource("ViewportTexture_8ig7q")
+shader_parameter/viewport_tex_2 = SubResource("ViewportTexture_mywiq")
+
+[sub_resource type="QuadMesh" id="QuadMesh_deebp"]
+
+[sub_resource type="Gradient" id="Gradient_mywiq"]
+
+[node name="ViewportTexture" type="Node2D"]
+script = ExtResource("1_mywiq")
+
+[node name="MeshInstance2D" type="MeshInstance2D" parent="."]
+material = SubResource("ShaderMaterial_mywiq")
+position = Vector2(965.25, 548.25)
+scale = Vector2(1931.5, 1097.5)
+mesh = SubResource("QuadMesh_deebp")
+
+[node name="SubViewport" type="SubViewport" parent="."]
+disable_3d = true
+transparent_bg = true
+size = Vector2i(1920, 1080)
+
+[node name="poly1" type="Polygon2D" parent="SubViewport"]
+color = Color(0, 1, 0, 1)
+polygon = PackedVector2Array(1111, 140, 890, 527, 924, 816, 1270, 895, 1578, 645, 1536, 337, 1198, 178)
+
+[node name="Line2D" type="Line2D" parent="SubViewport"]
+visible = false
+points = PackedVector2Array(0, 0, 1000, 800)
+width = 83.135
+gradient = SubResource("Gradient_mywiq")
+texture_mode = 2
+
+[node name="SubViewport2" type="SubViewport" parent="."]
+size = Vector2i(1920, 1080)
+
+[node name="poly2" type="Polygon2D" parent="SubViewport2"]
+color = Color(1, 0, 0, 1)
+polygon = PackedVector2Array(161, 227, 583, 124, 1164, 242, 1361, 561, 1133, 766, 773, 584, 514, 424, 264, 584, 142, 371)

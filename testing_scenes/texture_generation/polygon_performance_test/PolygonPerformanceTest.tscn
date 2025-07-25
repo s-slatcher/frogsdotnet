@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3 uid="uid://vxjbt3iprpb5"]
+
+[ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="1_ilsak"]
+[ext_resource type="Script" uid="uid://c8ekerx88nj18" path="res://testing_scenes/texture_generation/polygon_performance_test/PolygonPerformanceTest.cs" id="1_sh7ii"]
+
+[node name="PolygonPerformanceTest" type="Node2D"]
+script = ExtResource("1_sh7ii")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(960, 540)
+
+[node name="CanvasLayer" parent="." instance=ExtResource("1_ilsak")]
+
+[node name="MeshInstance2D" type="MeshInstance2D" parent="."]
+
+[node name="Line2D" type="Line2D" parent="."]
+position = Vector2(-173, -5)
+points = PackedVector2Array(1000, 500, 1083.48, 436)
+width = 97.1
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+round_precision = 10

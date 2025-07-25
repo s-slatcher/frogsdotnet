@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://3yd4st0lfqrw"]
+
+[ext_resource type="Script" uid="uid://cghgsqj3eae0" path="res://map_generation/mesh_distortion_handler/DistortableCompositePolygonMeshUpdater.cs" id="1_bik3u"]
+
+[node name="DistortionApplierMeshUpdater" type="Node3D"]
+script = ExtResource("1_bik3u")
+
+[node name="Timer" type="Timer" parent="."]

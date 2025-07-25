@@ -46,7 +46,7 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
         edgeRadiusCurve.BakeInterval = EdgeRadius / 100f;
         var length = edgeRadiusCurve.GetBakedLength();
         edgeRatio = length / EdgeRadius;
-        GD.Print("edge ratio = ", edgeRatio);
+        
     }
 
     public Vertex DistortVertex(Vector2 point, Vertex currentVertex, PolygonQuad node)
@@ -124,10 +124,9 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
     public bool DoSubdivide(PolygonQuad node)
     {
 
-        var depthRange = DepthRangeMap[node.BoundingRect];
+        var depthRange = GetDepthRange(node);
         var depthDifference = Math.Abs(depthRange.X - depthRange.Y);
         return depthDifference > MaxDepthDifference && node.GetWidth() > node.MinimumQuadWidth;
-        // return node.GetWidth() > GetTargetWidth(node) && node.GetWidth() > node.MinimumQuadWidth;
     }
 
     // private float GetTargetWidth(PolygonQuad node)
@@ -157,16 +156,14 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
 
         else
         {
+
             var edgeMap = gUtils.SortLineSegmentsByDistanceToRect(node.BoundingRect, EdgesByRectMap[node.Parent.BoundingRect], EdgeRadius);
             EdgesByRectMap[node.BoundingRect] = edgeMap;
         }
 
     }
 
-    public bool DoWipeChildren(PolygonQuad node)
-    {
-        return false;
-    }
+ 
 
     
 
@@ -179,6 +176,7 @@ public partial class EdgeWrapDistorter : GodotObject, IQuadMeshDistorter
 
         if (EdgesByRectMap[node.BoundingRect].Count == 0)
         {
+
             depthRange = new Vector2(0, 0);
             DepthRangeMap[node.BoundingRect] = depthRange;
             return depthRange;

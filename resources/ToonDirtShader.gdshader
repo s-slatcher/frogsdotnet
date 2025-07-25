@@ -97,8 +97,8 @@ vec4 triplanar_texture(sampler2D p_sampler, vec3 p_weights, vec3 p_triplanar_pos
 
 void fragment() {
 	vec4 albedo_tex = triplanar_texture(texture_albedo, uv1_power_normal, uv1_triplanar_pos);
-	//ALBEDO = albedo.rgb * albedo_tex.rgb;
-	ALBEDO = albedo.rgb;
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+	//ALBEDO = albedo.rgb;
 	vec4 edge_color = texture(texture_edge, UV);
 	vec4 debug_color = texture(texture_debug_test, UV);
 	float noise_uv_scaler = 0.05f; // at 0.05, texture repeats every 20 meters
@@ -159,7 +159,7 @@ void fragment() {
 	//
 
 	ALBEDO = mix(ALBEDO, wireframe_albedo, 1.0 - dist_smooth);
-
+		
 	float fade_depth_mult = smoothstep(edge_depth-0.25, edge_depth, vertex_pos.z);
 	float fade = ( (dist_smooth ) + (1. - closestEdge) )* fade_depth_mult;
 	

@@ -1,10 +1,11 @@
-[gd_scene load_steps=17 format=3 uid="uid://0u10cgpxhlft"]
+[gd_scene load_steps=12 format=3 uid="uid://0u10cgpxhlft"]
 
 [ext_resource type="Script" uid="uid://jjhedjijysii" path="res://map_generation/World.cs" id="1_vdpkr"]
-[ext_resource type="Material" uid="uid://b8kwrx0bwxsks" path="res://resources/DirtWithGrassMaterial.tres" id="2_qhmyd"]
+[ext_resource type="Material" uid="uid://b8kwrx0bwxsks" path="res://resources/shaders/DirtWithGrassMaterial.tres" id="2_qhmyd"]
 [ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="3_ggvqs"]
 [ext_resource type="PackedScene" uid="uid://i888mvag6wjg" path="res://common/InputCapture/PlaneMouseCapture.tscn" id="4_bk67d"]
 [ext_resource type="PackedScene" uid="uid://esxnxo61jdal" path="res://common/InputCapture/line_drawing.tscn" id="5_cfn36"]
+[ext_resource type="PackedScene" uid="uid://ca5y0iky063wy" path="res://map_generation/terrain_unit/TerrainUnit.tscn" id="6_i25bl"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_qhmyd"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -26,127 +27,9 @@ height = 1.795
 
 [sub_resource type="Curve3D" id="Curve3D_ggvqs"]
 
-[sub_resource type="Shader" id="Shader_cfn36"]
-code = "// NOTE: Shader automatically converted from Godot Engine 4.4.stable.mono's StandardMaterial3D.
-
-shader_type spatial;
-render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx, shadows_disabled;
-
-uniform vec4 albedo : source_color;
-uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
-uniform ivec2 albedo_texture_size;
-uniform float point_size : hint_range(0.1, 128.0, 0.1);
-
-uniform float roughness : hint_range(0.0, 1.0);
-uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
-uniform vec4 metallic_texture_channel;
-uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
-
-uniform float specular : hint_range(0.0, 1.0, 0.01);
-uniform float metallic : hint_range(0.0, 1.0, 0.01);
-varying vec3 uv1_triplanar_pos;
-
-uniform float uv1_blend_sharpness : hint_range(0.0, 150.0, 0.001);
-varying vec3 uv1_power_normal;
-
-uniform vec3 uv1_scale;
-uniform vec3 uv1_offset;
-uniform vec3 uv2_scale;
-uniform vec3 uv2_offset;
-
-vec4 triplanar_texture(sampler2D p_sampler, vec3 p_weights, vec3 p_triplanar_pos) {
-	vec4 samp = vec4(0.0);
-	samp += texture(p_sampler, p_triplanar_pos.xy) * p_weights.z;
-	samp += texture(p_sampler, p_triplanar_pos.xz) * p_weights.y;
-	samp += texture(p_sampler, p_triplanar_pos.zy * vec2(-1.0, 1.0)) * p_weights.x;
-	return samp;
-}
-
-void vertex() {
-	vec3 normal = MODEL_NORMAL_MATRIX * NORMAL;
-
-	TANGENT = vec3(0.0, 0.0, -1.0) * abs(normal.x);
-	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.y);
-	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.z);
-	TANGENT = inverse(MODEL_NORMAL_MATRIX) * normalize(TANGENT);
-
-	BINORMAL = vec3(0.0, 1.0, 0.0) * abs(normal.x);
-	BINORMAL += vec3(0.0, 0.0, -1.0) * abs(normal.y);
-	BINORMAL += vec3(0.0, 1.0, 0.0) * abs(normal.z);
-	BINORMAL = inverse(MODEL_NORMAL_MATRIX) * normalize(BINORMAL);
-
-	// UV1 Triplanar: Enabled (with World Triplanar)
-	uv1_power_normal = pow(abs(normal), vec3(uv1_blend_sharpness));
-	uv1_triplanar_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz * uv1_scale + uv1_offset;
-	uv1_power_normal /= dot(uv1_power_normal, vec3(1.0));
-	uv1_triplanar_pos *= vec3(1.0, -1.0, 1.0);
-	
-	vec4 albedo_tex = triplanar_texture(texture_albedo, uv1_power_normal, uv1_triplanar_pos.zyx);
-	VERTEX.xyz += NORMAL.xyz * pow(albedo_tex.r,2.) * 2.;
-	//VERTEX.y += (albedo_tex.r - 0.5) * -1.;
-	VERTEX.x -= pow(smoothstep(0., 2.25, abs(VERTEX.y)),2) * 1.5;
-}
-
-
-
-void fragment() {
-	//vec4 albedo_tex = triplanar_texture(texture_albedo, uv1_power_normal, uv1_triplanar_pos);
-	//ALBEDO = albedo.rgb * albedo_tex.rgb;
-	ALBEDO = albedo.rgb;
-
-	float metallic_tex = dot(triplanar_texture(texture_metallic, uv1_power_normal, uv1_triplanar_pos), metallic_texture_channel);
-	METALLIC = metallic_tex * metallic;
-	SPECULAR = specular;
-
-	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
-	float roughness_tex = dot(triplanar_texture(texture_roughness, uv1_power_normal, uv1_triplanar_pos), roughness_texture_channel);
-	ROUGHNESS = roughness_tex * roughness;
-}
-"
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_cfn36"]
-noise_type = 3
-seed = 45
-frequency = 0.0004
-fractal_type = 0
-fractal_octaves = 3
-fractal_lacunarity = 1.5
-
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_i25bl"]
-width = 1200
-height = 1200
-seamless = true
-seamless_blend_skirt = 0.323
-noise = SubResource("FastNoiseLite_cfn36")
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_i25bl"]
-render_priority = 0
-shader = SubResource("Shader_cfn36")
-shader_parameter/albedo = Color(0.847059, 0.533333, 0.266667, 1)
-shader_parameter/texture_albedo = SubResource("NoiseTexture2D_i25bl")
-shader_parameter/albedo_texture_size = Vector2i(1182, 1167)
-shader_parameter/point_size = 1.0
-shader_parameter/roughness = 1.0
-shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
-shader_parameter/specular = 0.5
-shader_parameter/metallic = 0.0
-shader_parameter/uv1_blend_sharpness = 1.0
-shader_parameter/uv1_scale = Vector3(1, 1, 1)
-shader_parameter/uv1_offset = Vector3(0, 0, 0)
-shader_parameter/uv2_scale = Vector3(1, 1, 1)
-shader_parameter/uv2_offset = Vector3(0, 0, 0)
-
-[sub_resource type="SphereMesh" id="SphereMesh_cfn36"]
-radius = 0.845
-height = 5.5
-radial_segments = 18
-rings = 12
-
-[sub_resource type="QuadMesh" id="QuadMesh_i25bl"]
-size = Vector2(15.09, 14.275)
-
 [node name="World" type="Node3D"]
 script = ExtResource("1_vdpkr")
+terrainUnitScene = ExtResource("6_i25bl")
 
 [node name="envo" type="Node3D" parent="."]
 
@@ -185,7 +68,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.25254, 0, 0.000711441)
 [node name="CanvasLayer" parent="." instance=ExtResource("3_ggvqs")]
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 71.6585, 39.4197, 67.1918)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.65388, 39.4197, 67.1918)
 
 [node name="Path3D" type="Path3D" parent="."]
 curve = SubResource("Curve3D_ggvqs")
@@ -196,13 +79,3 @@ camera = NodePath("../Camera3D")
 [node name="LineDrawing" parent="." node_paths=PackedStringArray("planeMouseScene") instance=ExtResource("5_cfn36")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.62833, 0, 0)
 planeMouseScene = NodePath("../PlaneMouseCapture")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.915, 0, 0, 0, 1.055, 0, 0, 0, 1.895, 70.447, 25.393, -2.035)
-material_override = SubResource("ShaderMaterial_i25bl")
-cast_shadow = 0
-mesh = SubResource("SphereMesh_cfn36")
-
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.21282, 0, -5.64791)
-mesh = SubResource("QuadMesh_i25bl")
