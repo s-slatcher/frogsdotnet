@@ -85,7 +85,7 @@ public partial class DistortableCompositePolygonMeshUpdater : Node3D
             QueueMeshUpdates(activeDistort.Distorter);
             activeDistort = new DistortionTask(); // sets 'task' property null
         }
-        else if (distortionQueue.Count != 0)  // task IS null and distortion queue is not empty
+        else if (activeTask == null && distortionQueue.Count != 0)  // task IS null and distortion queue is not empty
         {
             var nextDistorter = distortionQueue[0];
             distortionQueue.RemoveAt(0);

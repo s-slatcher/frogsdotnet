@@ -4,9 +4,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
+using Vector3 = Godot.Vector3;
+using Vector2 = Godot.Vector2;
 
 public partial class PolygonQuadMesh : GodotObject
 {
@@ -152,7 +155,6 @@ public partial class PolygonQuadMesh : GodotObject
             if (Mod(i, 3) == 0)  triCenter = GetTriangleCenter(vertex, vertexIndices[i+1], vertexIndices[i+2]) ; // divide by 1000 to fit in
 
             var UV = (new Vector2(vertex.Position.X, vertex.Position.Y)) / BoundingRect.Size;
-            // if (UV.X > 1 || UV.Y > 1) GD.Print(vertex.Position);
             st.SetCustomFormat(0, SurfaceTool.CustomFormat.RgFloat);
             st.SetCustom(0, new Godot.Color(triCenter.X, triCenter.Y, 0));
             st.SetUV(UV);
@@ -190,10 +192,23 @@ public partial class PolygonQuadMesh : GodotObject
         var triangleIndices = Geometry2D.TriangulatePolygon(stitchPolygon);
         triangleIndices = triangleIndices.Reverse().ToArray();
         var vertices = new List<Vertex>();
+        var missingVertexTotal = 0;
         foreach (var index in triangleIndices)
         {
             var polyPoint = stitchPolygon[index];
             var key = RoundVector2(polyPoint);
+            if (!Vector2ToVertexMap.ContainsKey(key))
+            {
+                IndexPoint(polyPoint, new Vertex()
+                {
+                    SourcePosition = polyPoint,
+                    Position = new Godot.Vector3(polyPoint.X, polyPoint.Y, 0),
+                    Normal = Godot.Vector3.Back
+                });
+                missingVertexTotal++;
+
+            }
+            if(missingVertexTotal > 0) GD.Print("missed vertex this face: ", missingVertexTotal);
             vertices.Add(Vector2ToVertexMap[key]);
         }
 

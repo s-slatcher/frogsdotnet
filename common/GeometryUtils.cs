@@ -91,7 +91,6 @@ public partial class GeometryUtils : GodotObject
         rect2.Position = center + rad_vec;
         rect2.End = center - rad_vec;
         rect2 = rect2.Abs();
-        // GD.Print("center", center, " rad: ", radius, " rect size", rect2.Size, " rect start", rect2.Position);
         return rect2;
     }
 

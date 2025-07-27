@@ -58,7 +58,6 @@ public partial class TerrainTexture : SubViewport
 
         var container = GetNode<Node2D>("ExplosionLineContainer");
         AddChild(line2d);
-        GD.Print("size of viewport: ", Size, "  pos of line: ", center1 * ppu);
     }
 
     ImageTexture GetEdgeTexture(Vector2[] polygon)
