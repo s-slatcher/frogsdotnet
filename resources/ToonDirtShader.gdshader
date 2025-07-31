@@ -33,7 +33,7 @@ uniform vec3 uv2_offset;
 
 varying vec3 vertex_pos;
 
-// 
+//
 uniform float edge_depth;
 
 // circle for wireframe reveal
@@ -140,7 +140,7 @@ void fragment() {
 	//float ripple_step_out = 1.0 - step(current_rad + current_ripple_width, dist_from_ripple_center); // comes out to zero if greater than max rad
 	//float ripple_step_in = step(current_rad, dist_from_ripple_center); // comes out to zero if less than min rad
 	//float ripple_step = ripple_step_in * ripple_step_out;
-	
+
 	vec2 triangle_center = vertexCustom0.xy;
 	//vec2 triangle_center = COLOR.xy * 100.; // tri center coords divided by 1000 in mesh gen
 	float dist_to_center = length(circle_center - triangle_center);
@@ -148,7 +148,7 @@ void fragment() {
 	float dither_full = circle_radius * 0.0;
 	float wire_full = circle_radius * 0.95;
 	float dist_smooth = pow(smoothstep(dither_full, dither_edge, dist_to_center), 10.);
-	
+
 
 	//ripple_step = 1.;
 
@@ -159,10 +159,10 @@ void fragment() {
 	//
 
 	ALBEDO = mix(ALBEDO, wireframe_albedo, 1.0 - dist_smooth);
-		
+
 	float fade_depth_mult = smoothstep(edge_depth-0.25, edge_depth, vertex_pos.z);
 	float fade = ( (dist_smooth ) + (1. - closestEdge) )* fade_depth_mult;
-	
+
 	if (fade < 0.001 || fade < fract(magic.z * fract(dot(FRAGCOORD.xy, magic.xy)))) {
 		discard;
 	}

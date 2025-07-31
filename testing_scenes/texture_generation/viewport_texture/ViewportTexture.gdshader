@@ -14,7 +14,7 @@ void fragment() {
 	float alpha = max(tex_1.a, tex_2.a);
 	vec4 color = vec4(combined, alpha);
 	COLOR = color;
-	
+
 }
 
 //void light() {

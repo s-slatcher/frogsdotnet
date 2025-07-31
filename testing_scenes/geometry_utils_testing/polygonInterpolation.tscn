@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://dystg8wn1atp5"]
+
+[ext_resource type="Script" uid="uid://da35qjd2sixuv" path="res://testing_scenes/geometry_utils_testing/PolygonInterpolation.cs" id="1_i1086"]
+
+[node name="PolygonInterpolation" type="Node2D"]
+script = ExtResource("1_i1086")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(65.5192, 297.829, 110, 104, 54, 22, 288, 21, 422, 148, 741, 186, 491, 339, 229, 419, 236, 180)
+uv = PackedVector2Array(65.5192, 297.829, 51.0247, -4.94714, 292.601, -14.6102)
+
+[node name="Line2D" type="Line2D" parent="."]
+position = Vector2(400, 0)

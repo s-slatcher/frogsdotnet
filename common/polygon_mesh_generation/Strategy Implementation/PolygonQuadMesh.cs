@@ -15,7 +15,7 @@ public partial class PolygonQuadMesh : GodotObject
 {
 
 
-    public const int VectorRoundingDecimal = 4;
+    public const int VectorRoundingDecimal = 3;
 
     public PolygonQuad RootQuad;
     public Rect2I BoundingRect;
