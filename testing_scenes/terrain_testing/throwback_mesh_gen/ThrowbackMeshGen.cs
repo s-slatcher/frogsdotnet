@@ -1,6 +1,7 @@
     using Godot;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Drawing;
 using System.Linq;
 using System.Linq.Expressions;
@@ -19,17 +20,24 @@ public partial class ThrowbackMeshGen : Node3D
     {
         return (x%m + m)%m;
     }
+    static int Mod(int x, int m)
+    {
+        return (x%m + m)%m;
+    }
 
     float maxPolygonSize = 20;
     float sideLength = 2;
     int subdivisionLevel = 4;
     float quadSize = 0.25f;
+    float edgeSmooth = 0.35f;
     PolygonQuad faceQuad;
     Dictionary<Vector3, Vector3> VertexNormals = new();
     Dictionary<Vector2, PolygonQuad> LeafNodeCornerPoints = new();
     HashSet<PolygonQuad> LeafNodes = new();
     HashSet<PolygonQuad> EdgeNodes = new();
     Dictionary<Vector2I, Vector2> KeyMap = new();
+
+    List<IndexedVertex> VertexList = new();
 
 
     Vector2 RoundVec(Vector2 vec2)
@@ -44,15 +52,20 @@ public partial class ThrowbackMeshGen : Node3D
         return key;
     }
 
-
+    public void AddDebugPath(List<Vector3> points)
+    {
+        var curve = new Curve3D();
+        foreach (var p in points) curve.AddPoint(p);
+        var pathNode = new Path3D() { Curve = curve };
+        AddChild(pathNode);
+    }
 
     public override void _Ready()
     {
 
         // prepare polygon
         var polyNode = GetNode<Polygon2D>("Polygon2D");
-        var polygon = polyNode.Polygon;
-        var poly = PreparePolygon(polygon);
+        var poly = PreparePolygon(polyNode.Polygon);
 
 
         if (!Geometry2D.IsPolygonClockwise(poly)) Array.Reverse(poly);
@@ -62,49 +75,44 @@ public partial class ThrowbackMeshGen : Node3D
         SubdivideMainFace(quad);
 
         var interpPoly = InterpPolyEdge(poly);
-        // var Line2d = new Line2D();
-        // AddChild(Line2d);
-        // Line2d.Width = 0.5f;
-        // Line2d.Points = interpPoly;
-        // Line2d.Scale = new Vector2(10, 10);
 
-        // var staticBody = new StaticBody3D();
-        // staticBody.Translate(new Vector3(0, 0, 1));
-        // AddChild(staticBody);
-        // foreach (var node in EdgeNodes)
-        // {
-        //     var collisionPoly = new CollisionPolygon3D() { Polygon = node.Polygons[0] };
-        //     staticBody.AddChild(collisionPoly);
-        // }
+        polyNode.Polygon = interpPoly;
 
-        // meshify the polygon
-        var mesh = GenerateMesh(interpPoly);
+        var sideFaceIndices = GenerateSideFaces(interpPoly);
+
+        var frontFaceIndices = GenerateFrontFace();
+
+        var st = new SurfaceTool();
+        st.Begin(Mesh.PrimitiveType.Triangles);
+        st.SetCustomFormat(0, SurfaceTool.CustomFormat.RgbFloat);
+
+        foreach (var idx in sideFaceIndices)
+        {
+            var vert = VertexList[idx];
+            st.SetNormal(vert.Normal);
+            st.SetCustom(0, vert.Custom0);
+            // st.SetColor(ColorFromNormal(normal));
+            st.AddVertex(vert.Position);
+
+        }
+
+        foreach (Vector3 vec in frontFaceIndices)
+        {
+            st.SetNormal(Vector3.Back);
+            st.SetCustom(0, ColorFromNormal(Vector3.Back));
+            st.AddVertex(vec);
+        }
+
+        // st.GenerateNormals();
+        var mesh = st.Commit();
+
         var meshInst = GetNode<MeshInstance3D>("MeshInstance3D");
         meshInst.Mesh = mesh;
-
-        // edit existing mesh created by csgPolygon class
-        mesh.SurfaceGetArrays(0);
-
-
-        // foreach (var vec in LeafNodeCornerPoints.Keys)
-        // {
-        //     var meshInstance = new MeshInstance3D();
-        //     meshInstance.Mesh = new SphereMesh(){Radius = 0.05f, Height = 0.1f};
-        //     meshInstance.Position = D(vec, 0);
-        //     AddChild(meshInstance);
-        // }
 
     }
 
     // returns false if both x and y sit on a grid corner, returns true otherwise (one or both axis are unaligned) 
-    bool IsEdgePoint(Vector2 point)
-    {
-        return !(Math.Abs(point.X % quadSize) < 0.001 && Math.Abs(point.Y % quadSize) < 0.001 );  
-    }
-     private bool PointIsOnEdge(Vector2 point)
-    {
-        return point.X % quadSize == 0 && point.Y % quadSize == 0;
-    }
+ 
 
     Vector2[] InterpPolyEdge(Vector2[] polygon)
     {
@@ -172,67 +180,6 @@ public partial class ThrowbackMeshGen : Node3D
         return newPoly.ToArray();
     }
 
-    Vector2[] GetPolyPerimeter()
-    {
-        var currentPoint = Vector2I.Zero;
-        var EdgeGraph = new Dictionary<Vector2I, HashSet<Vector2I>>();
-        GD.Print("total edge nodes: ", EdgeNodes.Count);
-        foreach (var node in EdgeNodes)
-        {
-            var poly = node.Polygons[0];
-            if (node.Polygons.Count > 1) GD.Print("multipoly");
-
-            for (int i = 0; i < poly.Length; i++)
-            {
-                var p1 = poly[i];
-                var p2_i = i == poly.Length - 1 ? 0 : i + 1;
-                var p2 = poly[p2_i];
-
-                var p1_key = GetVectorKey(p1);
-                var p2_key = GetVectorKey(p2);
-                //skip if either point is a grid corner
-                
-                if (!IsEdgePoint(p1) || !IsEdgePoint(p2)) continue;
-
-                if (EdgeGraph.ContainsKey(p1_key)) EdgeGraph[p1_key].Add(p2_key);
-                else EdgeGraph[p1_key] = new() { p2_key };
-
-                if (EdgeGraph.ContainsKey(p2_key)) EdgeGraph[p2_key].Add(p1_key);
-                else EdgeGraph[p2_key] = new() { p1_key };
-
-                if (currentPoint == Vector2I.Zero) currentPoint = p1_key;
-            }
-        }
-
-        var buggedPoints = EdgeGraph.Keys.Where((key) => EdgeGraph[key].Count != 2).ToList();
-        GD.Print("num of bugged points: ", buggedPoints.Count);
-        var zeroNeighbors = buggedPoints.Where(key => EdgeGraph[key].Count == 0).ToList();
-        GD.Print("zero neighbors: ", zeroNeighbors.Count);
-
-        List<Vector2> polygon = new() {};
-        HashSet<Vector2> visited = new();
-        
-        
-        while (!visited.Contains(currentPoint))
-        {
-            visited.Add(currentPoint);
-            polygon.Add(KeyMap[currentPoint]);
-            var nextPoints = EdgeGraph[currentPoint];
-            if (nextPoints.Count != 2) GD.Print("neighbor point count:" , nextPoints.Count);
-            currentPoint = nextPoints.FirstOrDefault(p => !visited.Contains(p));
-            if (currentPoint == default) break;
-
-            if (polygon.Count > 10000) { GD.Print("broke from infinite while"); break; }
-
-        }
-        GD.Print(polygon.Count);
-        return polygon.ToArray();
-
-
-
-    }
-    
-
     
 
     private void SubdivideMainFace(PolygonQuad rootQuad)
@@ -272,42 +219,136 @@ public partial class ThrowbackMeshGen : Node3D
 
 
 
-   
 
-    private Vector2[] SortPolygonClockwise(Vector2[] polygon)
+
+    // private Vector2[] SortPolygonClockwise(Vector2[] polygon)
+    // {
+    //     List<Vector2> sorted = new();
+
+    //     bool clockwise = Geometry2D.IsPolygonClockwise(polygon);
+    //     if (!clockwise) Array.Reverse(polygon);
+
+    //     int firstEdgeIndex = -1;
+
+
+    //     for (int i = 0; i < polygon.Length; i++)
+    //     {
+    //         var p = polygon[i];
+    //         if (GD.Randf() < 0.05) GD.Print(p);
+    //         var prev_p = i == 0 ? polygon[^1] : polygon[i - 1];
+    //         bool p_is_gridPoint = PointIsOnEdge(p);
+    //         bool prev_p_is_gridPoint = PointIsOnEdge(prev_p);
+    //         bool isFirstEdgePoint = !p_is_gridPoint && prev_p_is_gridPoint;
+
+    //         if (isFirstEdgePoint)
+    //         {
+    //             firstEdgeIndex = i;
+    //             break;
+    //         }
+    //     }
+
+    //     if (firstEdgeIndex == -1) return polygon;
+    //     for (int i = firstEdgeIndex; i < polygon.Length + firstEdgeIndex; i++) sorted.Add(polygon[i % polygon.Length]);
+
+
+    //     return sorted.ToArray();
+    // }
+
+    private List<int> GenerateSideFaces(Vector2[] polygon)
     {
-        List<Vector2> sorted = new();
 
-        bool clockwise = Geometry2D.IsPolygonClockwise(polygon);
-        if (!clockwise) Array.Reverse(polygon);
-
-        int firstEdgeIndex = -1;
-
-
-        for (int i = 0; i < polygon.Length; i++)
+        // setup first point before loop
+        var poly_3d = polygon.Select(p =>
         {
-            var p = polygon[i];
-            if (GD.Randf() < 0.05) GD.Print(p);
-            var prev_p = i == 0 ? polygon[^1] : polygon[i - 1];
-            bool p_is_gridPoint = PointIsOnEdge(p);
-            bool prev_p_is_gridPoint = PointIsOnEdge(prev_p);
-            bool isFirstEdgePoint = !p_is_gridPoint && prev_p_is_gridPoint;
+            var vert = new IndexedVertex() { Position = D(p, 0), ArrayIndex = VertexList.Count };
+            VertexList.Add(vert);
+            return vert;
 
-            if (isFirstEdgePoint)
+        }).ToList();
+
+
+        var edgeLines = new List<List<IndexedVertex>>();
+        var edgeLinePointCount = (int)(sideLength / quadSize) + 1;
+        
+
+
+        var len = poly_3d.Count;
+        for (int i = 0; i < len; i++)
+        {
+            var p0 = poly_3d[Mod(i - 1, len)];
+            var p1 = poly_3d[i];
+            var p2 = poly_3d[Mod(i + 1, len)];
+
+            var faceNorm1 = (p1.Position - p0.Position).Rotated(Vector3.Back, float.Pi / 2).Normalized();
+            var faceNorm2 = (p2.Position - p1.Position).Rotated(Vector3.Back, float.Pi / 2).Normalized();
+
+            var sideFaceNormAvg = (faceNorm1 + faceNorm2) / 2;
+            var pointNormAvg = (sideFaceNormAvg + Vector3.Back) / 2;
+
+            var frontEdgeNormal = pointNormAvg.Normalized();
+            var oppositeEdgeNormal = frontEdgeNormal * Vector3.Forward;
+            var edgePoints = new List<IndexedVertex>() { };
+
+            if (i == 25) GD.Print("front edge normal: ", frontEdgeNormal);
+            for (int k = 0; k < edgeLinePointCount; k++)
             {
-                firstEdgeIndex = i;
-                break;
+                // move point back (-Z) by k times min quad size
+                var distA = k * quadSize;
+                var distB = (edgeLinePointCount - 1 - k) * quadSize;
+                var pos = p1.Position + new Vector3(0, 0, -distA);
+                var vert = new IndexedVertex() { Position = pos, ArrayIndex = VertexList.Count, Custom0 = ColorFromNormal(faceNorm1) };
+
+                // spherical lerp normal around the imaginary circle at at either edge
+                if (distA > edgeSmooth && distB > edgeSmooth) vert.Normal = sideFaceNormAvg;
+                else if (distA < distB) vert.Normal = frontEdgeNormal.Slerp(sideFaceNormAvg, distA / edgeSmooth);
+                else vert.Normal = oppositeEdgeNormal.Slerp(sideFaceNormAvg, distB / edgeSmooth);
+
+                VertexList.Add(vert);
+                edgePoints.Add(vert);
+
+                if (i == 25) GD.Print(vert.Normal);
             }
+
+            edgeLines.Add(edgePoints);
+
         }
 
-        if (firstEdgeIndex == -1) return polygon;
-        for (int i = firstEdgeIndex; i < polygon.Length + firstEdgeIndex; i++) sorted.Add(polygon[i % polygon.Length]);
+        var totalFaceIndices = new List<int>();
 
+        // loop again with and convert sets of lines into triangle indices
+        for (int i = 0; i < edgeLines.Count; i++)
+        {
+            var edge1 = edgeLines[i];
+            // AddDebugPath(edge1.Select(v => v.Position).ToList());
+            var edge2 = edgeLines[Mod(i + 1, edgeLines.Count)];
 
-        return sorted.ToArray();
+            var indices = new List<int>();
+
+            // form two triangles for each set of two points in edges,
+            // indices point to spot on VertexList
+            for (int k = 0; k < edge1.Count - 1; k++)
+            {
+                indices.AddRange(
+                [
+                    edge1[k].ArrayIndex,
+                    edge1[k+1].ArrayIndex,
+                    edge2[k].ArrayIndex,
+                    edge2[k].ArrayIndex,
+                    edge1[k+1].ArrayIndex,
+                    edge2[k+1].ArrayIndex,
+
+                ]);
+
+            }
+
+            totalFaceIndices.AddRange(indices);
+        }
+
+        return totalFaceIndices;
+
     }
 
-    private Mesh GenerateMesh(Vector2[] polygon)
+    private List<Vector3> GenerateFrontFace()
     {
         var st = new SurfaceTool();
 
@@ -315,35 +356,35 @@ public partial class ThrowbackMeshGen : Node3D
         var totalVertices = new List<Vector3>();
 
 
-        for (int i = 0; i < polygon.Length; i++)
-        {
+        // for (int i = 0; i < polygon.Length; i++)
+        // {
 
-            var p1 = D(polygon[i], 0);
-            var p2_index = i == polygon.Length - 1 ? 0 : i + 1;
-            var p2 = D(polygon[p2_index], 0);
-            var p0_index = i == 0 ? polygon.Length - 1 : i - 1;
-            var p0 = D(polygon[i], 0);
+        //     var p1 = D(polygon[i], 0);
+        //     var p2_index = i == polygon.Length - 1 ? 0 : i + 1;
+        //     var p2 = D(polygon[p2_index], 0);
+        //     var p0_index = i == 0 ? polygon.Length - 1 : i - 1;
+        //     var p0 = D(polygon[i], 0);
 
-            var p3 = p2 + new Vector3(0, 0, -1);
-            var p4 = p1 + new Vector3(0, 0, -1);
+        //     var p3 = p2 + new Vector3(0, 0, -1);
+        //     var p4 = p1 + new Vector3(0, 0, -1);
 
-            // get data for this and previous edge to get one sides normal vectors
-            var face_normal_0 = (p1 - p0).Rotated(Vector3.Back, float.Pi / 2).Normalized();
-            var face_normal_1 = (p2 - p1).Rotated(Vector3.Back, float.Pi / 2).Normalized();
-
-
-            var p1_normal = (Vector3.Back + face_normal_0 + face_normal_1).Normalized();
-            var p4_normal = (Vector3.Forward + face_normal_0 + face_normal_1).Normalized();
-            VertexNormals[p1] = p1_normal;
-            VertexNormals[p4] = p4_normal;
-
-            faces.Add(new() { p2, p1, p4, p3 });
+        //     // get data for this and previous edge to get one sides normal vectors
+        //     var face_normal_0 = (p1 - p0).Rotated(Vector3.Back, float.Pi / 2).Normalized();
+        //     var face_normal_1 = (p2 - p1).Rotated(Vector3.Back, float.Pi / 2).Normalized();
 
 
-            // Vector3[] tri_verts = [p2, p1, p4, p4, p3, p2];
+        //     var p1_normal = (Vector3.Back + face_normal_0 + face_normal_1).Normalized();
+        //     var p4_normal = (Vector3.Forward + face_normal_0 + face_normal_1).Normalized();
+        //     VertexNormals[p1] = p1_normal;
+        //     VertexNormals[p4] = p4_normal;
 
-            // totalVertices.AddRange(tri_verts);
-        }
+        //     faces.Add(new() { p2, p1, p4, p3 });
+
+
+        //     // Vector3[] tri_verts = [p2, p1, p4, p4, p3, p2];
+
+        //     // totalVertices.AddRange(tri_verts);
+        // }
 
         for (int i = 0; i < subdivisionLevel; i++)
         {
@@ -363,20 +404,20 @@ public partial class ThrowbackMeshGen : Node3D
 
         }
 
+        return totalVertices;
 
+        // st.Begin(Mesh.PrimitiveType.Triangles);
+        // foreach (var p in totalVertices)
+        // {
+        //     var normal = VertexNormals.ContainsKey(p) ? VertexNormals[p] : Vector3.Back;
+        //     st.SetNormal(normal);
+        //     st.SetColor(ColorFromNormal(normal));
+        //     st.AddVertex(p);
 
-        st.Begin(Mesh.PrimitiveType.Triangles);
-        foreach (var p in totalVertices)
-        {
-            var normal = VertexNormals.ContainsKey(p) ? VertexNormals[p] : Vector3.Back;
-            st.SetNormal(normal);
-            st.SetColor(ColorFromNormal(normal));
-            st.AddVertex(p);
-
-        }
-        // st.GenerateNormals();
-        var mesh = st.Commit();
-        return mesh;
+        // }
+        // // st.GenerateNormals();
+        // var mesh = st.Commit();
+        // return mesh;
 
     }
 
@@ -411,6 +452,8 @@ public partial class ThrowbackMeshGen : Node3D
         return newFaces;
 
     }
+
+
 
     Godot.Color ColorFromNormal(Vector3 normal)
     {

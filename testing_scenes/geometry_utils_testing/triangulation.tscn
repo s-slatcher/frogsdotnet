@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://bjuk0ouuxvfr0"]
+
+[ext_resource type="Script" uid="uid://dhmj8g8dcka5o" path="res://testing_scenes/geometry_utils_testing/Triangulation.cs" id="1_wqff0"]
+
+[node name="Triangulation" type="Node2D"]
+script = ExtResource("1_wqff0")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(153, 81, 153, 108, 153, 138, 153, 175, 154, 212, 153, 249, 231, 247, 231.528, 211.623, 232, 180, 229, 142, 227, 109, 225, 78)

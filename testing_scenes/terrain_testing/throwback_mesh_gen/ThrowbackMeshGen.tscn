@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://ppm6co26mk6o"]
+[gd_scene load_steps=8 format=3 uid="uid://ppm6co26mk6o"]
 
 [ext_resource type="Script" uid="uid://bxidvtds7dw83" path="res://testing_scenes/terrain_testing/throwback_mesh_gen/ThrowbackMeshGen.cs" id="1_nit4u"]
 
@@ -19,7 +19,7 @@ glow_enabled = true
 code = "// NOTE: Shader automatically converted from Godot Engine 4.4.stable.mono's StandardMaterial3D.
 
 shader_type spatial;
-render_mode wireframe, blend_mix, depth_draw_opaque, cull_disabled,diffuse_burley, specular_schlick_ggx;
+render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
 
 uniform vec4 albedo : source_color;
 uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
@@ -39,8 +39,20 @@ uniform vec3 uv1_offset;
 uniform vec3 uv2_scale;
 uniform vec3 uv2_offset;
 
+varying float sum;
+
 void vertex() {
 	UV = UV * uv1_scale.xy + uv1_offset.xy;
+	vec3 faceNormColor = CUSTOM0.rgb;
+	vec3 norm = (faceNormColor - vec3(0.5)) * 2.;
+	float angle = acos(dot(norm, NORMAL));
+	float clamp_angle  = clamp(abs(angle), 0, PI/2.);
+	float angle_intensity = 1.0 - clamp_angle / (PI/2.);
+	
+	float edgeSmooth = 0.35;
+		VERTEX += NORMAL * (edgeSmooth * angle_intensity);
+	
+	
 }
 
 void fragment() {
@@ -66,7 +78,7 @@ void fragment() {
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_c12ng"]
 render_priority = 0
 shader = SubResource("Shader_nit4u")
-shader_parameter/albedo = Color(0.632663, 0.390913, 0.126287, 1)
+shader_parameter/albedo = Color(0.78034, 0.458231, 0.177108, 1)
 shader_parameter/albedo_texture_size = Vector2i(0, 0)
 shader_parameter/point_size = 1.0
 shader_parameter/roughness = 1.0
@@ -77,6 +89,13 @@ shader_parameter/uv1_scale = Vector3(1, 1, 1)
 shader_parameter/uv1_offset = Vector3(0, 0, 0)
 shader_parameter/uv2_scale = Vector3(1, 1, 1)
 shader_parameter/uv2_offset = Vector3(0, 0, 0)
+
+[sub_resource type="Curve3D" id="Curve3D_nit4u"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 29.445, 0, 23.8075),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
 
 [node name="ThrowbackMeshGen" type="Node3D"]
 script = ExtResource("1_nit4u")
@@ -92,10 +111,19 @@ visible = false
 light_energy = 0.0
 shadow_enabled = true
 
+[node name="OmniLight3D" type="OmniLight3D" parent="env"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.415, 10.04, -0.835)
+light_color = Color(0.976949, 1, 0.667423, 1)
+light_energy = 1.303
+omni_range = 12.878
+
 [node name="Polygon2D" type="Polygon2D" parent="."]
 position = Vector2(18, -9)
-polygon = PackedVector2Array(-41, 180, -96, 133, -66, 152, -33, 111, 91, 209, 61, 88, -41.2923, 7.88177, 157.881, 2.09664, 282, 76, 165, 174, 48, 291)
-uv = PackedVector2Array(-40.4658, 159.948, -41.2923, 7.88177, 157.881, 2.09664, 156.228, 165.733)
+polygon = PackedVector2Array(-7.67144, -194.109, -7.34399, -286.95, 202.384, -287.449, 202.45, -194.109)
+uv = PackedVector2Array(-7.34399, -194.55, -7.34399, -286.95, 203.856, -288.05, 202.756, -201.15)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 material_override = SubResource("ShaderMaterial_c12ng")
+
+[node name="Path3D" type="Path3D" parent="."]
+curve = SubResource("Curve3D_nit4u")
