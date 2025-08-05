@@ -113,22 +113,25 @@ public partial class HeightMap : GodotObject
 
         }
 
+        if (RemapToHeightRange) _pointsOfInterest = Remap(_pointsOfInterest, minValue, maxValue);
 
-        if (RemapToHeightRange) Remap(_pointsOfInterest, minValue, maxValue);
 
         domainPosition += width;
         return _pointsOfInterest;
     }
 
-    
-    void Remap(List<Vector2> points, float sampleMin, float sampleMax)
+
+    List<Vector2> Remap(List<Vector2> points, float sampleMin, float sampleMax)
     {
+        var newPoints = new List<Vector2>();
+
         for (int i = 0; i < points.Count; i++)
         {
             var pointHeight = points[i].Y;
             var remapHeight = (pointHeight - sampleMin) / (sampleMax - sampleMin) * (MaxHeight - MinHeight) + MinHeight;
-            points[i] = new Vector2(points[i].X, remapHeight );
-        } 
+            newPoints.Add(new Vector2(points[i].X, remapHeight));
+        }
+        return newPoints;
 
     }
     

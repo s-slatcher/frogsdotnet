@@ -9,7 +9,7 @@ void vertex() {
 void fragment() {
 	vec4 grass_tex = texture(grass_texture, UV);
 	COLOR = grass_tex;
-	
+
 }
 
 //void light() {

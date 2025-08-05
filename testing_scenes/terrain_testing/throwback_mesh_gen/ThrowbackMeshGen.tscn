@@ -1,27 +1,20 @@
-[gd_scene load_steps=8 format=3 uid="uid://ppm6co26mk6o"]
+[gd_scene load_steps=9 format=4 uid="uid://ppm6co26mk6o"]
 
 [ext_resource type="Script" uid="uid://bxidvtds7dw83" path="res://testing_scenes/terrain_testing/throwback_mesh_gen/ThrowbackMeshGen.cs" id="1_nit4u"]
-
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_nit4u"]
-sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
-ground_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
-
-[sub_resource type="Sky" id="Sky_c12ng"]
-sky_material = SubResource("ProceduralSkyMaterial_nit4u")
-
-[sub_resource type="Environment" id="Environment_jcdht"]
-background_mode = 2
-sky = SubResource("Sky_c12ng")
-tonemap_mode = 2
-glow_enabled = true
+[ext_resource type="PackedScene" uid="uid://bjjceeyq3csc3" path="res://addons/sky shader/skyshader.tscn" id="2_c12ng"]
+[ext_resource type="PackedScene" uid="uid://i888mvag6wjg" path="res://common/InputCapture/PlaneMouseCapture.tscn" id="3_jcdht"]
+[ext_resource type="Texture2D" uid="uid://btbcxmwcpjscx" path="res://resources/DKB_Banandium_Gems.png" id="4_rst2t"]
+[ext_resource type="Script" uid="uid://b7esejvi3o8y3" path="res://testing_scenes/terrain_testing/throwback_mesh_gen/BananaGem.cs" id="5_p0a6l"]
 
 [sub_resource type="Shader" id="Shader_nit4u"]
 code = "// NOTE: Shader automatically converted from Godot Engine 4.4.stable.mono's StandardMaterial3D.
 
 shader_type spatial;
-render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
+render_mode world_vertex_coords,blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
 
-uniform vec4 albedo : source_color;
+uniform vec4 dirt_color : source_color;
+uniform vec4 stone_color : source_color;
+uniform vec4 grass_color : source_color;
 uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
 uniform ivec2 albedo_texture_size;
 uniform float point_size : hint_range(0.1, 128.0, 0.1);
@@ -39,32 +32,115 @@ uniform vec3 uv1_offset;
 uniform vec3 uv2_scale;
 uniform vec3 uv2_offset;
 
-varying float sum;
+const int MAX_EXPLOSIONS = 256;
+uniform int explosion_count = 0;
+uniform float highest_radius = 10;
+uniform vec4 explosion_array[MAX_EXPLOSIONS];
+
+// terrain depth for dithering
+uniform float ledge_depth_min; 
+uniform float ledge_depth_max;
+uniform float ledge_depth_height_max;
+
+
+const vec3 magic = vec3(0.06711056f, 0.00583715f, 52.9829189f);
+
+varying vec3 vertex_pos;
+varying vec3 original_normal;
+
 
 void vertex() {
 	UV = UV * uv1_scale.xy + uv1_offset.xy;
+	
+	// edge smooothing
 	vec3 faceNormColor = CUSTOM0.rgb;
-	vec3 norm = (faceNormColor - vec3(0.5)) * 2.;
+	vec3 norm = (faceNormColor - vec3(0.5, 0.5, 0.5)) * 2.;
 	float angle = acos(dot(norm, NORMAL));
-	float clamp_angle  = clamp(abs(angle), 0, PI/2.);
-	float angle_intensity = 1.0 - clamp_angle / (PI/2.);
+	float dotProd = dot(norm,NORMAL);
+	float dotMax = cos(PI/4.);
+	float angle_intensity = smoothstep(dotMax, 1., dotProd);
+	float edgeSmooth = 0.2 ;
+	//if (VERTEX.z > -0.01) angle_intensity = 0.;
+	VERTEX += NORMAL * (edgeSmooth * (angle_intensity));
 	
-	float edgeSmooth = 0.35;
-		VERTEX += NORMAL * (edgeSmooth * angle_intensity);
+	float max_depth = ledge_depth_min + (ledge_depth_max - ledge_depth_min) * (1.0 - (VERTEX.y / ledge_depth_height_max));
+	vec3 default_pos = VERTEX;
+	VERTEX.z += max_depth;
 	
 	
+	original_normal = NORMAL;
+	//explosion distort
+	for (int i = 0; i < MAX_EXPLOSIONS; i++ )
+	{
+		
+		vec4 explosion = explosion_array[i];
+		if (explosion == vec4(0.)) break;
+		vec3 pos = explosion.xyz;
+		float radius = explosion.w;
+		vec2 dist_vec = VERTEX.xy - pos.xy;
+		if (abs(dist_vec.x) > radius || abs(dist_vec.y) > radius) continue;
+		float dist = length(dist_vec);
+		if (dist >= radius) continue;
+		float depth_change = sqrt( (radius * radius) - (dist * dist) );
+		float edgeSmooth = clamp( (radius - dist) / 1., 0., 1.);
+      depth_change *= edgeSmooth;
+		
+		float new_depth = VERTEX.z - depth_change; //* (1. - abs((default_pos.z / ledge_depth)));
+		VERTEX.z = min(VERTEX.z, new_depth);
+		if (VERTEX.z == new_depth) 
+		{
+			vec3 new_normal = normalize(vec3(pos.xy, 0) - VERTEX);
+			NORMAL = normalize(NORMAL * (1. - edgeSmooth) + new_normal * edgeSmooth);
+		}
+	}
+	vertex_pos = VERTEX;
 }
+
+bool binary_condition(int index)
+{
+	vec4 explosion = explosion_array[index];
+	float x_reach = explosion.x + highest_radius; 
+	return true;
+}
+
+int binary_explosion_search(vec3 vertex_position)
+{
+	//explosion centers sorted by low-to-high X coordinate, find closest 
+	//to (VERTEX.x - MAX_RADIUS) without getting closer than max radius
+	float x_pos = vertex_position.x;
+	int left = 0; int right = explosion_count;
+	
+	while (left < right)
+	{
+		int mid = left + (right - left);
+		if (binary_condition(mid)) right = mid;
+		else left = mid + 1;
+	}
+	
+	return left;
+}
+
+
 
 void fragment() {
 	vec2 base_uv = UV;
 
-	vec4 albedo_tex = texture(texture_albedo, base_uv);
-
-	// Vertex Color Use as Albedo: Enabled
-	albedo_tex *= COLOR;
-
-	ALBEDO = albedo.rgb * albedo_tex.rgb;
-
+	//vec4 albedo_tex = texture(texture_albedo, base_uv);
+	
+	// apply grass based on original normal, canceled out when explosions alter normal
+	float is_grass = step(0.35, original_normal.y) * ( 1.0 - step(0.5, abs(original_normal.x))); 
+	is_grass *= 1.0- step(abs(original_normal.z - NORMAL.z), 0.01) ;
+	ALBEDO = mix(dirt_color.rgb, grass_color.rgb, is_grass );
+	
+	
+	// apply stone color based on current depth, canceled out when original normal coorspsonds to an edge
+	float max_depth = ledge_depth_min + (ledge_depth_max - ledge_depth_min) * (1.0 - (vertex_pos.y / ledge_depth_height_max));
+	float stoneiness = 1. - smoothstep(-2. + max_depth, -0.25 + max_depth, vertex_pos.z);
+	float is_edge = step( 0.05 , abs(original_normal.z));
+	ALBEDO = mix(ALBEDO, stone_color.rgb, stoneiness * is_edge);
+	
+	
+	
 	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
 	METALLIC = metallic_tex * metallic;
 	SPECULAR = specular;
@@ -72,16 +148,33 @@ void fragment() {
 	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
 	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
 	ROUGHNESS = roughness_tex * roughness;
+	
+	// lerp from min to max terrain depth comparing vertex height to max height
+	// discard pixels that go beyond max depth
+	float depth_fade = smoothstep(-1.15, -1., vertex_pos.z);
+	if (depth_fade < 0.001 || depth_fade < fract(magic.z * fract(dot(FRAGCOORD.xy, magic.xy)))) {
+		discard;
+	}
+	
+	//if (NORMAL.y > 0.5) ALBEDO = vec3(0.2,0.7,0);
+	
+	//float depth_recolor = smoothstep(-0.5, -0.2, vertex_pos.z);
+	//if (depth_recolor < 0.001 || depth_recolor < fract(magic.z * fract(dot(FRAGCOORD.xy, magic.xy)))) {
+		//ALBEDO = stone_color.rgb;
+	//}
+	
 }
 "
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_c12ng"]
 render_priority = 0
 shader = SubResource("Shader_nit4u")
-shader_parameter/albedo = Color(0.78034, 0.458231, 0.177108, 1)
+shader_parameter/dirt_color = Color(1, 0.583333, 0, 1)
+shader_parameter/stone_color = Color(0.64, 0.48, 0.256, 1)
+shader_parameter/grass_color = Color(0.330347, 0.76, 0.2736, 1)
 shader_parameter/albedo_texture_size = Vector2i(0, 0)
 shader_parameter/point_size = 1.0
-shader_parameter/roughness = 1.0
+shader_parameter/roughness = 0.709
 shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
 shader_parameter/specular = 0.5
 shader_parameter/metallic = 0.0
@@ -89,6 +182,12 @@ shader_parameter/uv1_scale = Vector3(1, 1, 1)
 shader_parameter/uv1_offset = Vector3(0, 0, 0)
 shader_parameter/uv2_scale = Vector3(1, 1, 1)
 shader_parameter/uv2_offset = Vector3(0, 0, 0)
+shader_parameter/explosion_count = 0
+shader_parameter/highest_radius = 10.0
+shader_parameter/explosion_array = PackedVector4Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/ledge_depth_min = 0.0
+shader_parameter/ledge_depth_max = 0.0
+shader_parameter/ledge_depth_height_max = 0.0
 
 [sub_resource type="Curve3D" id="Curve3D_nit4u"]
 _data = {
@@ -99,31 +198,46 @@ point_count = 2
 
 [node name="ThrowbackMeshGen" type="Node3D"]
 script = ExtResource("1_nit4u")
+metadata/_edit_group_ = true
 
-[node name="env" type="Node3D" parent="."]
+[node name="skyshader" parent="." instance=ExtResource("2_c12ng")]
+day_time = 12.0
+clouds_cutoff = 0.38
+clouds_speed = 5.0
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="env"]
-environment = SubResource("Environment_jcdht")
+[node name="Sun" parent="skyshader" index="1"]
+transform = Transform3D(0.920903, 0, -0.389794, 0.389794, -4.37114e-08, 0.920902, -1.70384e-08, -1, -4.02539e-08, 0, 0, 0)
+light_energy = 1.0
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="env"]
-transform = Transform3D(0.976296, 0.149807, -0.156218, 0, 0.72176, 0.692143, 0.21644, -0.675737, 0.704652, 0, 0, 0)
-visible = false
-light_energy = 0.0
-shadow_enabled = true
+[node name="Moon" parent="skyshader" index="2"]
+transform = Transform3D(0.995978, 0, 0.0895897, -0.028138, 0.949397, 0.312814, -0.0850561, -0.314077, 0.94558, 0, 0, 0)
+light_energy = 0.1
 
-[node name="OmniLight3D" type="OmniLight3D" parent="env"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.415, 10.04, -0.835)
-light_color = Color(0.976949, 1, 0.667423, 1)
-light_energy = 1.303
-omni_range = 12.878
+[node name="Camera3D" parent="skyshader" index="3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7, 4.035, 33.98)
+fov = 77.6
+size = 90.49
 
 [node name="Polygon2D" type="Polygon2D" parent="."]
 position = Vector2(18, -9)
-polygon = PackedVector2Array(-7.67144, -194.109, -7.34399, -286.95, 202.384, -287.449, 202.45, -194.109)
-uv = PackedVector2Array(-7.34399, -194.55, -7.34399, -286.95, 203.856, -288.05, 202.756, -201.15)
+polygon = PackedVector2Array(-85, 19.5005, -83, -132.5, 160, -136, 160, -103, -46, -103, -44, -62, 91, -56, 91, -35, -40, -32, -62, 20.5005)
+uv = PackedVector2Array(-85, 19.5005, -83, -132.5, 125, -135.5, 126, -114.5, -59, -111.5, -62, 20.5005)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 material_override = SubResource("ShaderMaterial_c12ng")
 
 [node name="Path3D" type="Path3D" parent="."]
 curve = SubResource("Curve3D_nit4u")
+
+[node name="Sprite3D" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.6283, 10.1335, 0)
+
+[node name="PlaneMouseCapture" parent="." node_paths=PackedStringArray("camera") instance=ExtResource("3_jcdht")]
+camera = NodePath("../skyshader/Camera3D")
+
+[node name="Sprite3D2" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 53.515, 80, 2.462)
+texture = ExtResource("4_rst2t")
+script = ExtResource("5_p0a6l")
+
+[editable path="skyshader"]

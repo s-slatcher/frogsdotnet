@@ -68,6 +68,7 @@ public partial class TerrainMap : GodotObject
     public List<Polygon2D> GenerateNext(float width)
     {
 
+        GD.Print("called gen next width");
         UpdateHeightMaps();
 
         var points = heightMap.GetNextHeights(width);

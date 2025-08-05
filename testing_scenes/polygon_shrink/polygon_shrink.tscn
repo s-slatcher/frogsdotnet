@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://2wrup0ufaidu"]
+
+[ext_resource type="Script" uid="uid://cs3evh0ixn4dt" path="res://testing_scenes/polygon_shrink/PolygonShrink.cs" id="1_xmh5g"]
+
+[node name="PolygonShrink" type="Node2D"]
+script = ExtResource("1_xmh5g")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(367, 533, 369, 445, 364, 378, 401, 276, 460, 240, 533, 243, 590, 243, 624, 263, 696, 240, 720, 147, 722, 69, 805, 40, 927, 43, 997, 129, 1002, 227, 1028, 302, 1036, 380, 1116, 388, 1233, 390, 1259, 476, 1262, 647, 1137, 642, 914, 645, 587, 642, 369, 647)
