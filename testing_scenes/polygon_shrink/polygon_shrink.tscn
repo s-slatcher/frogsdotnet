@@ -7,3 +7,12 @@ script = ExtResource("1_xmh5g")
 
 [node name="Polygon2D" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(367, 533, 369, 445, 364, 378, 401, 276, 460, 240, 533, 243, 590, 243, 624, 263, 696, 240, 720, 147, 722, 69, 805, 40, 927, 43, 997, 129, 1002, 227, 1028, 302, 1036, 380, 1116, 388, 1233, 390, 1259, 476, 1262, 647, 1137, 642, 914, 645, 587, 642, 369, 647)
+
+[node name="p1" type="Marker2D" parent="."]
+position = Vector2(512, 634)
+
+[node name="p2" type="Marker2D" parent="."]
+position = Vector2(825, 639)
+
+[node name="p3" type="Marker2D" parent="."]
+position = Vector2(1131, 634)

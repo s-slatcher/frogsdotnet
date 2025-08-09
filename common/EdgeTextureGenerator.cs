@@ -9,8 +9,8 @@ public partial class EdgeTextureGenerator : GodotObject
 
     public Vector2[] Polygon;
     public int PixelPerUnit = 8;
-    public float edgeDistanceLimit = 10; // measured in units based on provided polygon, not image pixels
-    public float edgeBuffer = 0; // expand lines by x polygon units so grass doesn't end abruptly at edges 
+    public float edgeDistanceLimit = 1; // measured in units based on provided polygon, not image pixels
+    public float edgeBuffer = 1; // expand lines by x polygon units so grass doesn't end abruptly at edges 
     private GeometryUtils gUtils =  new();
     
 

@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://esxnxo61jdal"]
 
-[ext_resource type="Script" uid="uid://c3er8fufm0wks" path="res://common/InputCapture/LineDrawing.cs" id="1_bnipo"]
+[ext_resource type="Script" uid="uid://c3er8fufm0wks" path="res://common/input_capture/LineDrawing.cs" id="1_bnipo"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_bnipo"]
 height = 2.599

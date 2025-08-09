@@ -30,12 +30,13 @@ public partial class ThrowbackMeshGen : Node3D
     float terrainHeight = 80;
     float maxSideLength = 10;
     float sideLength = 0.5f;
-    int subdivisionLevel = 4;
-    float quadSize = 0.25f;
+    float quadSize = 0.5f;
     float edgeSmooth = 0.20f;
     PolygonQuad faceQuad;
+
     Dictionary<Vector3, Vector3> VertexNormals = new();
     Dictionary<Vector2, PolygonQuad> LeafNodeCornerPoints = new();
+
     HashSet<PolygonQuad> LeafNodes = new();
     HashSet<PolygonQuad> EdgeNodes = new();
     Dictionary<Vector2I, Vector2> KeyMap = new();
@@ -83,16 +84,17 @@ public partial class ThrowbackMeshGen : Node3D
         planeCap.PlaneClicked += OnPlaneClicked; 
 
         var time = Time.GetTicksMsec();
-       
+
         // prepare polygon
-        var polyNode = GetNode<Polygon2D>("Polygon2D");
-        var poly = PreparePolygon(polyNode.Polygon);
+        // var polyNode = GetNode<Polygon2D>("Polygon2D");
+        // var poly = PreparePolygon(polyNode.Polygon);
+        Vector2[] poly;
         
-        // var terrain = new TerrainMap(20);
-        // terrain.MaxHeight = terrainHeight;
+        var terrain = new TerrainMap(20);
+        terrain.MaxHeight = terrainHeight;
         
-        // var terrainPoly = terrain.GenerateNext(100)[0].Polygon;
-        // poly = terrainPoly;
+        var terrainPoly = terrain.GenerateNext(100)[0].Polygon;
+        poly = terrainPoly;
 
         if (!Geometry2D.IsPolygonClockwise(poly)) Array.Reverse(poly);
 
@@ -101,7 +103,7 @@ public partial class ThrowbackMeshGen : Node3D
         
         var interpPoly = InterpPolyEdge(poly);
 
-        polyNode.Polygon = interpPoly;
+        // polyNode.Polygon = interpPoly;
 
         var totalIndices = new List<int>();
         totalIndices.AddRange(GenerateSideFaces(interpPoly));
@@ -160,7 +162,7 @@ public partial class ThrowbackMeshGen : Node3D
 
     private void ExplodeTerrain(Vector3 vector)
     {
-        var explosion = new Vector4(vector.X, vector.Y, 0, (float)GD.RandRange(2, 3));
+        var explosion = new Vector4(vector.X, vector.Y, 0, (float)GD.RandRange(1, 1));
         if (explosion_count > 255) return; 
         ShaderArray[explosion_count] = explosion;
         shaderMaterial.SetShaderParameter("explosion_array", ShaderArray);
@@ -259,8 +261,9 @@ public partial class ThrowbackMeshGen : Node3D
 
     private void SubdivideMainFace(PolygonQuad rootQuad)
     {
-        
+
         // refine list of edge vertices within range of a node, unless value is zero then 
+    
         EdgeSmoothingMap[rootQuad] = EdgeVertices;
 
         var leafNodes = new HashSet<PolygonQuad>();
@@ -349,7 +352,7 @@ public partial class ThrowbackMeshGen : Node3D
                 var pos = p1 + new Vector3(0, 0, -distA);
                 var vert = new IndexedVertex() { Position = pos, ArrayIndex = VertexList.Count, Custom0 = ColorFromNormal(faceNorm2) };
 
-                // spherical Slerp normal around the imaginary circle at at either edge
+                // lerp normal around the imaginary circle at at either edge
                 if (distA > edgeSmooth && distB > edgeSmooth) vert.Normal = sideFaceNormAvg;
                 else if (distA < distB) vert.Normal = frontEdgeNormal.Lerp(sideFaceNormAvg, distA / edgeSmooth).Normalized();
                 else vert.Normal = oppositeEdgeNormal.Lerp(sideFaceNormAvg, distB / edgeSmooth).Normalized();
@@ -421,7 +424,6 @@ public partial class ThrowbackMeshGen : Node3D
 
     private List<int> GenerateFrontFace(Vector2[] poly)
     {
-        var st = new SurfaceTool();
 
 
 

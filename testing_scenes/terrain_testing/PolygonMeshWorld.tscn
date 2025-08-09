@@ -1,0 +1,46 @@
+[gd_scene load_steps=8 format=3 uid="uid://c2at4wnnfrlwv"]
+
+[ext_resource type="Script" uid="uid://dj7d20jbo5vto" path="res://testing_scenes/terrain_testing/PolygonMeshWorld.cs" id="1_5tvfr"]
+[ext_resource type="PackedScene" uid="uid://bjjceeyq3csc3" path="res://addons/sky shader/skyshader.tscn" id="2_a7mq0"]
+[ext_resource type="PackedScene" uid="uid://ejp4yvckt2mv" path="res://fx/explosion/explosion_particle_system.tscn" id="2_q80so"]
+[ext_resource type="PackedScene" uid="uid://brk0cbda83ld1" path="res://interface/camera/wasd_camera.tscn" id="3_hvveg"]
+[ext_resource type="PackedScene" uid="uid://4mworqcudaam" path="res://common/water/scenes/WaterPlane.tscn" id="4_4v8u0"]
+[ext_resource type="PackedScene" uid="uid://d3teamfq15lcl" path="res://map_generation/terrain_mesh/terrain_mesh.tscn" id="5_4v8u0"]
+[ext_resource type="PackedScene" uid="uid://i888mvag6wjg" path="res://common/input_capture/PlaneMouseCapture.tscn" id="5_q80so"]
+
+[node name="PolygonMeshWorld" type="Node3D"]
+script = ExtResource("1_5tvfr")
+explodeScene = ExtResource("2_q80so")
+
+[node name="WasdCamera" parent="." instance=ExtResource("3_hvveg")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 59.562, 98.1768, 131.385)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 85.086, 93.106, 215.78)
+visible = false
+
+[node name="Main" parent="." instance=ExtResource("2_a7mq0")]
+transform = Transform3D(0.219846, 0, 0.975535, 0, 1, 0, -0.975535, 0, 0.219846, 0, 0, 0)
+day_time = 16.3251
+time_scale = 0.005
+
+[node name="Sun" parent="Main" index="1"]
+transform = Transform3D(0.921005, 0, -0.389552, 0.165393, -0.905395, 0.391031, -0.352699, -0.424571, -0.833872, 0, 0, 0)
+light_energy = 1.0
+
+[node name="Moon" parent="Main" index="2"]
+transform = Transform3D(0.896002, 0, 0.444048, 0.31053, 0.714812, -0.62659, -0.31741, 0.699316, 0.640474, 0, 0, 0)
+
+[node name="Camera3D" parent="Main" index="3"]
+transform = Transform3D(1, 0, 0, 0, 0.991445, 0.130526, 0, -0.130526, 0.991444, 51.58, 37.55, 100.68)
+visible = false
+
+[node name="WaterPlane" parent="." instance=ExtResource("4_4v8u0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.1977, -53.9666)
+
+[node name="TerrainMesh" parent="." instance=ExtResource("5_4v8u0")]
+
+[node name="PlaneMouseCapture" parent="." node_paths=PackedStringArray("camera") instance=ExtResource("5_q80so")]
+camera = NodePath("../WasdCamera")
+
+[editable path="Main"]

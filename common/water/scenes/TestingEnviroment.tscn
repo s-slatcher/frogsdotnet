@@ -1,0 +1,56 @@
+[gd_scene load_steps=6 format=3 uid="uid://dkvgp8fel4p1h"]
+
+[ext_resource type="PackedScene" uid="uid://4mworqcudaam" path="res://Entities/Water/scenes/WaterPlane.tscn" id="1_ea3se"]
+[ext_resource type="Shader" uid="uid://c1updb58h42us" path="res://Entities/Water/shaders/SkyShader.gdshader" id="2_ffd5c"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_a5g70"]
+shader = ExtResource("2_ffd5c")
+shader_parameter/day_top_color = Color(0.1, 0.6, 1, 1)
+shader_parameter/day_bottom_color = Color(0.4, 0.8, 1, 1)
+shader_parameter/sunset_top_color = Color(0.7, 0.75, 1, 1)
+shader_parameter/sunset_bottom_color = Color(0.999434, 0.498101, 0.710732, 1)
+shader_parameter/night_top_color = Color(0.02, 0, 0.04, 1)
+shader_parameter/night_bottom_color = Color(0.1, 0, 0.2, 1)
+shader_parameter/horizon_color = Color(0, 0.7, 0.8, 1)
+shader_parameter/horizon_blur = 0.05
+shader_parameter/sun_color = Color(10, 8, 1, 1)
+shader_parameter/sun_sunset_color = Color(10, 0, 0, 1)
+shader_parameter/sun_size = 0.2
+shader_parameter/sun_blur = 10.0
+shader_parameter/moon_color = Color(1, 0.95, 0.7, 1)
+shader_parameter/moon_size = 0.06
+shader_parameter/moon_blur = 0.1
+shader_parameter/clouds_edge_color = Color(0.8, 0.8, 0.98, 1)
+shader_parameter/clouds_top_color = Color(1, 1, 1, 1)
+shader_parameter/clouds_middle_color = Color(0.92, 0.92, 0.98, 1)
+shader_parameter/clouds_bottom_color = Color(0.83, 0.83, 0.94, 1)
+shader_parameter/clouds_speed = 4.0
+shader_parameter/clouds_direction = 0.2
+shader_parameter/clouds_scale = 1.0
+shader_parameter/clouds_cutoff = 0.3
+shader_parameter/clouds_fuzziness = 0.5
+shader_parameter/clouds_weight = 0.0
+shader_parameter/clouds_blur = 0.25
+shader_parameter/stars_speed = 1.0
+shader_parameter/stars_scale = 1.0
+shader_parameter/stars_opacity = 1.0
+shader_parameter/overwritten_time = 100.0
+
+[sub_resource type="Sky" id="Sky_nsofl"]
+sky_material = SubResource("ShaderMaterial_a5g70")
+
+[sub_resource type="Environment" id="Environment_5hvje"]
+background_mode = 2
+sky = SubResource("Sky_nsofl")
+ambient_light_energy = 3.0
+
+[node name="TestingEnviroment" type="Node3D"]
+
+[node name="WaterPlane" parent="." instance=ExtResource("1_ea3se")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.209932, 1.4521, -0.00129834)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.996195, 0.0871557, 0, -0.0871557, 0.996195, 0, 2.99251, 7.22871)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_5hvje")

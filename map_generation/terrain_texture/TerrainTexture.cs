@@ -5,22 +5,25 @@ public partial class TerrainTexture : SubViewport
 {
 
     EdgeTextureGenerator edgeTexture = new();
+    public float GrassLength;
 
     public override void _Ready()
-    {  
+    {
 
 
     }
 
-    public void SetPolygon(Vector2[] polygon)
+    public void SetPolygon(Vector2[] polygon, float grassLength = 3)
     {
 
         // var polyInst = new Polygon2D() { Polygon = polygon };
         // AddChild(polyInst);
         
         GD.Print(IsNodeReady());
+        GrassLength = grassLength;
         var tex = GetEdgeTexture(polygon);
         Size = (Vector2I)tex.GetSize();
+        
 
 
 
@@ -63,7 +66,7 @@ public partial class TerrainTexture : SubViewport
     ImageTexture GetEdgeTexture(Vector2[] polygon)
     {
         edgeTexture.Polygon = polygon;
-        edgeTexture.edgeDistanceLimit = 6;
+        edgeTexture.edgeDistanceLimit = GrassLength;
         edgeTexture.edgeBuffer = 2;
         Image image = edgeTexture.Generate();
         var texture = ImageTexture.CreateFromImage(image);

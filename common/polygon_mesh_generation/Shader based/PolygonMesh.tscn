@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://dmqr2kyotv0fo"]
-
-[ext_resource type="Script" uid="uid://dmdov03rynehg" path="res://common/polygon_mesh_generation/Shader based/PolygonMesh.cs" id="1_5764t"]
-
-[node name="PolygonMesh" type="Node3D"]
-script = ExtResource("1_5764t")

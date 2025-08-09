@@ -1,0 +1,54 @@
+[gd_scene load_steps=10 format=3 uid="uid://ejp4yvckt2mv"]
+
+[ext_resource type="Script" uid="uid://bebql5mtdy5no" path="res://fx/explosion/ExplosionParticleSystem.cs" id="1_2ngse"]
+[ext_resource type="Shader" uid="uid://csvbfd4kcoe6t" path="res://fx/explosion/explosion.tres" id="1_y06xd"]
+
+[sub_resource type="Gradient" id="Gradient_y06xd"]
+colors = PackedColorArray(0, 0, 0, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_2ngse"]
+gradient = SubResource("Gradient_y06xd")
+
+[sub_resource type="Curve" id="Curve_6eto6"]
+_data = [Vector2(0, 0.6946), 0.0, 3.28812, 0, 0, Vector2(0.136106, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_7cjdg"]
+curve = SubResource("Curve_6eto6")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_a66sk"]
+lifetime_randomness = 0.2
+emission_shape = 2
+emission_sphere_radius = 0.85
+spread = 180.0
+initial_velocity_max = 2.1
+gravity = Vector3(0, 0, 0)
+scale_curve = SubResource("CurveTexture_7cjdg")
+color_ramp = SubResource("GradientTexture1D_2ngse")
+turbulence_noise_strength = 16.09
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2ngse"]
+render_priority = 0
+shader = ExtResource("1_y06xd")
+shader_parameter/DisplacmentLevel = 0.33
+shader_parameter/ColorParameter = Color(0.36, 0.36, 0.36, 1)
+shader_parameter/EmissionColor = Color(0.977933, 0.548545, 0.0655922, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_y06xd"]
+material = SubResource("ShaderMaterial_2ngse")
+radius = 1.0
+height = 2.0
+
+[node name="ExplosionParticleSystem" type="Node3D"]
+script = ExtResource("1_2ngse")
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="."]
+emitting = false
+amount = 32
+lifetime = 0.57
+one_shot = true
+explosiveness = 1.0
+fixed_fps = 60
+trail_lifetime = 4.91
+process_material = SubResource("ParticleProcessMaterial_a66sk")
+draw_pass_1 = SubResource("SphereMesh_y06xd")
