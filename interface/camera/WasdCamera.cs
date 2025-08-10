@@ -10,11 +10,13 @@ public partial class WasdCamera : Camera3D
     Vector3 startPosition;
     public float AccelSmoothing = 20f;
 
-    List<float> zoomLevels = [0, -60, -80];
-    List<float> speeds = [50, 30, 20];
+    List<float> zoomLevels = [0, -60, -90];
+    List<float> speeds = [60, 40, 30];
     int currentZoom = 0;
 
     float currentSpeed;
+
+    bool isTilted = false;
 
     public override void _Ready()
     {
@@ -37,9 +39,26 @@ public partial class WasdCamera : Camera3D
         Position = Position.Lerp(targetPosition, (float)(1.0 - Math.Exp(-dt * AccelSmoothing)));
 
         if (Input.IsActionJustPressed("ui_accept")) CycleZoom();
+        if (Input.IsActionJustPressed("ctrl")) ToggleTilt();
 
 
     }
+
+    private void ToggleTilt()
+    {
+        if (!isTilted)
+        {
+            Rotate(Vector3.Right, -float.Pi / 8);
+            targetPosition += new Vector3(0, 10, 0);
+        }
+        else
+        {
+            Rotate(Vector3.Right, float.Pi / 8);
+            targetPosition -= new Vector3(0, 10, 0);
+        }
+        isTilted = !isTilted;
+    }
+
 
     private void CycleZoom()
     {

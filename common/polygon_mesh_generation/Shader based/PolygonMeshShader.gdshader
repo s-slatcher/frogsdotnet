@@ -38,6 +38,7 @@ uniform vec3 uv1_offset;
 uniform vec3 uv2_scale;
 uniform vec3 uv2_offset;
 
+varying float side_effect;
 
 varying vec3 vertex_pos;
 varying vec3 original_normal;
@@ -45,14 +46,34 @@ varying vec3 original_vertex;
 varying float max_depth;
 
 const int MAX_EXPLOSIONS = 500;
+const float MAX_RADIUS = 12.;
 uniform vec4 explosion_array[MAX_EXPLOSIONS];
 
-uniform float edge_smooth = 0.5;
+uniform float edge_smooth = 0.8;
 uniform float depth_mulitplier = 1.;
 
 // used for pseudo random number
 const vec3 magic = vec3(0.06711056f, 0.00583715f, 52.9829189f);
 
+
+int explosion_start_binary_search(float x_pos)
+{
+
+	int left = 0;
+	int right = MAX_EXPLOSIONS;
+	
+	while(left < right)
+	{
+		int mid = left + (right - left) / 2;
+		vec4 mid_explode = explosion_array[mid];
+		if (mid_explode == vec4(0.)) mid_explode.w = 99999.;
+		float right_edge = mid_explode.x + mid_explode.w;
+		if (right_edge > x_pos) right = mid;
+		else left = mid + 1;
+	}
+	return left;
+	
+}
 
 void vertex() {
 	
@@ -81,27 +102,39 @@ void vertex() {
 	original_vertex = VERTEX;
 	// EXPLOSION DISTORT
 	// ----------------
-	for (int i = 0; i < MAX_EXPLOSIONS; i++ )
+	
+	int explode_start = explosion_start_binary_search(VERTEX.x);
+	
+	for (int i = explode_start; i < MAX_EXPLOSIONS; i++ )
 	{
 		
 		vec4 explosion = explosion_array[i];
-		if (explosion == vec4(0.)) break;
 		vec3 pos = explosion.xyz;
 		float radius = explosion.w;
+		
+		if (explosion == vec4(0.)) break;
+		if ((pos.x - MAX_RADIUS) > VERTEX.x) break;
+		
 		vec2 dist_vec = VERTEX.xy - pos.xy;
 		if (abs(dist_vec.x) > radius || abs(dist_vec.y) > radius) continue;
+		
 		float dist = length(dist_vec);
 		if (dist >= radius) continue;
 		float depth_change = sqrt( (radius * radius) - (dist * dist) ) * depth_mulitplier;
-		float edgeSmooth = clamp( (radius - dist) / 1., 0., 1.);
-      depth_change *= edgeSmooth;
 		
-		float new_depth = original_vertex.z - depth_change; //* (1. - abs((default_pos.z / ledge_depth)));
-		VERTEX.z = min(VERTEX.z, new_depth);
-		if (VERTEX.z == new_depth) 
+		//float depth_smooth = smoothstep(0, 2, abs(depth_change) );
+		
+		//float edgeSmooth = clamp( (radius - dist) / 1., 0., 1.);
+		
+		float new_depth = original_vertex.z - depth_change;
+		
+		if (new_depth < VERTEX.z)
 		{
+			float difference = abs(new_depth - VERTEX.z);
+			float depth_smooth = smoothstep(0, 3, difference);
 			vec3 new_normal = normalize(vec3(pos.xy, 0) - VERTEX);
-			NORMAL = normalize(NORMAL * (1. - edgeSmooth) + new_normal * edgeSmooth);
+			VERTEX.z = mix(VERTEX.z, new_depth, depth_smooth);
+			NORMAL = normalize(mix(NORMAL, new_normal, depth_smooth));
 		}
 	}
 	
@@ -151,10 +184,17 @@ void fragment() {
 	// Applies stone color based on current depth 
 	// canceled out when original normal coorspsonds to an edge (small Z contribution)
 	float stone_start = original_vertex.z - 1.;
-	float stoneiness = 1. - smoothstep(stone_start-2., stone_start, vertex_pos.z);	
-	float is_edge = step( 0.25 , abs(original_normal.z));
-	ALBEDO = mix(ALBEDO, stone_color.rgb, stoneiness * is_edge);
 	
+	float max_stone_delta = 6.;
+	float min_stone_delta = 1.;
+	float z_delta = abs(original_vertex.z - vertex_pos.z);
+	
+	float stone_level = smoothstep(min_stone_delta, max_stone_delta, z_delta);
+	
+	float stoneiness = 1. - smoothstep(stone_start-2., stone_start, vertex_pos.z);	
+	float is_edge = step( 0.5 , abs(original_normal.z));
+	//ALBEDO = mix(ALBEDO, stone_color.rgb, stoneiness * is_edge);
+	ALBEDO = mix(ALBEDO, vec3(0.1, 0.1, 0.1), sqrt(stone_level) * is_edge);
 	
 	float is_exploded = step( 0.01, abs(original_vertex.z - vertex_pos.z));
 	float edge_color = texture(grass_texture, UV).r - is_exploded; 

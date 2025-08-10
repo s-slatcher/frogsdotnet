@@ -10,7 +10,7 @@ public partial class TerrainMesh : Node3D
     public float SideLength = 5;
 
     public float MinDepth = 2;
-    public float MaxDepth = 8;
+    public float MaxDepth = 6;
 
     public float QuadDensity = 0.5f;
 
@@ -88,7 +88,7 @@ public partial class TerrainMesh : Node3D
         var pF = newPoints[0];
         var pL = newPoints[^1];
 
-        var midValue = float.Sqrt(0.5f);
+        var midValue = float.Sqrt(0.35f);
 
         // conditional tapering on edges of curve 
         var startValue = pF.Y > midValue ? float.Max(midValue, pF.Y * 0.5f) : pF.Y;
@@ -99,7 +99,7 @@ public partial class TerrainMesh : Node3D
 
         foreach (var p in newPoints) c.AddPoint(p);
         c.BakeResolution = 500;
-        polyMesh.DepthMultiplierDomainCurve = c;
+            polyMesh.DepthMultiplierDomainCurve = c;
     }
 
     public void ExplodeTerrain(Vector3 position, float radius)

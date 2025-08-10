@@ -1,5 +1,6 @@
 using Godot;
 using Godot.NativeInterop;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +21,7 @@ public partial class PolygonMesh : MeshInstance3D
 
     // setting to 0 forces per-face normals for all faces 
     // POSSIBLY replace threshold with smooth separating of normals as angle increases  
-    public float SmoothingAngleLimit = float.Pi / 2;
+    public float SmoothingAngleLimit = 999;
     public float SmoothingBump = 0.2f;
     public float SmoothDistance = 0.2f;
 
@@ -68,7 +69,8 @@ public partial class PolygonMesh : MeshInstance3D
 
         List<int> sideFaceIndices = GenerateSideFaces(interpolatedPolygon);
         List<int> frontFaceIndices = GenerateFrontFace(translatedPoly);
-        var indices = sideFaceIndices.Concat(frontFaceIndices);
+        // List<int> backFaceIndices = GenerateBackFace(translatedPoly);
+        var indices = sideFaceIndices.Concat(frontFaceIndices);//.Concat(backFaceIndices);
 
 
         var st = new SurfaceTool();
@@ -97,6 +99,23 @@ public partial class PolygonMesh : MeshInstance3D
 
 
     }
+
+    // may re-enable as a solution to casting shadows without as much light bleed onto mesh
+
+    // private List<int> GenerateBackFace(Vector2[] translatedPoly)
+    // {
+    //     var indices = new List<int>();
+    //     var offsetPoly = Geometry2D.OffsetPolygon(translatedPoly, 1)[0];
+    //     var triangle = Geometry2D.TriangulatePolygon(offsetPoly);
+    //     foreach (var triIndex in triangle)
+    //     {
+    //         var p = offsetPoly[triIndex];
+    //         var vert = IndexVertex(D(p, -LedgeDeptAtPoint(p)), Vector3.Forward, Vector3.Back, 100);
+    //         indices.Add(vert.ArrayIndex);
+    //     }
+    //     return indices;
+    // }
+
 
     private List<PolygonQuad> SubdivideMainFace(PolygonQuad rootQuad)
     {

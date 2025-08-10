@@ -5,7 +5,7 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6a7wh"]
 render_priority = 0
 shader = ExtResource("1_hsspu")
-shader_parameter/DisplacmentLevel = 0.18
+shader_parameter/DisplacmentLevel = 0.32
 shader_parameter/ColorParameter = Color(0.400697, 0.400698, 0.400698, 1)
 shader_parameter/EmissionColor = Color(0.684722, 0.328749, 0.0323784, 1)
 

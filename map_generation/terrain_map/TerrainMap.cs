@@ -14,7 +14,7 @@ public partial class TerrainMap : GodotObject
     public float MaxHeight = 80;
     public float MinHeight = 0;
 
-    public float CliffGrade = float.Pi / 15;
+    public float CliffGrade =  float.Pi / 15;
     public float CliffSideNoiseWidth = 8;
 
     private float groupingTolerance = 14f; // maximum height difference allowed in one group of points
@@ -58,7 +58,7 @@ public partial class TerrainMap : GodotObject
     public List<Polygon2D> GenerateFromPointList(List<Vector2> pointList)
     {
         List<Rect2> towerRects = GroupPoints(pointList);
-        var towerPolygons = towerRects.Select(GetTowerPolygon).ToList();
+        var towerPolygons = towerRects.Select(   GetTowerPolygon   ).ToList();
         ArrangeTowers(towerPolygons);
         var mergedList = ReduceMergePolygons(towerPolygons);
         return mergedList;
@@ -74,7 +74,9 @@ public partial class TerrainMap : GodotObject
         GD.Print(width, " width height map --- ", points.Count, " total points");
 
         List<Rect2> towerRects = GroupPoints(points);
-        var towerPolygons = towerRects.Select(GetTowerPolygon).ToList();
+        foreach (var rect in towerRects)  CachedTowerAnchorPoints.Add(rect.GetCenter() + new Vector2(0, rect.Size.Y / 2));
+        var towerPolygons = towerRects.Select( rect => new NoiseEdgePoly(rect, CliffGrade).Polygon ).ToList();
+        
         ArrangeTowers(towerPolygons);
         var mergedList = ReduceMergePolygons(towerPolygons);
 
@@ -261,7 +263,7 @@ public partial class TerrainMap : GodotObject
 
     }
 
-    private Vector2[] CurlEndsOfNoiseLine(Vector2[] noiseLine, float curlRadius, Vector2 noiseOrientation, int curlDirection)
+    private Vector2[]   CurlEndsOfNoiseLine(Vector2[] noiseLine, float curlRadius, Vector2 noiseOrientation, int curlDirection)
     {
         if (curlDirection != -1 && curlDirection != 1) return noiseLine;
         List<Vector2> newNoiseList = [.. noiseLine];

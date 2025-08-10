@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://c2at4wnnfrlwv"]
+[gd_scene load_steps=9 format=3 uid="uid://c2at4wnnfrlwv"]
 
 [ext_resource type="Script" uid="uid://dj7d20jbo5vto" path="res://testing_scenes/terrain_testing/PolygonMeshWorld.cs" id="1_5tvfr"]
 [ext_resource type="PackedScene" uid="uid://bjjceeyq3csc3" path="res://addons/sky shader/skyshader.tscn" id="2_a7mq0"]
@@ -7,10 +7,12 @@
 [ext_resource type="PackedScene" uid="uid://4mworqcudaam" path="res://common/water/scenes/WaterPlane.tscn" id="4_4v8u0"]
 [ext_resource type="PackedScene" uid="uid://d3teamfq15lcl" path="res://map_generation/terrain_mesh/terrain_mesh.tscn" id="5_4v8u0"]
 [ext_resource type="PackedScene" uid="uid://i888mvag6wjg" path="res://common/input_capture/PlaneMouseCapture.tscn" id="5_q80so"]
+[ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="8_kcwvj"]
 
 [node name="PolygonMeshWorld" type="Node3D"]
 script = ExtResource("1_5tvfr")
 explodeScene = ExtResource("2_q80so")
+terrainMeshScene = ExtResource("5_4v8u0")
 
 [node name="WasdCamera" parent="." instance=ExtResource("3_hvveg")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 59.562, 98.1768, 131.385)
@@ -19,20 +21,27 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 59.562, 98.1768, 131.385)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 85.086, 93.106, 215.78)
 visible = false
 
-[node name="Main" parent="." instance=ExtResource("2_a7mq0")]
-transform = Transform3D(0.219846, 0, 0.975535, 0, 1, 0, -0.975535, 0, 0.219846, 0, 0, 0)
-day_time = 16.3251
+[node name="enviroment" parent="." instance=ExtResource("2_a7mq0")]
+day_time = 14.4624
+latitude = -40.45
 time_scale = 0.005
 
-[node name="Sun" parent="Main" index="1"]
-transform = Transform3D(0.921005, 0, -0.389552, 0.165393, -0.905395, 0.391031, -0.352699, -0.424571, -0.833872, 0, 0, 0)
+[node name="Sun" parent="enviroment" index="1"]
+transform = Transform3D(0.902893, -0.389869, 0.181071, -0.360496, -0.457285, 0.812977, -0.234154, -0.799307, -0.553425, 0, 0, 0)
 light_energy = 1.0
+shadow_bias = 0.02
+shadow_reverse_cull_face = true
+directional_shadow_max_distance = 193.2
 
-[node name="Moon" parent="Main" index="2"]
-transform = Transform3D(0.896002, 0, 0.444048, 0.31053, 0.714812, -0.62659, -0.31741, 0.699316, 0.640474, 0, 0, 0)
+[node name="Moon" parent="enviroment" index="2"]
+transform = Transform3D(0.782342, 0.619167, 0.067603, -0.537755, 0.726234, -0.428255, -0.314257, 0.298688, 0.901126, 0, 0, 0)
 
-[node name="Camera3D" parent="Main" index="3"]
+[node name="Camera3D" parent="enviroment" index="3"]
 transform = Transform3D(1, 0, 0, 0, 0.991445, 0.130526, 0, -0.130526, 0.991444, 51.58, 37.55, 100.68)
+visible = false
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="enviroment"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 89.0868, 107.671)
 visible = false
 
 [node name="WaterPlane" parent="." instance=ExtResource("4_4v8u0")]
@@ -43,4 +52,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.1977, -53.9666)
 [node name="PlaneMouseCapture" parent="." node_paths=PackedStringArray("camera") instance=ExtResource("5_q80so")]
 camera = NodePath("../WasdCamera")
 
-[editable path="Main"]
+[node name="CanvasLayer" parent="." instance=ExtResource("8_kcwvj")]
+
+[editable path="enviroment"]
