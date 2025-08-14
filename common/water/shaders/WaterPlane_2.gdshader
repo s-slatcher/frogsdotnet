@@ -61,7 +61,7 @@ void fragment() {
 	vec3 ndc = vec3(SCREEN_UV * 2.0 - 1.0, depth);
 	vec4 world = INV_VIEW_MATRIX * INV_PROJECTION_MATRIX * vec4(ndc, 1.0);
 	float depth_texture_y = world.y / world.w;
-	float vertex_y = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).y;
+	float vertex_y = (INV_VIEW_MATRIX * vec4(world_pos, 1.0)).y;
 
 	//set depth blend
 	float depth_blend = clamp((vertex_y - depth_texture_y) / depth_distance, 0.0, 1.0);
@@ -74,7 +74,7 @@ void fragment() {
 
 	float basic_fresnel = fresnel(3.0, NORMAL, VIEW);
 
-	vec2 uv = UV * uv_scale;
+	vec2 uv = vec2(world_pos.x/100., world_pos.z / 100.);
 	vec2 uv_movement = movement_direction * TIME * movement_strength;
 
 	vec3 normalmap = texture(normalmap_a, uv + uv_movement ).rgb * normalmap_a_strength;

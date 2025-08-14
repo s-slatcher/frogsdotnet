@@ -2,7 +2,9 @@ using Godot;
 using Godot.NativeInterop;
 using Microsoft.VisualBasic;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography;
@@ -10,14 +12,23 @@ using System.Security.Cryptography;
 public partial class PolygonMesh : MeshInstance3D
 {
 
+    
+
     Vector2[] polygon;
 
+    bool hasPrintedEdgeList = false;
+    public bool PrintDebug = false;
 
-    public float DefaultSideLength = 2;
+    public float DefaultDepth = 2;
+    public float MinDepth = 2;
+    public float MaxDepth = 10;
     public float QuadDensity = 0.25f;
 
-    public Curve HeightDepthCurve;
-    public Curve DepthMultiplierDomainCurve;
+    
+    // assumes curves are normalized between 0 - 1 on both domain and range
+    // usings bounding rect and Max/Min depth to produces a depth value at each xy coord
+    public Curve HeightDepthCurve = null;
+    public Curve DomainDepthCurve = null;
 
     // setting to 0 forces per-face normals for all faces 
     // POSSIBLY replace threshold with smooth separating of normals as angle increases  
@@ -42,6 +53,12 @@ public partial class PolygonMesh : MeshInstance3D
 
     Rect2 boundingRect;
 
+
+    //Debug Data
+    float frontSubdivideTime = 0;
+    float frontFaceIndexingTime = 0;
+    float meshGenTime = 0;
+
     // modulas that wraps on negative values   
 
     static float Mod(float x, float m) => (x % m + m) % m;
@@ -54,10 +71,13 @@ public partial class PolygonMesh : MeshInstance3D
     }
 
 
- 
+
 
     public void GenerateMesh(Vector2[] polygon)
     {
+
+        var time = Time.GetTicksMsec();
+
         var translatedPoly = PreparePolygon(polygon);
         var interpolatedPolygon = InterpolatePolygonEdge(translatedPoly);
 
@@ -78,6 +98,7 @@ public partial class PolygonMesh : MeshInstance3D
         st.SetCustomFormat(0, SurfaceTool.CustomFormat.RgbFloat);
         st.SetCustomFormat(1, SurfaceTool.CustomFormat.RFloat);
 
+        var meshTime = Time.GetTicksMsec();
         foreach (var idx in indices)
         {
             var vert = VertexList[idx];
@@ -90,31 +111,27 @@ public partial class PolygonMesh : MeshInstance3D
         }
 
         var mesh = st.Commit();
-
         Mesh = mesh;
+        meshGenTime = Time.GetTicksMsec() - meshTime;
+
 
         var shader = (ShaderMaterial)MaterialOverride;
         shader.SetShaderParameter("edge_smooth", SmoothingBump);
 
-
+        if (PrintDebug)
+        {
+            GD.Print("Mesh bounding rect size: ", boundingRect.Size);
+            GD.Print("Total vertices: ", VertexList.Count);
+            GD.Print("total time: ", Time.GetTicksMsec() - time);
+            GD.Print("front face subdivision: ", frontSubdivideTime);
+            GD.Print("front vert indexing time: ", frontFaceIndexingTime);
+            GD.Print("mesh gen time: ", meshGenTime);
+            GD.Print("---------");
+        }
 
     }
 
-    // may re-enable as a solution to casting shadows without as much light bleed onto mesh
-
-    // private List<int> GenerateBackFace(Vector2[] translatedPoly)
-    // {
-    //     var indices = new List<int>();
-    //     var offsetPoly = Geometry2D.OffsetPolygon(translatedPoly, 1)[0];
-    //     var triangle = Geometry2D.TriangulatePolygon(offsetPoly);
-    //     foreach (var triIndex in triangle)
-    //     {
-    //         var p = offsetPoly[triIndex];
-    //         var vert = IndexVertex(D(p, -LedgeDeptAtPoint(p)), Vector3.Forward, Vector3.Back, 100);
-    //         indices.Add(vert.ArrayIndex);
-    //     }
-    //     return indices;
-    // }
+   
 
 
     private List<PolygonQuad> SubdivideMainFace(PolygonQuad rootQuad)
@@ -124,12 +141,13 @@ public partial class PolygonMesh : MeshInstance3D
 
         NearEdgePointsMap[rootQuad] = EdgeFaceVertices.Keys.ToList();
         if (SmoothingAngleLimit < float.Pi / 2) NearEdgePointsMap[rootQuad] = new();  // empty set to prevent any smoothing
-
+        
 
         var leafNodes = new List<PolygonQuad>();
         var queue = new List<PolygonQuad>() { rootQuad };
         var queuePos = 0;
 
+        var time = Time.GetTicksMsec();
         while (queuePos < queue.Count)
         {
             var quad = queue[queuePos];
@@ -156,6 +174,7 @@ public partial class PolygonMesh : MeshInstance3D
                 leafNodes.Add(quad);
             }
         }
+        frontSubdivideTime = Time.GetTicksMsec() - time;
         return leafNodes;
     }
 
@@ -169,11 +188,12 @@ public partial class PolygonMesh : MeshInstance3D
         Vector2I KeyifyVector(Vector3 vertexPos) => new((int)(vertexPos.X * 100), (int)(vertexPos.Y * 100));
 
         // assign converted positions to vertices
-        Dictionary<Vector2I, IndexedVertex> FrontVertexMap = new();
+        ConcurrentDictionary<Vector2I, IndexedVertex> FrontVertexMap = new();
 
         var quadRoot = PolygonQuad.CreateRootQuad(poly, QuadDensity);
         var leafNodes = SubdivideMainFace(quadRoot);
 
+        var time = Time.GetTicksMsec();
         foreach (var node in leafNodes)
         {
             var edgeList = NearEdgePointsMap[node];
@@ -182,7 +202,7 @@ public partial class PolygonMesh : MeshInstance3D
 
             foreach (var p in nodePoly)
             {
-                var pos = D(p, LedgeDeptAtPoint(p));
+                var pos = D(p, DepthAtPoint(p));
 
                 var posAsKey = KeyifyVector(pos);
                 bool pointExists = FrontVertexMap.ContainsKey(posAsKey);
@@ -209,7 +229,7 @@ public partial class PolygonMesh : MeshInstance3D
                     vertNorm = closePoint.Normal.Lerp(faceNorm, delta / SmoothDistance).Normalized();
                 }
 
-                var vert = IndexVertex(pos, vertNorm, faceNorm, DefaultSideLength);
+                var vert = IndexVertex(pos, vertNorm, faceNorm, DefaultDepth);
                 poly3d.Add(vert);
 
                 FrontVertexMap[posAsKey] = vert;
@@ -222,7 +242,7 @@ public partial class PolygonMesh : MeshInstance3D
             indices.AddRange(vertexTriIndices);
 
         }
-
+        frontFaceIndexingTime = Time.GetTicksMsec() - time;
         return indices;
 
     }
@@ -230,32 +250,56 @@ public partial class PolygonMesh : MeshInstance3D
 
     // TODO: get these values by sampling ledge curve
 
-    private float LedgeDeptAtPoint(Vector2 point)
+    private float DepthAtPoint(Vector2 point)
     {
-        var depthAtHeight = HeightDepthCurve.SampleBaked(point.Y);
-        var domainMultiplier = DepthMultiplierDomainCurve.SampleBaked(point.X);
-        var depthValue = (depthAtHeight - HeightDepthCurve.MinValue) * domainMultiplier + HeightDepthCurve.MinValue;
-        return depthValue;
 
+        if (HeightDepthCurve == null || DomainDepthCurve == null)
+        {
+            return DefaultDepth;
+        }
 
-        return DefaultSideLength;
+        var localMaxDepth = MapWidthToMaxDepth(point.X);
+        var depthAtHeight = MapHeightToDepth(point.Y, localMaxDepth);
+
+        return depthAtHeight;
     }
+
+    private float MapHeightToDepth(float yPos, float localMax)
+    {
+        float yRatio = (yPos - boundingRect.Position.Y) / boundingRect.Size.Y;
+
+        var curveValue = HeightDepthCurve.SampleBaked(yRatio);
+
+        return curveValue * (localMax - MinDepth) + MinDepth;
+    }
+
+    private float MapWidthToMaxDepth(float xPos)
+    {
+        float xRatio = (xPos - boundingRect.Position.X) / boundingRect.Size.X;
+
+        var curveValue = DomainDepthCurve.SampleBaked(xRatio);
+
+        return curveValue * (MaxDepth - MinDepth) + MinDepth;
+    }
+
     private Vector3 FaceNormalAtPoint(Vector2 point)
     {
 
-        var p1 = new Vector3(point.X, point.Y, LedgeDeptAtPoint(point));
+        var p1 = new Vector3(point.X, point.Y, DepthAtPoint(point));
         var p2_2d = point + new Vector2(0.1f, 0.1f);
-        var p2 = new Vector3(p2_2d.X, p2_2d.Y, LedgeDeptAtPoint(p2_2d));
+        var p2 = new Vector3(p2_2d.X, p2_2d.Y, DepthAtPoint(p2_2d));
         var p3_2d = point + new Vector2(-0.1f, 0.1f);
-        var p3 = new Vector3(p3_2d.X, p3_2d.Y, LedgeDeptAtPoint(p3_2d));
+        var p3 = new Vector3(p3_2d.X, p3_2d.Y, DepthAtPoint(p3_2d));
 
         var vec1 = p2 - p1;
         var vec2 = p3 - p1;
         var normal = vec1.Cross(vec2).Normalized();
+        // 
         if (normal.Z < 0) normal.Z *= -1;
 
         return normal;
     }
+
 
     private List<IndexedVertex> GenerateSideFaceVertices(IndexedVertex frontVertex, Vector3 sideNormal, Vector3 edgeFaceNormal)
     {
@@ -290,9 +334,11 @@ public partial class PolygonMesh : MeshInstance3D
             else vertNormal = backNormal.Lerp(sideNormal, distBack / SmoothDistance).Normalized();
 
 
-            edgeList.Add(IndexVertex(pos, vertNormal, edgeFaceNormal, DefaultSideLength));
+            edgeList.Add(IndexVertex(pos, vertNormal, edgeFaceNormal, DefaultDepth));
 
         }
+
+        
 
         return edgeList;
 
@@ -303,7 +349,6 @@ public partial class PolygonMesh : MeshInstance3D
         var indicesList = new List<int>();
         var poly = interpolatedPolygon;
 
-
         // list of 2-length sets of edge vertices defining an edge face
         var lastList = new List<IndexedVertex>() { null, null };
         EdgeList = new List<List<IndexedVertex>>() { lastList };
@@ -311,17 +356,16 @@ public partial class PolygonMesh : MeshInstance3D
 
 
         var len = poly.Length;
-        GD.Print("polylen: ", len);
         for (int i = 0; i < len; i++)
         {
 
-            float zOffset = LedgeDeptAtPoint(poly[i]);
+            float zOffset = DepthAtPoint(poly[i]);
             var p0 = D(poly[Mod(i - 1, len)], zOffset);
             var p1 = D(poly[i], zOffset);
             var p2 = D(poly[Mod(i + 1, len)], zOffset);
 
-            var faceNorm1 = (p1 - p0).Rotated(Vector3.Back, float.Pi / 2).Normalized();
-            var faceNorm2 = (p2 - p1).Rotated(Vector3.Back, float.Pi / 2).Normalized();
+            var faceNorm1 = (p1 - p0).Rotated(Vector3.Back, -float.Pi / 2).Normalized();
+            var faceNorm2 = (p2 - p1).Rotated(Vector3.Back, -float.Pi / 2).Normalized();
 
             var angle = faceNorm1.AngleTo(faceNorm2);
             bool smoothNormals = angle < SmoothingAngleLimit;
@@ -337,8 +381,7 @@ public partial class PolygonMesh : MeshInstance3D
 
 
             // shared vertex for both sides with averaged normal vector
-            if (smoothNormals)
-            {
+           
 
 
                 var sideFaceNormAvg = (faceNorm1 + faceNorm2) / 2;
@@ -347,34 +390,34 @@ public partial class PolygonMesh : MeshInstance3D
                 // var oppositeEdgeNorm = edgePointNormal * new Vector3(1, 1, -1);
 
 
-                leftVert = rightVert = IndexVertex(p1, edgePointNormal, faceNorm1, DefaultSideLength); // face norm chosen is arbitrary 
+                leftVert = rightVert = IndexVertex(p1, edgePointNormal, faceNorm1, DefaultDepth); // face norm chosen is arbitrary 
                 var edgeFaceVerts = GenerateSideFaceVertices(leftVert, sideFaceNormAvg, faceNorm1);
 
 
 
                 EdgeFaceVertices[leftVert] = edgeFaceVerts;
-            }
+            
             // separate left and right vertices-- assigned respective face normal
-            else
-            {
-                leftVert = IndexVertex(p1, faceNorm1, faceNorm1, DefaultSideLength);
-                rightVert = IndexVertex(p1, faceNorm2, faceNorm2, DefaultSideLength);
+            // else
+            // {
+            //     leftVert = IndexVertex(p1, faceNorm1, faceNorm1, DefaultDepth);
+            //     rightVert = IndexVertex(p1, faceNorm2, faceNorm2, DefaultDepth);
 
 
-                var leftVertList = new List<IndexedVertex>() { leftVert };
-                var rightVertList = new List<IndexedVertex>() { rightVert };
-                for (int k = 0; k < edgeVertCount; k++)
-                {
-                    var dist = (k + 1) * QuadDensity;
-                    var translate = new Vector3(0, 0, -dist);
-                    leftVertList.Add(IndexVertex(p1 + translate, leftVert.Normal, faceNorm1, DefaultSideLength));
-                    rightVertList.Add(IndexVertex(p1 + translate, rightVert.Normal, faceNorm2, DefaultSideLength));
-                }
+            //     var leftVertList = new List<IndexedVertex>() { leftVert };
+            //     var rightVertList = new List<IndexedVertex>() { rightVert };
+            //     for (int k = 0; k < edgeVertCount; k++)
+            //     {
+            //         var dist = (k + 1) * QuadDensity;
+            //         var translate = new Vector3(0, 0, -dist);
+            //         leftVertList.Add(IndexVertex(p1 + translate, leftVert.Normal, faceNorm1, DefaultDepth));
+            //         rightVertList.Add(IndexVertex(p1 + translate, rightVert.Normal, faceNorm2, DefaultDepth));
+            //     }
 
-                EdgeFaceVertices[leftVert] = leftVertList;
-                EdgeFaceVertices[rightVert] = rightVertList;
+            //     EdgeFaceVertices[leftVert] = leftVertList;
+            //     EdgeFaceVertices[rightVert] = rightVertList;
 
-            }
+            // }
 
             // insert edge in previous and next edge lines; wrap to first edge on last loop
             EdgeList[^1][1] = leftVert;
@@ -383,6 +426,8 @@ public partial class PolygonMesh : MeshInstance3D
 
         }
 
+            
+    
         indicesList = EdgeList
             .SelectMany(edgeList => TriangulateEdgeFace(edgeList[0], edgeList[1]))
             .ToList();
@@ -390,6 +435,7 @@ public partial class PolygonMesh : MeshInstance3D
         return indicesList;
     }
 
+    int timesRan = 0;
 
     private List<int> TriangulateEdgeFace(IndexedVertex edge1, IndexedVertex edge2)
     {
@@ -397,11 +443,15 @@ public partial class PolygonMesh : MeshInstance3D
 
 
         var leftVerts = EdgeFaceVertices[edge1];
+
         var rightVerts = EdgeFaceVertices[edge2];
+
+
         // form two triangles for each set of two points in edges,
         // indices point to spot on VertexList
         var leftPos = 0;
         var rightPos = 0;
+
 
         // break loop when last index reached for both edges
         while (leftPos < leftVerts.Count - 1 || rightPos < rightVerts.Count - 1)
@@ -431,6 +481,7 @@ public partial class PolygonMesh : MeshInstance3D
 
         }
 
+        indices.Reverse();
         return indices;
 
 
@@ -527,7 +578,7 @@ public partial class PolygonMesh : MeshInstance3D
             ArrayIndex = VertexList.Count,
             Normal = normal,
             Custom0 = ColorFromNormal(faceNormal),
-            Custom1 = new Color(LedgeDeptAtPoint(new Vector2(position.X, position.Y)), 0, 0)
+            Custom1 = new Godot.Color(DepthAtPoint(new Vector2(position.X, position.Y)), 0, 0)
         };
         VertexList.Add(vert);
         return vert;

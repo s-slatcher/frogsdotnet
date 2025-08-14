@@ -19,7 +19,6 @@ public partial class TerrainTexture : SubViewport
         // var polyInst = new Polygon2D() { Polygon = polygon };
         // AddChild(polyInst);
         
-        GD.Print(IsNodeReady());
         GrassLength = grassLength;
         var tex = GetEdgeTexture(polygon);
         Size = (Vector2I)tex.GetSize();

@@ -1,67 +1,76 @@
 using Godot;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 public partial class TerrainMesh : Node3D
 {
 
-    public float TerrainWidth = 50;
-    public float SideLength = 5;
-
-    public float MinDepth = 2;
-    public float MaxDepth = 6;
-
-    public float QuadDensity = 0.5f;
-
-    [Export] public Curve DepthDomainCurve;
-    [Export] public Curve RangeDomainCurve;
-
-    TerrainTexture terrainTexture;
-    PolygonMesh polyMesh;
+    [Export] TerrainTexture terrainTexture;
+    [Export] PolygonMesh polyMesh;
 
 
-    public override void _Ready()
+    public enum TerrainType
     {
-
-
-
-        terrainTexture = GetNode<TerrainTexture>("TerrainTexture");
-        polyMesh = GetNode<PolygonMesh>("PolygonMesh");
-        polyMesh.DefaultSideLength = MinDepth;
-        polyMesh.QuadDensity = QuadDensity;
-
-
+        Landmass,
+        FloatingIsland,
     }
 
-    public void GenerateMesh(TerrainPolygon terrainPolygon)
+    public float MaxDepth = 5;
+    public float MinDepth = 5;
+    public float QuadDensity = 0.25f;
+
+    internal TerrainPolygon terrainPoly;
+    public TerrainPolygon TerrainPolygon
+    {
+        get { return terrainPoly; }
+        set
+        {
+            terrainPoly = value;
+            SetMesh();
+        }
+    }
+
+    
+
+    private void SetMesh()
     {
 
-        SetDomainDepthCurve(terrainPolygon);
-        SetHeightDepthCurve(terrainPolygon);
+        if (!IsNodeReady()) GD.PrintErr("called generate before in scene tree");
 
-
-        polyMesh.GenerateMesh(terrainPolygon.Polygon);
-        terrainTexture.SetPolygon(terrainPolygon.Polygon, 5);
-
+      
+    
+        SetDomainDepthCurve(terrainPoly);
+        SetHeightDepthCurve(terrainPoly);
+        terrainTexture.SetPolygon(terrainPoly.Polygon, 5);
+        var grass_texture = terrainTexture.GetTexture();
         var shader = (ShaderMaterial)polyMesh.MaterialOverride;
-        shader.SetShaderParameter("grass_texture", terrainTexture.GetTexture());
+        shader.SetShaderParameter("grass_texture", grass_texture);
 
+
+        polyMesh.QuadDensity = QuadDensity;
+        polyMesh.GenerateMesh(terrainPoly.Polygon);
+        
     }
 
     public void SetHeightDepthCurve(TerrainPolygon terrainPoly)
     {
+
+        polyMesh.HeightDepthCurve = GD.Load<Curve>("uid://dnobssupgeuds");
+
         var c = new Curve();
         var maxHeight = terrainPoly.BoundingRect.End.Y;
 
-        c.MinDomain = 0;
-        c.MaxDomain = maxHeight;
-        c.MinValue = MinDepth;
-        c.MaxValue = MaxDepth;
+        // c.MinDomain = 0;
+        // c.MaxDomain = 1;
+        // c.MinValue = MinDepth;
+        // c.MaxValue = MaxDepth;
 
         // highest depth value aligned with lowest height
-        var startPoint = new Vector2(0, MaxDepth);
-        var endPoint = new Vector2(maxHeight, MinDepth);
+        var startPoint = new Vector2(0, 1);
+        var endPoint = new Vector2(1, 0);
 
         c.AddPoint(startPoint);
         c.AddPoint(endPoint);
@@ -71,19 +80,27 @@ public partial class TerrainMesh : Node3D
 
     public void SetDomainDepthCurve(TerrainPolygon terrainPoly)
     {
+        if (terrainPoly.SimplifiedHeightCurve.PointCount == 0)
+        {
+            polyMesh.DomainDepthCurve = null;
+            return;
+        }
+
         var baseCurve = terrainPoly.SimplifiedHeightCurve;
+        var width = terrainPoly.BoundingRect.Size.X;
         var c = new Curve();
 
-        c.MinDomain = 0;
-        c.MaxDomain = baseCurve.MaxDomain;
-        c.MinValue = 0;
-        c.MaxValue = 1;
+        // c.MinDomain = 0;
+        // c.MaxDomain = baseCurve.MaxDomain;
+        // c.MinValue = 0;
+        // c.MaxValue = 1;
 
 
         var baseCurvePoints = new List<Vector2>();
         for (int i = 0; i < baseCurve.PointCount; i++) baseCurvePoints.Add(baseCurve.GetPointPosition(i));
 
-        var newPoints = baseCurvePoints.Select(p => new Vector2(p.X, float.Sqrt(p.Y / baseCurve.MaxValue))).ToList();
+        var newPoints = baseCurvePoints
+            .Select(p => new Vector2(p.X / width, float.Sqrt(p.Y / baseCurve.MaxValue))).ToList();
 
         var pF = newPoints[0];
         var pL = newPoints[^1];
@@ -99,7 +116,7 @@ public partial class TerrainMesh : Node3D
 
         foreach (var p in newPoints) c.AddPoint(p);
         c.BakeResolution = 500;
-            polyMesh.DepthMultiplierDomainCurve = c;
+        polyMesh.DomainDepthCurve = c;
     }
 
     public void ExplodeTerrain(Vector3 position, float radius)

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cyv1wp31xapg2"]
+
+[ext_resource type="Script" uid="uid://ckmwvndvmw44b" path="res://testing_scenes/debug_polygon/DebugPolygon.cs" id="1_qegps"]
+
+[node name="DebugPolygon" type="Polygon2D"]
+script = ExtResource("1_qegps")

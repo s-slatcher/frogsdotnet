@@ -4,16 +4,17 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 
 public partial class HeightMap : GodotObject
 {
     string seed = "";
-    
+
     // number of noise points sampled per 1/frequency units (1 period, sort of) of the noise map.
-    private const int samplesPerPeriod = 40;    
+    private const int samplesPerPeriod = 40;
 
     public float domainPosition = 0;
-    
+
     public float MaxHeight = 1;
     public float MinHeight = 0;
     public int NoiseLayerTotal;
@@ -24,7 +25,7 @@ public partial class HeightMap : GodotObject
 
 
 
-    public HeightMap(int noiseSeed, float noiseFrequency = 0.01f, int noiseLayers = 2, float layerFrequencyMultiplier = 2f, float layerGain = 0.5f )
+    public HeightMap(int noiseSeed, float noiseFrequency = 0.01f, int noiseLayers = 2, float layerFrequencyMultiplier = 2f, float layerGain = 0.5f)
     {
         this.NoiseLayerTotal = noiseLayers;
         this.LayerFrequencyMultiplier = layerFrequencyMultiplier;
@@ -32,7 +33,7 @@ public partial class HeightMap : GodotObject
 
         for (int i = 0; i < noiseLayers; i++)
         {
-             
+
             var layerFrequency = noiseFrequency * Math.Pow(layerFrequencyMultiplier, i);
             var noise = new FastNoiseLite()
             {
@@ -52,13 +53,13 @@ public partial class HeightMap : GodotObject
         var delta = noise.Frequency / 10;
         var valPlus = noise.GetNoise1D(pos + delta);
         var valMinus = noise.GetNoise1D(pos - delta);
-        return (valPlus - valMinus) / (delta * 2);         
+        return (valPlus - valMinus) / (delta * 2);
     }
 
 
-    public List<Vector2> GetNextHeights(float width)
+    public List<Vector2> GetNextHeights(float width, bool normalizeDomain = true)
     {
-        
+
         List<Vector2> _pointsOfInterest = [];
 
 
@@ -66,31 +67,31 @@ public partial class HeightMap : GodotObject
         var noisePeriod = 1 / highestFreq;
         var sampleTotal = width / noisePeriod * samplesPerPeriod;
         var sampleGap = width / sampleTotal;
-        
-        var slopeTrends = NoiseLayers.Select( noise => Math.Sign( getSlope(noise, 0))).ToList();
-        
+
+        var slopeTrends = NoiseLayers.Select(noise => Math.Sign(getSlope(noise, 0))).ToList();
+
         float strengthDivisor = 0;
         for (int i = 0; i < NoiseLayers.Count; i++) strengthDivisor += (float)Math.Pow(LayerGain, i);
-        
+
         var minValue = float.MaxValue;
         var maxValue = float.MinValue;
 
         for (int i = 0; i < sampleTotal; i++)
-        {   
+        {
             var noisePos = sampleGap * i;
             float combinedHeight = 0;
-            
+
             bool isPointOfInterest = false;
 
             for (int j = 0; j < NoiseLayers.Count; j++)
             {
                 var noiseLayer = NoiseLayers[j];
-                var layerStrength = (float) Math.Pow(LayerGain, j);
+                var layerStrength = (float)Math.Pow(LayerGain, j);
 
                 var value = noiseLayer.GetNoise1D(noisePos + domainPosition);
 
                 combinedHeight += value * layerStrength;
-                
+
                 var slope = getSlope(noiseLayer, noisePos);
                 if (Math.Sign(slope) != slopeTrends[j])
                 {
@@ -98,22 +99,38 @@ public partial class HeightMap : GodotObject
                     isPointOfInterest = true;
                 }
             }
-            
+
             combinedHeight /= strengthDivisor;
             var mappedValue = (combinedHeight + 1) / 2 * (MaxHeight - MinHeight) + MinHeight;
-            
+
             minValue = Math.Min(minValue, mappedValue);
             maxValue = Math.Max(maxValue, mappedValue);
 
-            
-            var mapVector = new Vector2(noisePos, (float) mappedValue);
-            
-            
+
+            var mapVector = new Vector2(noisePos, (float)mappedValue);
+
+
             if (isPointOfInterest) _pointsOfInterest.Add(mapVector);
 
         }
 
+        // remaps y to span entire max and min height range
         if (RemapToHeightRange) _pointsOfInterest = Remap(_pointsOfInterest, minValue, maxValue);
+
+        // stretches the domain of points in both directions to start at 0 and end at the passed width 
+        if (normalizeDomain)
+        {
+            var firstX = _pointsOfInterest[0].X;
+            var lastX = _pointsOfInterest[^1].X;
+            var translate = new Vector2(-firstX, 0);
+            // _pointsOfInterest = _pointsOfInterest.Select(p => p + translate).ToList();
+            var scale = width / float.Abs(lastX - firstX);
+            _pointsOfInterest = _pointsOfInterest.Select(p => (p + new Vector2(-firstX, 0)) * new Vector2(scale, 1)).ToList();
+
+        }
+
+
+
 
 
         domainPosition += width;
@@ -133,7 +150,11 @@ public partial class HeightMap : GodotObject
         }
         return newPoints;
 
+        
+
     }
+
+  
     
     
 

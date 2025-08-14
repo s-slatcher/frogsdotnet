@@ -1,9 +1,16 @@
-[gd_scene load_steps=12 format=4 uid="uid://d3teamfq15lcl"]
+[gd_scene load_steps=13 format=4 uid="uid://ctrd1t761p1u1"]
 
-[ext_resource type="Script" uid="uid://piymvhyv5oxk" path="res://map_generation/terrain_mesh/TerrainMesh.cs" id="1_8i83x"]
-[ext_resource type="PackedScene" uid="uid://ckdbden2ckxda" path="res://common/polygon_mesh_generation/Shader based/polygon_mesh.tscn" id="2_g543p"]
-[ext_resource type="Shader" uid="uid://cnnmjm6ycldt7" path="res://common/polygon_mesh_generation/Shader based/PolygonMeshShader.gdshader" id="3_g543p"]
-[ext_resource type="PackedScene" uid="uid://bc0es7d2y4vvk" path="res://map_generation/terrain_texture/TerrainTexture.tscn" id="3_p7cl5"]
+[ext_resource type="Script" uid="uid://cmkdfgarvlld1" path="res://map_generation/terrain_mesh/base_terrain_mesh/BaseTerrainMesh.cs" id="1_aenc0"]
+[ext_resource type="PackedScene" uid="uid://ckdbden2ckxda" path="res://common/polygon_mesh_generation/Shader based/polygon_mesh.tscn" id="2_pyip6"]
+[ext_resource type="Shader" uid="uid://cnnmjm6ycldt7" path="res://common/polygon_mesh_generation/Shader based/PolygonMeshShader.gdshader" id="3_hjx4h"]
+
+[sub_resource type="Curve" id="Curve_aenc0"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="Curve" id="Curve_pyip6"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_6mu2c"]
 noise_type = 2
@@ -32,10 +39,10 @@ offsets = PackedFloat32Array(0.997859, 1)
 [sub_resource type="GradientTexture1D" id="GradientTexture1D_6mu2c"]
 gradient = SubResource("Gradient_vlyff")
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_p7cl5"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1jfcp"]
 resource_local_to_scene = true
 render_priority = 0
-shader = ExtResource("3_g543p")
+shader = ExtResource("3_hjx4h")
 shader_parameter/dirt_color = Color(1, 0.583333, 0, 1)
 shader_parameter/dirt_color_alt = Color(0.936441, 0.545093, 0, 1)
 shader_parameter/stone_color = Color(0.481602, 0.354573, 0.19801, 1)
@@ -59,12 +66,11 @@ shader_parameter/explosion_array = PackedVector4Array(0, 0, 0, 0, 0, 0, 0, 0, 0,
 shader_parameter/edge_smooth = 0.0
 shader_parameter/depth_mulitplier = 1.0
 
-[node name="TerrainMesh" type="Node3D" node_paths=PackedStringArray("terrainTexture", "polyMesh")]
-script = ExtResource("1_8i83x")
-terrainTexture = NodePath("TerrainTexture")
+[node name="BaseTerrainMesh" type="Node3D" node_paths=PackedStringArray("polyMesh")]
+script = ExtResource("1_aenc0")
 polyMesh = NodePath("PolygonMesh")
+BaseWidthCurve = SubResource("Curve_aenc0")
+BaseHeightCurve = SubResource("Curve_pyip6")
 
-[node name="PolygonMesh" parent="." instance=ExtResource("2_g543p")]
-material_override = SubResource("ShaderMaterial_p7cl5")
-
-[node name="TerrainTexture" parent="." instance=ExtResource("3_p7cl5")]
+[node name="PolygonMesh" parent="." instance=ExtResource("2_pyip6")]
+material_override = SubResource("ShaderMaterial_1jfcp")

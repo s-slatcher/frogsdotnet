@@ -1,0 +1,45 @@
+[gd_scene load_steps=4 format=3 uid="uid://bcklov2s2l3t0"]
+
+[ext_resource type="Script" uid="uid://ck8ypoqjkad8b" path="res://testing_scenes/terrain_testing/noisify_refactor/NoiseTest.cs" id="1_ymj8o"]
+[ext_resource type="PackedScene" uid="uid://b8osbgmfbof24" path="res://testing_scenes/debug_camera_2d/debug_camera_2d.tscn" id="2_qyuen"]
+
+[sub_resource type="Curve2D" id="Curve2D_qyuen"]
+_data = {
+"points": PackedVector2Array(-0.307561, 0, 0.307561, 0, -280.311, -205.1, -22.522, 0.192548, 22.522, -0.192548, -256.952, -229.928, -19.2549, -0.320913, 19.2549, 0.320913, -196.43, -228.848, 0, 0, 0, 0, -179.441, -200.782, 0, 0, 0, 0, -208.11, -198.623)
+}
+point_count = 5
+
+[node name="NoiseTest" type="Node2D"]
+script = ExtResource("1_ymj8o")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+offset_right = 1920.0
+offset_bottom = 1077.0
+color = Color(0.450648, 0.450648, 0.450648, 1)
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+position = Vector2(-21.79, 0)
+
+[node name="Polygon2D" type="Polygon2D" parent="Polygon2D"]
+visible = false
+position = Vector2(-8.23, 0.88)
+scale = Vector2(1.09, 0.485)
+
+[node name="DebugCamera2d" parent="." instance=ExtResource("2_qyuen")]
+
+[node name="Line2D" type="Line2D" parent="."]
+position = Vector2(8.025, 0)
+width = 0.2
+
+[node name="Line2D2" type="Line2D" parent="."]
+position = Vector2(16.05, 0)
+width = 0.2
+
+[node name="Path2D" type="Path2D" parent="."]
+position = Vector2(28, -1)
+scale = Vector2(0.941811, 0.926378)
+curve = SubResource("Curve2D_qyuen")
+
+[node name="Line2D3" type="Line2D" parent="."]
+position = Vector2(8.025, 0)
+width = 0.2

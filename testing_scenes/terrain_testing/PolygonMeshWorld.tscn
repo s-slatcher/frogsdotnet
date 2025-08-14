@@ -44,8 +44,9 @@ visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 89.0868, 107.671)
 visible = false
 
-[node name="WaterPlane" parent="." instance=ExtResource("4_4v8u0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 13.1977, -53.9666)
+[node name="WaterPlane" parent="." node_paths=PackedStringArray("pos_source") instance=ExtResource("4_4v8u0")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.51, -48.987)
+pos_source = NodePath("../WasdCamera")
 
 [node name="TerrainMesh" parent="." instance=ExtResource("5_4v8u0")]
 

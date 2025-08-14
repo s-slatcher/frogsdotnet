@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://ypoo7gr5570n"]
 
-[ext_resource type="Script" uid="uid://b4dnephx8i620" path="res://resources/curve_resource_generation/MapNoiseWallCurve.cs" id="1_00wdo"]
-[ext_resource type="Texture2D" uid="uid://bm0ma1yn0p4qf" path="res://resources/curve_resource_generation/wall_curve_noise.tres" id="2_56irs"]
+[ext_resource type="Script" uid="uid://b4dnephx8i620" path="res://resources/curves/MapNoiseWallCurve.cs" id="1_00wdo"]
+[ext_resource type="Texture2D" uid="uid://bm0ma1yn0p4qf" path="res://resources/curves/wall_curve_noise.tres" id="2_56irs"]
 
 [sub_resource type="Curve2D" id="Curve2D_00wdo"]
 _data = {

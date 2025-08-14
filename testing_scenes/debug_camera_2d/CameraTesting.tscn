@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://bco33l22ho5hw"]
+
+[ext_resource type="PackedScene" uid="uid://b8osbgmfbof24" path="res://testing_scenes/debug_camera_2d/debug_camera_2d.tscn" id="1_jy45t"]
+[ext_resource type="Script" uid="uid://bna1c785na4o6" path="res://testing_scenes/debug_camera_2d/CameraTesting.cs" id="1_mycmf"]
+[ext_resource type="Texture2D" uid="uid://ch5r8fna4n5xl" path="res://icon.svg" id="3_ow0k3"]
+
+[node name="CameraTesting" type="Node2D"]
+script = ExtResource("1_mycmf")
+
+[node name="DebugCamera2d" parent="." instance=ExtResource("1_jy45t")]
+position = Vector2(196.755, 1008.78)
+zoom = Vector2(6.535, 6.535)
+
+[node name="Line2D" type="Line2D" parent="."]
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(313, 1065)
+texture = ExtResource("3_ow0k3")

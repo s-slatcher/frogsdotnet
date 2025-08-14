@@ -5,6 +5,8 @@ using System.Collections.Generic;
 public partial class WasdCamera : Camera3D
 {
 
+    [Export] public float HeightLimit = 36;
+
     Vector3 targetPosition = Vector3.Zero;
 
     Vector3 startPosition;
@@ -40,6 +42,8 @@ public partial class WasdCamera : Camera3D
 
         if (Input.IsActionJustPressed("ui_accept")) CycleZoom();
         if (Input.IsActionJustPressed("ctrl")) ToggleTilt();
+
+        targetPosition.Y = float.Clamp(targetPosition.Y, HeightLimit, 999);
 
 
     }

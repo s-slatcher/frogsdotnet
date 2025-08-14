@@ -67,11 +67,9 @@ public partial class TerrainMap : GodotObject
     public List<Polygon2D> GenerateNext(float width)
     {
         CachedTowerAnchorPoints = new();
-        GD.Print("called gen next width");
         UpdateHeightMaps();
 
         var points = heightMap.GetNextHeights(width);
-        GD.Print(width, " width height map --- ", points.Count, " total points");
 
         List<Rect2> towerRects = GroupPoints(points);
         foreach (var rect in towerRects)  CachedTowerAnchorPoints.Add(rect.GetCenter() + new Vector2(0, rect.Size.Y / 2));
@@ -80,7 +78,6 @@ public partial class TerrainMap : GodotObject
         ArrangeTowers(towerPolygons);
         var mergedList = ReduceMergePolygons(towerPolygons);
 
-        foreach (var p in CachedTowerAnchorPoints) GD.Print(p);
 
         return mergedList;
     }
@@ -124,6 +121,7 @@ public partial class TerrainMap : GodotObject
             }
 
         }
+        
         mergedList.Add(ConvertToPolygonInstance(currentMerge));
         return mergedList;
     }
@@ -215,9 +213,6 @@ public partial class TerrainMap : GodotObject
             groupRects.Add(rect);
         }
 
-        GD.Print("terrain hill anchor points: ");
-
-        // CachedTowerAnchorPoints = groupRects.Select( rect => rect.GetCenter() - new Vector2(0, rect.Size.Y / 2) ).ToList();
 
         return groupRects;
     }
@@ -313,7 +308,7 @@ public partial class TerrainMap : GodotObject
 
 public struct TerrainPolygon(Vector2[] polygon, Curve heightCurve, Rect2 rect)
 {
-    public readonly Vector2[] Polygon = polygon;
-    public readonly Rect2 BoundingRect = rect;
-    public readonly Curve SimplifiedHeightCurve = heightCurve;
+    public Vector2[] Polygon = polygon;
+    public Rect2 BoundingRect = rect;
+    public Curve SimplifiedHeightCurve = heightCurve;
 }

@@ -41,7 +41,8 @@ shader_parameter/far = 100.0
 shader_parameter/edge_color = Color(1, 1, 1, 1)
 
 [sub_resource type="QuadMesh" id="QuadMesh_s77gi"]
-size = Vector2(1000, 400)
+size = Vector2(1200, 400)
+center_offset = Vector3(0, 0, -230.58)
 orientation = 1
 
 [node name="WaterPlane" type="MeshInstance3D"]

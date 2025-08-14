@@ -380,7 +380,7 @@ public partial class GeometryUtils : GodotObject
             // if (nextIsShorter) angle = handleDir.AngleTo(vecNext);
             // else angle = (handleDir).AngleTo(vecLast);
             var shortLength = Math.Min(vecNext.Length(), vecLast.Length());
-
+            
             
 
             // var handleNextLength = shortLength * 0.5 / Math.Cos(angle) * smoothingFactor ;
@@ -397,12 +397,12 @@ public partial class GeometryUtils : GodotObject
         else
         {
             // smoothly enclose the shape by splitting the that last point's 'in' and 'out' handles across two nearly overlapping points
-            var delta = 0.1f;
-            var firstPointPos = smoothedCurve.GetPointPosition(0);
-            var firstInVec = smoothedCurve.GetPointIn(0);
-            smoothedCurve.SetPointIn(0, Vector2.Zero);
-            var appendedPointPos = firstPointPos + firstInVec.Normalized() * delta;
-            smoothedCurve.AddPoint(appendedPointPos, firstInVec, Vector2.Zero); 
+            // var delta = 0.1f;
+            // var firstPointPos = smoothedCurve.GetPointPosition(0);
+            // var firstInVec = smoothedCurve.GetPointIn(0);
+            // smoothedCurve.SetPointIn(0, Vector2.Zero);
+            // var appendedPointPos = firstPointPos + firstInVec.Normalized() * delta;
+            // smoothedCurve.AddPoint(appendedPointPos, firstInVec, Vector2.Zero); 
             return smoothedCurve;
         }
         

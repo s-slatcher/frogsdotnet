@@ -1,7 +1,7 @@
 // NOTE: Shader automatically converted from Godot Engine 4.4.stable.mono's StandardMaterial3D.
 
 shader_type spatial;
-render_mode world_vertex_coords,blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+render_mode world_vertex_coords, blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
 
 // terrain colors
 uniform vec4 dirt_color : source_color;
@@ -49,7 +49,7 @@ const int MAX_EXPLOSIONS = 500;
 const float MAX_RADIUS = 12.;
 uniform vec4 explosion_array[MAX_EXPLOSIONS];
 
-uniform float edge_smooth = 0.8;
+uniform float edge_smooth = 0.;
 uniform float depth_mulitplier = 1.;
 
 // used for pseudo random number
