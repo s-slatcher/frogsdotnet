@@ -1,13 +1,19 @@
-[gd_scene load_steps=4 format=3 uid="uid://bcklov2s2l3t0"]
+[gd_scene load_steps=5 format=3 uid="uid://bcklov2s2l3t0"]
 
 [ext_resource type="Script" uid="uid://ck8ypoqjkad8b" path="res://testing_scenes/terrain_testing/noisify_refactor/NoiseTest.cs" id="1_ymj8o"]
 [ext_resource type="PackedScene" uid="uid://b8osbgmfbof24" path="res://testing_scenes/debug_camera_2d/debug_camera_2d.tscn" id="2_qyuen"]
 
+[sub_resource type="Curve2D" id="Curve2D_ea8g4"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -219, -327, -0.252157, 0.0630394, 0.252157, -0.0630394, -217, -338, -7.90675, 0.37371, 7.90675, -0.37371, -208, -345, -10.2754, -0.441276, 10.2754, 0.441276, -202, -345, 0, 0, 0, 0, -202, -345, 0, 0, 0, 0, -194, -337, 0, 0, 0, 0, -191, -325)
+}
+point_count = 7
+
 [sub_resource type="Curve2D" id="Curve2D_qyuen"]
 _data = {
-"points": PackedVector2Array(-0.307561, 0, 0.307561, 0, -280.311, -205.1, -22.522, 0.192548, 22.522, -0.192548, -256.952, -229.928, -19.2549, -0.320913, 19.2549, 0.320913, -196.43, -228.848, 0, 0, 0, 0, -179.441, -200.782, 0, 0, 0, 0, -208.11, -198.623)
+"points": PackedVector2Array(0, 0, 0, 0, -202.801, -349.749, 0, 0, 0, 0, -151.835, -144.649, -0.254183, 0.775251, 0.254183, -0.775251, -272.879, -142.49, 0, 0, 0, 0, -232.531, -352.988)
 }
-point_count = 5
+point_count = 4
 
 [node name="NoiseTest" type="Node2D"]
 script = ExtResource("1_ymj8o")
@@ -18,7 +24,6 @@ offset_bottom = 1077.0
 color = Color(0.450648, 0.450648, 0.450648, 1)
 
 [node name="Polygon2D" type="Polygon2D" parent="."]
-position = Vector2(-21.79, 0)
 
 [node name="Polygon2D" type="Polygon2D" parent="Polygon2D"]
 visible = false
@@ -28,15 +33,21 @@ scale = Vector2(1.09, 0.485)
 [node name="DebugCamera2d" parent="." instance=ExtResource("2_qyuen")]
 
 [node name="Line2D" type="Line2D" parent="."]
-position = Vector2(8.025, 0)
-width = 0.2
+visible = false
+width = 0.1
+default_color = Color(1, 0, 0, 1)
 
 [node name="Line2D2" type="Line2D" parent="."]
-position = Vector2(16.05, 0)
+visible = false
 width = 0.2
+default_color = Color(1, 0, 0, 1)
 
 [node name="Path2D" type="Path2D" parent="."]
-position = Vector2(28, -1)
+curve = SubResource("Curve2D_ea8g4")
+
+[node name="Path2D2" type="Path2D" parent="."]
+modulate = Color(0, 0, 0, 1)
+self_modulate = Color(1, 0, 0, 1)
 scale = Vector2(0.941811, 0.926378)
 curve = SubResource("Curve2D_qyuen")
 

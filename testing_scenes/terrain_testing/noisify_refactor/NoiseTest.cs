@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Drawing;
+using System.Dynamic;
 using System.Linq;
 using System.Numerics;
 using Vector2 = Godot.Vector2;
@@ -15,6 +16,8 @@ public partial class NoiseTest : Node2D
     Polygon2D poly;
     Vector2 noiseLinePosition = new Vector2(0, -10);
 
+    float nextXStart = 0;
+
     public override void _Ready()
     {
         line = GetNode<Line2D>("Line2D");
@@ -22,12 +25,24 @@ public partial class NoiseTest : Node2D
 
         SetDistortMap();
         // height, base, top
-        var polyList = GenerateNoiseEdgePoly(8, 10, 0);
-        // line.Points = polyList.ToArray();
-        poly.Polygon = polyList.ToArray();
 
-        Polygon2D node = poly.GetChild(0) as Polygon2D;
-        node.Polygon = poly.Polygon;
+
+        for (int i = 0; i < 50; i++)
+        {
+            var poly = GenerateNoiseEdgePoly(GD.RandRange(20, 50), GD.RandRange(1, 30), GD.RandRange(1, 30));
+            var polyInstance = new Polygon2D();
+            polyInstance.Polygon = poly.ToArray();
+            AddChild(polyInstance);
+            polyInstance.Translate(new Vector2(nextXStart, 0));
+            nextXStart += 45;
+        }
+
+        // var polyList = GenerateNoiseEdgePoly(30, 0, 30);
+        // // line.Points = polyList.ToArray();
+        // poly.Polygon = polyList.ToArray();
+
+        // Polygon2D node = poly.GetChild(0) as Polygon2D;
+        // node.Polygon = poly.Polygon;
 
 
 
@@ -43,7 +58,7 @@ public partial class NoiseTest : Node2D
         var layerFrequencyMult = 2f;
         var layerStrengthMult = 0.55f;
         DistortMap = new((int)GD.Randi(), distortFreq, distortLayers, layerFrequencyMult, layerStrengthMult);
-        DistortMap.MaxHeight = 3f;
+        DistortMap.MaxHeight = 6f;
         DistortMap.MinHeight = 0;
 
     }
@@ -78,19 +93,97 @@ public partial class NoiseTest : Node2D
         var compressedRightEdge = CompressNoiseLine(smoothRightEdge);
 
 
+       
 
 
         compressedRightEdge = compressedRightEdge.Select(p => p * new Vector2(-1, 1) + new Vector2(baseWidth, 0)).ToList();
 
-        line.Points = compressedLeftEdge.ToArray();
-        GetNode<Line2D>("Line2D2").Points = compressedRightEdge.ToArray();
+         // finding top and bottom gap
+        // note: first element is lowest X 
+        // need to flip and translate right edge first
+        // since this is done before reversing, align first with first and last with last to generate
+        var p1 = compressedLeftEdge[0];
+        var d1 = p1 - compressedLeftEdge[1]; 
+       
+        var p2 = compressedRightEdge[0];
+        var d2 = p2 - compressedRightEdge[1];
+
+        var topEdge = GetRoundedEdge(p1, d1, p2, d2);
+
+
+        p1 = compressedLeftEdge[^1];
+        d1 = p1 - compressedLeftEdge[^2];
+
+        p2 = compressedRightEdge[^1];
+        d2 = p2 - compressedRightEdge[^2];
+
+        var bottomEdge = GetRoundedEdge(p1, d1, p2, d2);
+
+
+
+
+
+
+        line.Points = topEdge.ToArray();
+        GetNode<Line2D>("Line2D2").Points = bottomEdge.ToArray();
 
         compressedRightEdge.Reverse();
+        // bottomEdge.Reverse();
+        topEdge.Reverse();
 
 
-        return compressedLeftEdge.Concat(compressedRightEdge).ToList();
+        return compressedLeftEdge.Concat(bottomEdge).Concat(compressedRightEdge).Concat(topEdge).ToList();
 
     }
+
+    public List<Vector2> GetRoundedEdge(Vector2 point1, Vector2 direction1, Vector2 point2, Vector2 direction2)
+    {
+        var points = new List<Vector2>();
+
+        // points.Add(point1);
+        // points.Add(direction1 + point1);
+        // points.Add(direction2 + point2);
+        // points.Add(point2);
+        // return points;
+
+        var gapVector_1 = point2 - point1;
+        var gapVector_2 = point1 - point2;
+
+        var points_1 = GetRoundedSide(point1, direction1, gapVector_1);
+        var points_2 = GetRoundedSide(point2, direction2, gapVector_2);
+
+
+        points_2.Reverse();
+
+        // points.Add(point1);
+        points.AddRange(points_1);
+        points.AddRange(points_2);
+        // points.Add(point2);    
+
+
+        return points;
+    }
+
+    public List<Vector2> GetRoundedSide(Vector2 point, Vector2 direction, Vector2 gapVector)
+    {
+        var points = new List<Vector2>();
+        var halfGap = gapVector.Length() / 2;
+        var leftAngle = direction.AngleTo(gapVector);
+        var rotatePercentage = 0.66f;
+        
+        var maxPointDist = float.Abs( halfGap / ( float.Cos(leftAngle) + float.Cos(leftAngle * (1 - rotatePercentage)) ));
+
+        // maxPointDist *= 0.7f;
+        maxPointDist = float.Min(maxPointDist, 3);
+
+        // first point extends in continued direction of point1, second point attaches to end but rotates to make up half the angle difference to the gap
+        var point_add = direction.Normalized() * maxPointDist + point;
+        var point_add_2 = direction.Normalized().Rotated(leftAngle * rotatePercentage) * maxPointDist + point_add;
+
+        points.AddRange([point_add, point_add_2]);
+        return points;
+    }
+
 
     public List<Vector2> CompressNoiseLine(Vector2[] noiseLine)
     {
