@@ -97,7 +97,7 @@ void vertex() {
 	//if (VERTEX.z > -0.01) angle_intensity = 0.;
 	
 	// disable is faceNormColor wasnt set 
-	if (faceNormColor != vec3(0,0,0) ) VERTEX += NORMAL * (edge_smooth * (angle_intensity));
+	//if (faceNormColor != vec3(0,0,0) ) VERTEX += NORMAL * (edge_smooth * (angle_intensity));
 	
 	original_vertex = VERTEX;
 	// EXPLOSION DISTORT

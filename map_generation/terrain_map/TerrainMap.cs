@@ -54,16 +54,6 @@ public partial class TerrainMap : GodotObject
         landDistortionMap.MinHeight = landDistortionMap.MaxHeight - CliffSideNoiseWidth;
     }
 
-
-    public List<Polygon2D> GenerateFromPointList(List<Vector2> pointList)
-    {
-        List<Rect2> towerRects = GroupPoints(pointList);
-        var towerPolygons = towerRects.Select(   GetTowerPolygon   ).ToList();
-        ArrangeTowers(towerPolygons);
-        var mergedList = ReduceMergePolygons(towerPolygons);
-        return mergedList;
-    }
-
     public List<Polygon2D> GenerateNext(float width)
     {
         CachedTowerAnchorPoints = new();
@@ -72,9 +62,20 @@ public partial class TerrainMap : GodotObject
         var points = heightMap.GetNextHeights(width);
 
         List<Rect2> towerRects = GroupPoints(points);
-        foreach (var rect in towerRects)  CachedTowerAnchorPoints.Add(rect.GetCenter() + new Vector2(0, rect.Size.Y / 2));
-        var towerPolygons = towerRects.Select( rect => new NoiseEdgePoly(rect, CliffGrade).Polygon ).ToList();
-        
+        var towerPolygons = new List<Vector2[]>();
+
+        foreach (var rect in towerRects)
+        {
+            CachedTowerAnchorPoints.Add(rect.GetCenter() + new Vector2(0, rect.Size.Y / 2));
+            var topWidth = rect.Size.X;
+            var height = rect.Size.Y;
+            var baseWidth = float.Tan(CliffGrade) * height * 2 + topWidth;
+            towerPolygons.Add(new NoiseEdgePoly(height, baseWidth, topWidth, false).Polygon);    
+
+        }
+
+        GD.Print("generated terrain of width ", width, " merged tower count: ", towerPolygons.Count);
+       
         ArrangeTowers(towerPolygons);
         var mergedList = ReduceMergePolygons(towerPolygons);
 
@@ -85,7 +86,7 @@ public partial class TerrainMap : GodotObject
     public TerrainPolygon GenerateNextTerrainPolygon(float width)
     {
         var mergedList = GenerateNext(width);
-        var poly = mergedList[0].Polygon; // fix later, assumes only 1 polygon produced always
+        var poly = mergedList[0].Polygon; // FIX EVENTUALLY, assumes only 1 polygon produced always
         var rect = GeometryUtils.RectFromPolygon(poly);
 
         var pointList = CachedTowerAnchorPoints;
@@ -148,7 +149,9 @@ public partial class TerrainMap : GodotObject
 
             var towerPoly = towers[i];
             var nextTowerPoly = towers[i + 1];
-            bool leftUnitIsShorter = towerPoly[0].Y < nextTowerPoly[0].Y;
+            var rect = GeometryUtils.RectFromPolygon(towerPoly);
+            var rectNext = GeometryUtils.RectFromPolygon(nextTowerPoly);
+            bool leftUnitIsShorter = rect.Size.Y < rectNext.Size.Y;
 
             Vector2 topEdge;
             Vector2 mergePoint;
@@ -156,15 +159,15 @@ public partial class TerrainMap : GodotObject
 
             if (leftUnitIsShorter)
             {
-                topEdge = towerPoly[^1];
-                mergePoint = HeightMatchPointToUnitEdge(nextTowerPoly, topEdge, false);
+                topEdge = HeightMatchPointToUnitEdge(towerPoly, rect, rect.End.Y, true);
+                mergePoint = HeightMatchPointToUnitEdge(nextTowerPoly, rectNext, topEdge.Y, false);
                 alignTranslation = new Vector2((topEdge - mergePoint).X, 0);
 
             }
             else
             {
-                topEdge = nextTowerPoly[0];
-                mergePoint = HeightMatchPointToUnitEdge(towerPoly, topEdge, true);
+                topEdge = HeightMatchPointToUnitEdge(nextTowerPoly, rectNext, rectNext.End.Y, false);
+                mergePoint = HeightMatchPointToUnitEdge(towerPoly, rect, topEdge.Y, true);
                 alignTranslation = new Vector2((mergePoint - topEdge).X, 0);
             }
 
@@ -174,7 +177,8 @@ public partial class TerrainMap : GodotObject
         }
     }
 
-
+ 
+ 
     private List<Rect2> GroupPoints(List<Vector2> points)
     {
         var groupRects = new List<Rect2>();
@@ -217,83 +221,20 @@ public partial class TerrainMap : GodotObject
         return groupRects;
     }
 
-    private Vector2[] GetTowerPolygon(Rect2 rect)
+   
+    private Vector2 HeightMatchPointToUnitEdge(Vector2[] towerPolygon, Rect2 towerRect, float matchHeight, bool rightEdge)
     {
-        var sideLength = rect.Size.Y / float.Cos(CliffGrade);
-        var baseWidth = Math.Sqrt(sideLength * sideLength - rect.Size.Y * rect.Size.Y) * 2 + rect.Size.X;
-
-        var leftSide = landDistortionMap.GetNextHeights(sideLength).ToArray();
-        var rightSide = landDistortionMap.GetNextHeights(sideLength).ToArray();
-
-        // normalize positions
-        leftSide = gu.TranslatePolygon(leftSide, new Vector2(-leftSide[0].X, 0));
-        rightSide = gu.TranslatePolygon(rightSide, new Vector2(-rightSide[0].X, 0));
-
-        // add ending points to transition into flat surface
-        leftSide = CurlEndsOfNoiseLine(leftSide, 1, new Vector2(1, 0), -1);
-        rightSide = CurlEndsOfNoiseLine(rightSide, 1, new Vector2(1, 0), -1);
-
-        //rotate to match side angle
-        leftSide = gu.RotatePolygon(leftSide, float.Pi / 2 - CliffGrade);
-        rightSide = gu.RotatePolygon(rightSide, float.Pi / 2 - CliffGrade);
-
-        rightSide = gu.ScalePolygon(rightSide, new Vector2(-1, 1));
-
-
-        var translateX = baseWidth;
-        var translation = new Vector2((float)translateX, 0);
-        var translatedRightSide = gu.TranslatePolygon(rightSide.ToArray(), translation);
-        var combinedUnitPoly = leftSide.Reverse().Concat(translatedRightSide).ToArray();
-
-        // convert to curve and smooth, then tesselate back into polygon
-        var smoothCurve = gu.PointsToCurve(combinedUnitPoly, 0.75f, false);
-        var tesselatePoly = smoothCurve.Tessellate(5, 4);
-
-        var polyRect = GeometryUtils.RectFromPolygon(combinedUnitPoly);
-
-        CachedTowerAnchorPoints.Add(polyRect.GetCenter() + new Vector2(0, polyRect.Size.Y / 2));
-
-        return tesselatePoly;
-        // return gu.TranslatePolygon(tesselatePoly, rect.Position);        
-
-    }
-
-    private Vector2[]   CurlEndsOfNoiseLine(Vector2[] noiseLine, float curlRadius, Vector2 noiseOrientation, int curlDirection)
-    {
-        if (curlDirection != -1 && curlDirection != 1) return noiseLine;
-        List<Vector2> newNoiseList = [.. noiseLine];
-        var edgeVector = noiseOrientation.Normalized() * curlRadius;
-        var bottomEdgeVector = edgeVector * -1;
-
-        var topEdgeCenter = edgeVector.Rotated(float.Pi / 2 * curlDirection) + noiseLine[^1];
-        var bottomEdgeCenter = edgeVector.Rotated(float.Pi / 2 * curlDirection) + noiseLine[0];
-
-        Vector2 topEdge1 = topEdgeCenter + edgeVector.Rotated(-curlDirection * float.Pi / 4);
-        Vector2 topEdge2 = topEdgeCenter + edgeVector;
-
-        Vector2 bottomEdge1 = bottomEdgeCenter + bottomEdgeVector;
-        Vector2 bottomEdge2 = bottomEdgeCenter + bottomEdgeVector.Rotated(curlDirection * float.Pi / 4);
-
-        newNoiseList.AddRange([topEdge1, topEdge2]);
-        newNoiseList.InsertRange(0, [bottomEdge1, bottomEdge2]);
-
-        return newNoiseList.ToArray();
-    }
-
-    private Vector2 HeightMatchPointToUnitEdge(Vector2[] towerPolygon, Vector2 point, bool rightEdge)
-    {
-
-        Vector2 indexRange;
-        if (rightEdge) indexRange = new Vector2(towerPolygon.Length / 2 - 1, towerPolygon.Length);
-        else indexRange = new Vector2(0, towerPolygon.Length / 2 + 1);
 
         var matchingPoint = Vector2.Zero;
         var lowestDelta = float.MaxValue;
 
-        for (int i = (int)indexRange.X; i < indexRange.Y; i++)
+        for (int i = 0; i < towerPolygon.Length; i++)
         {
             var unitP = towerPolygon[i];
-            var delta = Math.Abs(point.Y - unitP.Y);
+            bool isRightEdge = unitP.X > towerRect.Size.X / 2 + towerRect.Position.X;
+            if (isRightEdge != rightEdge) continue; 
+
+            var delta = Math.Abs(matchHeight - unitP.Y);
             if (delta < lowestDelta)
             {
                 matchingPoint = towerPolygon[i];

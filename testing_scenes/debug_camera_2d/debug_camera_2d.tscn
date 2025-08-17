@@ -3,6 +3,9 @@
 [ext_resource type="Script" uid="uid://dnfste23nvm5j" path="res://testing_scenes/debug_camera_2d/DebugCamera2d.cs" id="1_nptnc"]
 
 [sub_resource type="FontFile" id="FontFile_nptnc"]
+subpixel_positioning = 0
+msdf_pixel_range = 14
+msdf_size = 128
 cache/0/16/0/ascent = 0.0
 cache/0/16/0/descent = 0.0
 cache/0/16/0/underline_position = 0.0
@@ -177,6 +180,7 @@ size_flags_vertical = 3
 metadata/_edit_use_anchors_ = true
 
 [node name="PositionLabel" type="Label" parent="CanvasLayer/Control"]
+layout_mode = 0
 offset_right = 412.0
 offset_bottom = 55.0
 theme_override_font_sizes/font_size = 30

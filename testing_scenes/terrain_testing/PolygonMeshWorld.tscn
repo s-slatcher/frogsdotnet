@@ -22,19 +22,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 85.086, 93.106, 215.78)
 visible = false
 
 [node name="enviroment" parent="." instance=ExtResource("2_a7mq0")]
-day_time = 14.4624
-latitude = -40.45
+day_time = 14.0834
+latitude = -22.45
 time_scale = 0.005
 
 [node name="Sun" parent="enviroment" index="1"]
-transform = Transform3D(0.902893, -0.389869, 0.181071, -0.360496, -0.457285, 0.812977, -0.234154, -0.799307, -0.553425, 0, 0, 0)
+transform = Transform3D(0.978373, -0.198113, -0.0594844, -0.0438009, -0.479471, 0.876463, -0.20216, -0.854902, -0.477778, 0, 0, 0)
 light_energy = 1.0
 shadow_bias = 0.02
 shadow_reverse_cull_face = true
 directional_shadow_max_distance = 193.2
 
 [node name="Moon" parent="enviroment" index="2"]
-transform = Transform3D(0.782342, 0.619167, 0.067603, -0.537755, 0.726234, -0.428255, -0.314257, 0.298688, 0.901126, 0, 0, 0)
+transform = Transform3D(0.90579, 0.373688, 0.199745, -0.307989, 0.904395, -0.295315, -0.291004, 0.205974, 0.934286, 0, 0, 0)
 
 [node name="Camera3D" parent="enviroment" index="3"]
 transform = Transform3D(1, 0, 0, 0, 0.991445, 0.130526, 0, -0.130526, 0.991444, 51.58, 37.55, 100.68)
@@ -42,7 +42,7 @@ visible = false
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="enviroment"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 89.0868, 107.671)
-visible = false
+light_energy = 0.36
 
 [node name="WaterPlane" parent="." node_paths=PackedStringArray("pos_source") instance=ExtResource("4_4v8u0")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.51, -48.987)

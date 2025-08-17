@@ -80,7 +80,6 @@ public partial class UserDrawnHeightMap : Node3D
         IsDrawing = false;
         previewLine.Points = [];
         var cleanedPoints = CleanDrawPoints();
-        TerrainFromPointList(cleanedPoints);
         drawPoints = new();
 
     }
@@ -103,17 +102,7 @@ public partial class UserDrawnHeightMap : Node3D
 
     }
 
-    private void TerrainFromPointList(List<Vector2> points)
-    {
-        var terrain = new TerrainMap();
-        var polys = terrain.GenerateFromPointList(points);
-        var polys_regular = terrain.GenerateNext(100);
-        foreach (var poly in polys)
-        {
-            poly.Scale = new Vector2(-1, 1);
-            AddChild(poly);
-        }
-    }
+   
 
     // void Remap(List<Vector2> points, float sampleMin, float sampleMax)
     // {

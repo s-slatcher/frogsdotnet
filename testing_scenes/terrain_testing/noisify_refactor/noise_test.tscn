@@ -11,9 +11,9 @@ point_count = 7
 
 [sub_resource type="Curve2D" id="Curve2D_qyuen"]
 _data = {
-"points": PackedVector2Array(0, 0, 0, 0, -202.801, -349.749, 0, 0, 0, 0, -151.835, -144.649, -0.254183, 0.775251, 0.254183, -0.775251, -272.879, -142.49, 0, 0, 0, 0, -232.531, -352.988)
+"points": PackedVector2Array(0, 0, 0, 0, -869.601, -295.776, -4.2412, -3.19498, 4.2412, 3.19498, -834.562, -336.795)
 }
-point_count = 4
+point_count = 2
 
 [node name="NoiseTest" type="Node2D"]
 script = ExtResource("1_ymj8o")

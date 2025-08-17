@@ -16,6 +16,8 @@ public partial class PolygonMeshWorld : Node3D
 
     Vector2 radiusRange = new Vector2(2, 8);
 
+    Vector2 lastClick = Vector2.Zero;
+
     Dictionary<Rect2, TerrainMesh> TerrainRegionMap = new();
 
     public override void _Ready()
@@ -53,8 +55,13 @@ public partial class PolygonMeshWorld : Node3D
 
     private void OnPlaneClicked(Vector3 vector)
     {
+        
         var randRadius = (float)GD.RandRange(radiusRange.X, radiusRange.Y);
         var center2d = new Vector2(vector.X, vector.Y);
+
+        GD.Print("dist from last click: ", center2d.DistanceTo(lastClick));
+        lastClick = center2d;
+
         var explodeRect = new Rect2(Vector2.Zero, new Godot.Vector2(randRadius * 2, randRadius * 2));
         explodeRect.Position = center2d - new Vector2(randRadius, randRadius);
 
@@ -69,6 +76,8 @@ public partial class PolygonMeshWorld : Node3D
             }
 
         }
+
+        
 
         var explosion = (Node3D)explodeScene.Instantiate();
         explosion.Position = vector + new Vector3(0, 0, 1);
@@ -89,14 +98,13 @@ public partial class PolygonMeshWorld : Node3D
         //     randPos, (float)GD.RandRange(1 * radiusAdd, 3 * radiusAdd)
         // );
     }
-
+    
 
     public void PopulateMap()
     {
         int numOfLandmasses = 3;
-        float islandWidth = 45;
 
-        var terrain = new TerrainMap(15);
+        var terrain = new TerrainMap((int)GD.Randi());
         terrain.MinHeight = 10;
         terrain.MaxHeight = 100;
 
@@ -164,7 +172,8 @@ public partial class PolygonMeshWorld : Node3D
 
             var islandPosition = new Vector2(xCoord + randOffset, heightValue + randHeightOffset);
 
-            var islandPolygon = new NoiseEdgePoly(0.5f, 20, 10).Polygon;
+            var randHeight = GD.RandRange(10, 20);
+            var islandPolygon = new NoiseEdgePoly(randHeight/2, 8, randHeight * 2f, true).Polygon;
             var terrainPoly = new TerrainPolygon()
             {
                 Polygon = islandPolygon,

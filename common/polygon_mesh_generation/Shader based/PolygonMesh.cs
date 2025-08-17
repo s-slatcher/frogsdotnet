@@ -17,7 +17,7 @@ public partial class PolygonMesh : MeshInstance3D
     Vector2[] polygon;
 
     bool hasPrintedEdgeList = false;
-    public bool PrintDebug = false;
+    public bool PrintDebug = true;
 
     public float DefaultDepth = 2;
     public float MinDepth = 2;
@@ -602,7 +602,7 @@ public partial class PolygonMesh : MeshInstance3D
     public int ExplosionInsertPosition(Vector3 center, float radius)
     {
 
-        // array length is MAX_EXPLOSIONS constant, but actual length is explosionCount
+        
         var rightEdge = center.X + radius;
 
         var length = ExplodeList.Count;

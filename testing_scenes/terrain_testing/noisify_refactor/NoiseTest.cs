@@ -92,10 +92,6 @@ public partial class NoiseTest : Node2D
         var compressedLeftEdge = CompressNoiseLine(smoothLeftEdge);
         var compressedRightEdge = CompressNoiseLine(smoothRightEdge);
 
-
-       
-
-
         compressedRightEdge = compressedRightEdge.Select(p => p * new Vector2(-1, 1) + new Vector2(baseWidth, 0)).ToList();
 
          // finding top and bottom gap
@@ -120,10 +116,6 @@ public partial class NoiseTest : Node2D
         var bottomEdge = GetRoundedEdge(p1, d1, p2, d2);
 
 
-
-
-
-
         line.Points = topEdge.ToArray();
         GetNode<Line2D>("Line2D2").Points = bottomEdge.ToArray();
 
@@ -140,11 +132,6 @@ public partial class NoiseTest : Node2D
     {
         var points = new List<Vector2>();
 
-        // points.Add(point1);
-        // points.Add(direction1 + point1);
-        // points.Add(direction2 + point2);
-        // points.Add(point2);
-        // return points;
 
         var gapVector_1 = point2 - point1;
         var gapVector_2 = point1 - point2;
@@ -155,10 +142,11 @@ public partial class NoiseTest : Node2D
 
         points_2.Reverse();
 
-        // points.Add(point1);
+        points.Add(point1);
         points.AddRange(points_1);
         points.AddRange(points_2);
-        // points.Add(point2);    
+        points.Add(point2);
+
 
 
         return points;
@@ -169,19 +157,29 @@ public partial class NoiseTest : Node2D
         var points = new List<Vector2>();
         var halfGap = gapVector.Length() / 2;
         var leftAngle = direction.AngleTo(gapVector);
-        var rotatePercentage = 0.66f;
+        var rotatePercentage = 0.55f;
         
         var maxPointDist = float.Abs( halfGap / ( float.Cos(leftAngle) + float.Cos(leftAngle * (1 - rotatePercentage)) ));
 
-        // maxPointDist *= 0.7f;
-        maxPointDist = float.Min(maxPointDist, 3);
+        maxPointDist *= 0.5f;
+        maxPointDist = float.Min(maxPointDist, 2);
 
         // first point extends in continued direction of point1, second point attaches to end but rotates to make up half the angle difference to the gap
         var point_add = direction.Normalized() * maxPointDist + point;
         var point_add_2 = direction.Normalized().Rotated(leftAngle * rotatePercentage) * maxPointDist + point_add;
 
-        points.AddRange([point_add, point_add_2]);
-        return points;
+        // get handle-in for second point on curve
+        var handleDir = (gapVector * -1).Normalized();
+        var handleLength = maxPointDist * 0.95f;
+        var handle = handleDir * handleLength;
+
+        var curve = new Curve2D();
+        curve.AddPoint(point_add);
+        curve.AddPoint(point_add_2, handle);
+        return curve.Tessellate().ToList();
+
+        // points.AddRange([point_add, point_add_2]);
+        // return points;
     }
 
 
@@ -276,9 +274,6 @@ public partial class NoiseTest : Node2D
         AddChild(line2d);
     }
 
-    public void GenerateConnectingTopper(List<Vector2> lineLeft, List<Vector2> lineRight)
-    {
-
-    }
+ 
 
 }
