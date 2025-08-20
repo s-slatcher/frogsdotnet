@@ -59,8 +59,6 @@ public partial class PolygonMeshWorld : Node3D
         var randRadius = (float)GD.RandRange(radiusRange.X, radiusRange.Y);
         var center2d = new Vector2(vector.X, vector.Y);
 
-        GD.Print("dist from last click: ", center2d.DistanceTo(lastClick));
-        lastClick = center2d;
 
         var explodeRect = new Rect2(Vector2.Zero, new Godot.Vector2(randRadius * 2, randRadius * 2));
         explodeRect.Position = center2d - new Vector2(randRadius, randRadius);
@@ -106,13 +104,13 @@ public partial class PolygonMeshWorld : Node3D
 
         var terrain = new TerrainMap((int)GD.Randi());
         terrain.MinHeight = 10;
-        terrain.MaxHeight = 100;
+        terrain.MaxHeight = 80;
 
         var numOfFloatingIslands = 3;
 
 
-        var widthMean = 80f;
-        var gapMean = 30f;
+        var widthMean = 50f;
+        var gapMean = 60f;
 
         var startX = 0f;
 

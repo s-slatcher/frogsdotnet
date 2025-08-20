@@ -24,7 +24,7 @@ public partial class PolygonMesh : MeshInstance3D
     public float MaxDepth = 10;
     public float QuadDensity = 0.25f;
 
-    
+    public Rect2 BoundingRect;
     // assumes curves are normalized between 0 - 1 on both domain and range
     // usings bounding rect and Max/Min depth to produces a depth value at each xy coord
     public Curve HeightDepthCurve = null;
@@ -51,7 +51,7 @@ public partial class PolygonMesh : MeshInstance3D
     int explosionCount = 0;
     const int MAX_EXPLOSIONS = 500;  //keep aligned with shader constants
 
-    Rect2 boundingRect;
+    
 
 
     //Debug Data
@@ -102,7 +102,7 @@ public partial class PolygonMesh : MeshInstance3D
         foreach (var idx in indices)
         {
             var vert = VertexList[idx];
-            var UV = new Vector2(vert.Position.X, vert.Position.Y - 1f) / boundingRect.Size;  // TODO: fix the need for adjusting y UV's for grass shader
+            var UV = new Vector2(vert.Position.X, vert.Position.Y) / BoundingRect.Size;  // TODO: fix the need for adjusting y UV's for grass shader
             st.SetNormal(vert.Normal);
             st.SetCustom(0, vert.Custom0);
             st.SetCustom(1, vert.Custom1);
@@ -120,7 +120,7 @@ public partial class PolygonMesh : MeshInstance3D
 
         if (PrintDebug)
         {
-            GD.Print("Mesh bounding rect size: ", boundingRect.Size);
+            GD.Print("Mesh bounding rect size: ", BoundingRect.Size);
             GD.Print("Total vertices: ", VertexList.Count);
             GD.Print("total time: ", Time.GetTicksMsec() - time);
             GD.Print("front face subdivision: ", frontSubdivideTime);
@@ -266,7 +266,7 @@ public partial class PolygonMesh : MeshInstance3D
 
     private float MapHeightToDepth(float yPos, float localMax)
     {
-        float yRatio = (yPos - boundingRect.Position.Y) / boundingRect.Size.Y;
+        float yRatio = (yPos - BoundingRect.Position.Y) / BoundingRect.Size.Y;
 
         var curveValue = HeightDepthCurve.SampleBaked(yRatio);
 
@@ -275,7 +275,7 @@ public partial class PolygonMesh : MeshInstance3D
 
     private float MapWidthToMaxDepth(float xPos)
     {
-        float xRatio = (xPos - boundingRect.Position.X) / boundingRect.Size.X;
+        float xRatio = (xPos - BoundingRect.Position.X) / BoundingRect.Size.X;
 
         var curveValue = DomainDepthCurve.SampleBaked(xRatio);
 
@@ -557,8 +557,10 @@ public partial class PolygonMesh : MeshInstance3D
     {
         if (!Geometry2D.IsPolygonClockwise(polygon)) Array.Reverse(polygon);
         var rect = GeometryUtils.RectFromPolygon(polygon);
-        boundingRect = rect;
+        BoundingRect = rect.Grow(1);
+
         var translatedPoly = polygon.Select(p => p - rect.Position).ToArray(); // normalize polygon to start at origin
+
         return translatedPoly;
 
     }

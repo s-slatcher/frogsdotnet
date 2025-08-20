@@ -17,8 +17,8 @@ public partial class TerrainMap : GodotObject
     public float CliffGrade =  float.Pi / 15;
     public float CliffSideNoiseWidth = 8;
 
-    private float groupingTolerance = 14f; // maximum height difference allowed in one group of points
-    private float MinSurfaceWidth = 8; // minimum width difference of the points contained in a group, priority over groupingTolerance
+    private float groupingTolerance = 8f; // maximum height difference allowed in one group of points
+    private float MinSurfaceWidth = 6; // minimum width difference of the points contained in a group, priority over groupingTolerance
 
 
     private float landDistortShiftFactor = 0.33f;

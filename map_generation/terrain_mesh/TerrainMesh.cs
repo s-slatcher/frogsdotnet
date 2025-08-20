@@ -44,7 +44,7 @@ public partial class TerrainMesh : Node3D
     
         SetDomainDepthCurve(terrainPoly);
         SetHeightDepthCurve(terrainPoly);
-        terrainTexture.SetPolygon(terrainPoly.Polygon, 5);
+        terrainTexture.SetPolygon(terrainPoly.Polygon,8);
         var grass_texture = terrainTexture.GetTexture();
         var shader = (ShaderMaterial)polyMesh.MaterialOverride;
         shader.SetShaderParameter("grass_texture", grass_texture);
