@@ -2,6 +2,7 @@ using Godot;
 using Godot.NativeInterop;
 using System;
 using System.Collections.Generic;
+using System.Net.Http.Headers;
 using System.Numerics;
 using Vector2 = Godot.Vector2; 
 using Vector3 = Godot.Vector3;
@@ -19,6 +20,7 @@ public partial class PolygonMeshWorld : Node3D
     Vector2 lastClick = Vector2.Zero;
 
     Dictionary<Rect2, TerrainMesh> TerrainRegionMap = new();
+    
 
     public override void _Ready()
     {
@@ -30,28 +32,30 @@ public partial class PolygonMeshWorld : Node3D
 
         PopulateMap();
 
-        // var time = Time.GetTicksMsec();
+        // GenerateDebugSquare();
+    }
 
-        // var terrain = new TerrainMap(15);
-        // terrain.MinHeight = 10;
-        // terrain.MaxHeight = 100;
-        // var terrainPolygon = terrain.GenerateNextTerrainPolygon(100);
-        // // var poly = terrainPolygon.Polygon;
-        // // var curve = terrainPolygon.SimplifiedHeightCurve;
+    private void GenerateDebugSquare()
+    {
+        var terrainPolygon = new TerrainPolygon();
+        terrainPolygon.Polygon = new Vector2[]{
+            Vector2.Zero,
+            new Vector2(0,5),
+            new Vector2(5,5),
+            new Vector2(5,0)
+        };
+        terrainPolygon.BoundingRect = GeometryUtils.RectFromPolygon(terrainPolygon.Polygon);
+        terrainPolygon.SimplifiedHeightCurve = null;
 
-        // // var polygon = new GeometryUtils().PolygonFromRect(new Rect2(Vector2.Zero, new Vector2(20, 20)));
-
-        // terrainMesh = GetNode<TerrainMesh>("TerrainMesh");
-        // terrainMesh.SideLength = 5;
-        // // terrainMesh.DepthDomainCurve = terrainPolygon.SimplifiedHeightCurve;
-        // terrainMesh.GenerateMesh(terrainPolygon);
-
-        // GD.Print("TERRAIN GENERATED: ", Time.GetTicksMsec() - time);
-
-
-        // AddChild(meshInst);
+        var terrainMesh = (TerrainMesh)terrainMeshScene.Instantiate();
+        AddChild(terrainMesh);
+        terrainMesh.QuadDensity = 0.5f;
+        terrainMesh.TerrainPolygon = terrainPolygon;
+        terrainMesh.Position = new Vector3(50, 50, 20);
+        terrainMesh.Scale = new Vector3(10, 10, 10);
 
     }
+
 
     private void OnPlaneClicked(Vector3 vector)
     {

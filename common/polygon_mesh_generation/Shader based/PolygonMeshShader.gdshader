@@ -177,7 +177,7 @@ void fragment() {
 	
 	vec3 dirt_noise_tex = texture(dirt_normal, UV).rgb;
 	
-	float dirt_noise_thresh = 0.1;
+	float dirt_noise_thresh = 0.;
 
 	float dirt_noise_mult = step(dirt_noise_thresh, dirt_noise_tex.r);
 	ALBEDO = mix(dirt_color.rgb, dirt_color_alt.rgb, 1.0 - dirt_noise_mult);

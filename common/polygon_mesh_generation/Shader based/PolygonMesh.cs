@@ -12,7 +12,8 @@ using System.Security.Cryptography;
 public partial class PolygonMesh : MeshInstance3D
 {
 
-    
+    static int idTotal = 0;
+    public int id;
 
     Vector2[] polygon;
 
@@ -71,6 +72,10 @@ public partial class PolygonMesh : MeshInstance3D
     }
 
 
+    public override void _Ready()
+    {
+        id = idTotal++;
+    }
 
 
     public void GenerateMesh(Vector2[] polygon)
@@ -91,7 +96,6 @@ public partial class PolygonMesh : MeshInstance3D
         List<int> frontFaceIndices = GenerateFrontFace(translatedPoly);
         // List<int> backFaceIndices = GenerateBackFace(translatedPoly);
         var indices = sideFaceIndices.Concat(frontFaceIndices);//.Concat(backFaceIndices);
-
 
         var st = new SurfaceTool();
         st.Begin(Mesh.PrimitiveType.Triangles);
@@ -120,6 +124,7 @@ public partial class PolygonMesh : MeshInstance3D
 
         if (PrintDebug)
         {
+            GD.Print("mesh id:", id);
             GD.Print("Mesh bounding rect size: ", BoundingRect.Size);
             GD.Print("Total vertices: ", VertexList.Count);
             GD.Print("total time: ", Time.GetTicksMsec() - time);
@@ -294,7 +299,7 @@ public partial class PolygonMesh : MeshInstance3D
         var vec1 = p2 - p1;
         var vec2 = p3 - p1;
         var normal = vec1.Cross(vec2).Normalized();
-        // 
+         
         if (normal.Z < 0) normal.Z *= -1;
 
         return normal;
@@ -320,8 +325,7 @@ public partial class PolygonMesh : MeshInstance3D
         {
             var distFront = (i + 1) * quadSize;
             var distBack = (vertNum * quadSize) - distFront;  // distance from opposite end of face
-            var pos = frontPos + new Vector3(0, 0, -distBack);
-
+            var pos = frontPos + new Vector3(0, 0, -distFront);
             Vector3 vertNormal;
 
             // special case where smooth distance set too high, directly lerp front to back normals
@@ -338,7 +342,6 @@ public partial class PolygonMesh : MeshInstance3D
 
         }
 
-        
 
         return edgeList;
 
@@ -349,7 +352,7 @@ public partial class PolygonMesh : MeshInstance3D
         var indicesList = new List<int>();
         var poly = interpolatedPolygon;
 
-        // list of 2-length sets of edge vertices defining an edge face
+        // list of 2-length sets of edge vertices defining an edge line
         var lastList = new List<IndexedVertex>() { null, null };
         EdgeList = new List<List<IndexedVertex>>() { lastList };
 
@@ -378,24 +381,19 @@ public partial class PolygonMesh : MeshInstance3D
             float edgeVertCount = (int)(zOffset * 2 / QuadDensity);
 
 
-
-
             // shared vertex for both sides with averaged normal vector
-           
+            var sideFaceNormAvg = (faceNorm1 + faceNorm2) / 2;
+            var frontFaceNormal = FaceNormalAtPoint(poly[i]);
+            var edgePointNormal = (sideFaceNormAvg + frontFaceNormal) / 2;
+            // var oppositeEdgeNorm = edgePointNormal * new Vector3(1, 1, -1);
 
 
-                var sideFaceNormAvg = (faceNorm1 + faceNorm2) / 2;
-                var frontFaceNormal = FaceNormalAtPoint(poly[i]);
-                var edgePointNormal = (sideFaceNormAvg + frontFaceNormal) / 2;
-                // var oppositeEdgeNorm = edgePointNormal * new Vector3(1, 1, -1);
-
-
-                leftVert = rightVert = IndexVertex(p1, edgePointNormal, faceNorm1, DefaultDepth); // face norm chosen is arbitrary 
-                var edgeFaceVerts = GenerateSideFaceVertices(leftVert, sideFaceNormAvg, faceNorm1);
+            leftVert = rightVert = IndexVertex(p1, edgePointNormal, faceNorm1, DefaultDepth); // face norm chosen is arbitrary 
+            var edgeFaceVerts = GenerateSideFaceVertices(leftVert, sideFaceNormAvg, faceNorm1);
 
 
 
-                EdgeFaceVertices[leftVert] = edgeFaceVerts;
+            EdgeFaceVertices[leftVert] = edgeFaceVerts;
             
             // separate left and right vertices-- assigned respective face normal
             // else
@@ -426,7 +424,9 @@ public partial class PolygonMesh : MeshInstance3D
 
         }
 
-            
+       
+
+        
     
         indicesList = EdgeList
             .SelectMany(edgeList => TriangulateEdgeFace(edgeList[0], edgeList[1]))
@@ -442,9 +442,8 @@ public partial class PolygonMesh : MeshInstance3D
         var indices = new List<int>();
 
 
-        var leftVerts = EdgeFaceVertices[edge1];
-
         var rightVerts = EdgeFaceVertices[edge2];
+        var leftVerts = EdgeFaceVertices[edge1];
 
 
         // form two triangles for each set of two points in edges,
@@ -481,7 +480,7 @@ public partial class PolygonMesh : MeshInstance3D
 
         }
 
-        indices.Reverse();
+        // indices.Reverse();
         return indices;
 
 

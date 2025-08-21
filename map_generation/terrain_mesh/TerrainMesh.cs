@@ -80,7 +80,7 @@ public partial class TerrainMesh : Node3D
 
     public void SetDomainDepthCurve(TerrainPolygon terrainPoly)
     {
-        if (terrainPoly.SimplifiedHeightCurve.PointCount == 0)
+        if (terrainPoly.SimplifiedHeightCurve == null || terrainPoly.SimplifiedHeightCurve.PointCount == 0)
         {
             polyMesh.DomainDepthCurve = null;
             return;
