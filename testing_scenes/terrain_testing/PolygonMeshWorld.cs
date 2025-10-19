@@ -9,6 +9,9 @@ using Vector3 = Godot.Vector3;
 
 public partial class PolygonMeshWorld : Node3D
 {
+    [Export] int Seed = 1;
+    [Export] float LandWidth = 20;
+
     [Export] PackedScene explodeScene;
     [Export] PackedScene terrainMeshScene;
     TerrainMesh terrainMesh;
@@ -20,49 +23,51 @@ public partial class PolygonMeshWorld : Node3D
     Vector2 lastClick = Vector2.Zero;
 
     Dictionary<Rect2, TerrainMesh> TerrainRegionMap = new();
-    
+
+
 
     public override void _Ready()
     {
 
-        rng.Seed = 1;
+        rng.Seed = (uint)Seed;
 
         PlaneMouseCapture planeCap = GetNode<PlaneMouseCapture>("PlaneMouseCapture");
         planeCap.PlaneClicked += OnPlaneClicked;
 
-        PopulateMap();
-
-        // GenerateDebugSquare();
+        GenerateTerrain();
     }
 
-    private void GenerateDebugSquare()
+    private void GenerateTerrain()
     {
-        var terrainPolygon = new TerrainPolygon();
-        terrainPolygon.Polygon = new Vector2[]{
-            Vector2.Zero,
-            new Vector2(0,5),
-            new Vector2(5,5),
-            new Vector2(5,0)
-        };
-        terrainPolygon.BoundingRect = GeometryUtils.RectFromPolygon(terrainPolygon.Polygon);
-        terrainPolygon.SimplifiedHeightCurve = null;
+        var landmassGen = new LandmassTerrainPolyGenerator((int)rng.Seed);
+        landmassGen.Height = 120;
+
+
+        // simplify poly (takes 250 points down to <100) without much visual change
+        var poly = landmassGen.GenerateTerrainPoly(0, LandWidth);
+        var gUtils = new GeometryUtils();
+        var simplePoly = gUtils.SimplifyPolygon(poly, 0.05f);
+        GD.Print("landmass poly point count: ", poly.Length);
+        GD.Print("count after simplifying: ", simplePoly.Length);
+        poly = simplePoly;
 
         var terrainMesh = (TerrainMesh)terrainMeshScene.Instantiate();
+        terrainMesh.QuadDensity = 0.50f; //USUALLY 0.5f
+        terrainMesh.MinDepth = 3f;
         AddChild(terrainMesh);
-        terrainMesh.QuadDensity = 0.5f;
-        terrainMesh.TerrainPolygon = terrainPolygon;
-        terrainMesh.Position = new Vector3(50, 50, 20);
-        terrainMesh.Scale = new Vector3(10, 10, 10);
+        terrainMesh.TerrainPolygon = poly;
 
+        TerrainRegionMap[GeometryUtils.RectFromPolygon(poly)] = terrainMesh;
+        
     }
-
+ 
 
     private void OnPlaneClicked(Vector3 vector)
     {
-        
+
         var randRadius = (float)GD.RandRange(radiusRange.X, radiusRange.Y);
         var center2d = new Vector2(vector.X, vector.Y);
-
+        GD.Print("clicked at: ", center2d);
 
         var explodeRect = new Rect2(Vector2.Zero, new Godot.Vector2(randRadius * 2, randRadius * 2));
         explodeRect.Position = center2d - new Vector2(randRadius, randRadius);
@@ -79,7 +84,7 @@ public partial class PolygonMeshWorld : Node3D
 
         }
 
-        
+
 
         var explosion = (Node3D)explodeScene.Instantiate();
         explosion.Position = vector + new Vector3(0, 0, 1);
@@ -101,103 +106,6 @@ public partial class PolygonMeshWorld : Node3D
         // );
     }
     
-
-    public void PopulateMap()
-    {
-        int numOfLandmasses = 3;
-
-        var terrain = new TerrainMap((int)GD.Randi());
-        terrain.MinHeight = 10;
-        terrain.MaxHeight = 80;
-
-        var numOfFloatingIslands = 3;
-
-
-        var widthMean = 50f;
-        var gapMean = 60f;
-
-        var startX = 0f;
-
-        var curvePoints = new List<Vector2>();
-
-        Curve combinedCurve = new();
-
-        for (int i = 0; i < numOfLandmasses; i++)
-        {
-            var terrainPoly = terrain.GenerateNextTerrainPolygon((float)rng.Randfn(widthMean, 5f));
-            var terrainMesh = (TerrainMesh)terrainMeshScene.Instantiate();
-            AddChild(terrainMesh);
-            terrainMesh.QuadDensity = 0.5f;
-            terrainMesh.Translate(new Vector3(startX, 0, 0));
-
-            var curve = terrainPoly.SimplifiedHeightCurve;
-
-            for (int j = 0; j < curve.PointCount; j++)
-            {
-                var p = curve.GetPointPosition(j);
-                var pTranlate = p + new Vector2(startX, 0);
-                curvePoints.Add(pTranlate);
-            }
-
-            startX += terrainPoly.BoundingRect.Size.X;
-            startX += (float)rng.Randfn(gapMean, 5f);
-
-            terrainMesh.TerrainPolygon = terrainPoly;
-
-            TerrainRegionMap[terrainPoly.BoundingRect] = terrainMesh;
-
-        }
-
-        foreach (var p in curvePoints)
-        {
-            // var meshInst = new MeshInstance3D();
-            // var sphereMesh = new SphereMesh();
-            // meshInst.Mesh = sphereMesh;
-            // sphereMesh.Radius = 5;
-            // sphereMesh.Height = 10;
-            // meshInst.Position = new Vector3(p.X, p.Y, 0);
-            // AddChild(meshInst);
-
-            combinedCurve.AddPoint(p);
-        }
-
-        var totalWidth = startX;
-        var floatingIslandGap = totalWidth / (numOfFloatingIslands + 1);
-
-        for (int i = 0; i < numOfFloatingIslands; i++)
-        {
-            var randOffset = GD.RandRange(0, 10);
-            var xCoord = (i + 1) * floatingIslandGap;
-            var heightValue = combinedCurve.SampleBaked(xCoord + randOffset);
-            heightValue = float.Max(heightValue, 30);
-            var randHeightOffset = GD.RandRange(50, 100);
-
-            var islandPosition = new Vector2(xCoord + randOffset, heightValue + randHeightOffset);
-
-            var randHeight = GD.RandRange(10, 20);
-            var islandPolygon = new NoiseEdgePoly(randHeight/2, 8, randHeight * 2f, true).Polygon;
-            var terrainPoly = new TerrainPolygon()
-            {
-                Polygon = islandPolygon,
-                BoundingRect = GeometryUtils.RectFromPolygon(islandPolygon),
-                SimplifiedHeightCurve = new()
-            };
-
-            var terrainMesh = (TerrainMesh)terrainMeshScene.Instantiate();
-            AddChild(terrainMesh);
-            terrainMesh.QuadDensity = 0.5f;
-            terrainMesh.Translate(new Vector3(islandPosition.X, islandPosition.Y, 0));
-            terrainMesh.TerrainPolygon = terrainPoly;
-
-            
-
-
-        }
-
-
-
-    }
-
    
 
 

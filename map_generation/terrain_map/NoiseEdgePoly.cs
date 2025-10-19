@@ -7,8 +7,10 @@ using Vector2 = Godot.Vector2;
 public partial class NoiseEdgePoly : GodotObject
 {
 
-  
-    
+
+    float MaxDistortWidth = 6f;
+    float MaxDistortLayerFrequency = 0.15f;
+    float MinDistortLayerFrequency = 0.04f; 
 
     float BaseWidth;
     float TopWidth;
@@ -28,9 +30,10 @@ public partial class NoiseEdgePoly : GodotObject
         TopWidth = topWidth;
         Height = height;
 
-        if (isIsland) SetDistortMap(3, 0.08f); 
-        else SetDistortMap(6, 0.04f);
+        if (isIsland) SetDistortMap(); 
+        else SetDistortMap();
 
+    
 
         var towerRect = new Rect2(Vector2.Zero, new Vector2(baseWidth, Height));
 
@@ -39,14 +42,20 @@ public partial class NoiseEdgePoly : GodotObject
     }
 
     
-    public void SetDistortMap(float distortWidth, float baseFreq = 0.04f)
+    public void SetDistortMap()
     {
+        // automatically adjusting noise settings based on terrain dimensions
+        var minWidth = float.Min(BaseWidth, TopWidth);
+        var distortWidth = 8f; 
 
-        var distortFreq = baseFreq;
+
+        var distortFreq = 0.06f;
         var distortLayers = 3;
         var layerFrequencyMult = 2f;
         var layerStrengthMult = 0.45f;
-        DistortMap = new((int)GD.Randi(), distortFreq, distortLayers, layerFrequencyMult, layerStrengthMult);
+        DistortMap = new(1, distortFreq, distortLayers, layerFrequencyMult, layerStrengthMult);
+
+
         DistortMap.MaxHeight = distortWidth;
         DistortMap.MinHeight = 0;
 

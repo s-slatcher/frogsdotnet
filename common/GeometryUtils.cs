@@ -214,15 +214,81 @@ public partial class GeometryUtils : GodotObject
         return lineSegments; 
     }
 
+    public Vector2[] SimplifyPolygon(Vector2[] polygon, float epsilon)
+    {
+        var deletablePoints = new HashSet<int>();
+
+        var segments = new List<(int, int)>
+        {
+            (0, polygon.Length - 1)
+        };
+
+        float epSquare = epsilon * epsilon;
+
+        while (segments.Count > 0)
+        {
+            var segment = segments[^1];
+            segments.RemoveAt(segments.Count - 1);
+
+            int start = segment.Item1;
+            int end = segment.Item2;
+
+            if (end == start + 1) continue;
+
+            var p1 = polygon[start];
+            var p2 = polygon[end];
+
+
+
+            float maxDistSquare = 0;
+            int maxDistIndex = -1;
+
+            for (int i = start + 1; i < end; i++)
+            {
+                var p = polygon[i];
+                var closePoint = Geometry2D.GetClosestPointToSegment(p, p1, p2);
+                var distSquare = closePoint.DistanceSquaredTo(p);
+                if (maxDistSquare < distSquare)
+                {
+                    maxDistSquare = distSquare;
+                    maxDistIndex = i;
+                }
+            }
+
+            if (maxDistSquare > epSquare)
+            {
+                segments.Add((start, maxDistIndex));
+                segments.Add((maxDistIndex, end));
+            }
+            else
+            {
+                for (int i = start + 1; i < end; i++)
+                {
+                    deletablePoints.Add(i);
+                }
+            }
+
+        }
+
+        var simplePoly = new List<Vector2>();
+        for (int i = 0; i < polygon.Length; i++)
+        {
+            if (deletablePoints.Contains(i)) continue;
+            simplePoly.Add(polygon[i]);
+        }
+        return simplePoly.ToArray();
+
+    }
+
 
     //-----------------------------------------------------------------
     // Rect2 and LineSegment overlapping checks and distance checks 
     //-----------------------------------------------------------------
-   
-    public List<LineSegment> FilterLineSegmentsByRectIntersection( List<LineSegment> lineSegments, Rect2 rect )
+
+    public List<LineSegment> FilterLineSegmentsByRectIntersection(List<LineSegment> lineSegments, Rect2 rect)
     {
         List<LineSegment> intersectingLineSegments = new();
-        List<LineSegment> rectLineSegments = LineSegmentsFromPolygon( PolygonFromRect(rect) );
+        List<LineSegment> rectLineSegments = LineSegmentsFromPolygon(PolygonFromRect(rect));
 
         foreach (var lineSegment in lineSegments)
         {
@@ -236,16 +302,16 @@ public partial class GeometryUtils : GodotObject
             {
                 Vector2 intersection = (Vector2)Geometry2D.SegmentIntersectsSegment(lineSegment.Start, lineSegment.End, rectSegment.Start, rectSegment.End);
                 // documentation says to expect null on failed intersection but actually returns Vector2(0,0) ?  
-                if (intersection != Vector2.Zero) 
+                if (intersection != Vector2.Zero)
                 {
                     intersectingLineSegments.Add(lineSegment);
                     break;
                 }
-                
+
             }
 
         }
-    
+
         return intersectingLineSegments;
 
     }

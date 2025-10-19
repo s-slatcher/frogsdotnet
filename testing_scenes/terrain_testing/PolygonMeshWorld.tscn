@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://c2at4wnnfrlwv"]
+[gd_scene load_steps=22 format=4 uid="uid://c2at4wnnfrlwv"]
 
 [ext_resource type="Script" uid="uid://dj7d20jbo5vto" path="res://testing_scenes/terrain_testing/PolygonMeshWorld.cs" id="1_5tvfr"]
 [ext_resource type="PackedScene" uid="uid://bjjceeyq3csc3" path="res://addons/sky shader/skyshader.tscn" id="2_a7mq0"]
@@ -7,10 +7,101 @@
 [ext_resource type="PackedScene" uid="uid://4mworqcudaam" path="res://common/water/scenes/WaterPlane.tscn" id="4_4v8u0"]
 [ext_resource type="PackedScene" uid="uid://d3teamfq15lcl" path="res://map_generation/terrain_mesh/terrain_mesh.tscn" id="5_4v8u0"]
 [ext_resource type="PackedScene" uid="uid://i888mvag6wjg" path="res://common/input_capture/PlaneMouseCapture.tscn" id="5_q80so"]
+[ext_resource type="Shader" uid="uid://cnnmjm6ycldt7" path="res://common/polygon_mesh_generation/Shader based/PolygonMeshShader.gdshader" id="7_kklvx"]
 [ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="8_kcwvj"]
+[ext_resource type="Texture2D" uid="uid://ch5r8fna4n5xl" path="res://icon.svg" id="10_bml0k"]
+[ext_resource type="Shader" uid="uid://cyvqf68e74veo" path="res://testing_scenes/terrain_testing/BreakableRock.gdshader" id="11_q5us4"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_6mu2c"]
+noise_type = 2
+seed = 140
+frequency = 0.069
+fractal_type = 0
+cellular_return_type = 6
+domain_warp_amplitude = 25.725
+domain_warp_fractal_octaves = 10
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_2hbq0"]
+invert = true
+noise = SubResource("FastNoiseLite_6mu2c")
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_vlyff"]
+noise_type = 3
+frequency = 0.0576
+fractal_type = 0
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_6mu2c"]
+noise = SubResource("FastNoiseLite_vlyff")
+
+[sub_resource type="Gradient" id="Gradient_vlyff"]
+offsets = PackedFloat32Array(0.997859, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_6mu2c"]
+gradient = SubResource("Gradient_vlyff")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_p7cl5"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("7_kklvx")
+shader_parameter/dirt_color = Color(0, 0, 0, 1)
+shader_parameter/dirt_color_alt = Color(0, 0, 0, 1)
+shader_parameter/stone_color = Color(0.273501, 0.208601, 0.15561, 1)
+shader_parameter/grass_color = Color(0.223529, 0.541176, 0.137255, 1)
+shader_parameter/grass_texture = SubResource("GradientTexture1D_6mu2c")
+shader_parameter/grass_noise_texture = SubResource("NoiseTexture2D_6mu2c")
+shader_parameter/dirt_normal = SubResource("NoiseTexture2D_2hbq0")
+shader_parameter/albedo = Color(0, 0, 0, 1)
+shader_parameter/albedo_texture_size = Vector2i(0, 0)
+shader_parameter/point_size = 1.0
+shader_parameter/roughness = 0.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/specular = 0.0
+shader_parameter/metallic = 0.0
+shader_parameter/uv1_blend_sharpness = 1.0
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
+shader_parameter/explosion_array = PackedVector4Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/edge_smooth = 0.0
+shader_parameter/depth_mulitplier = 1.0
+shader_parameter/rockiness = 1.0
+shader_parameter/rock_scale = 0.5
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ewfcb"]
+render_priority = 0
+shader = ExtResource("11_q5us4")
+shader_parameter/stone_color = Color(0.651855, 0.355896, 0.0884458, 1)
+shader_parameter/albedo = Color(0.803175, 0.473957, 0.11222, 1)
+shader_parameter/albedo_texture_size = Vector2i(0, 0)
+shader_parameter/point_size = 0.0
+shader_parameter/roughness = 0.5
+shader_parameter/metallic_texture_channel = Vector4(0.155, 0, 0, 0)
+shader_parameter/specular = 0.0
+shader_parameter/metallic = 1.0
+shader_parameter/uv1_blend_sharpness = 0.0
+shader_parameter/uv1_scale = Vector3(0, 0, 0)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(0, 0, 0)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
+shader_parameter/explosion = Vector4(208.835, 56.585, 0, 8.555)
+shader_parameter/maxDepth = -2.365
+shader_parameter/rock_intensity = 1.0
+shader_parameter/voronoiCellScale = 0.515
+
+[sub_resource type="QuadMesh" id="QuadMesh_q5us4"]
+size = Vector2(100, 100)
+subdivide_width = 200
+subdivide_depth = 200
+
+[sub_resource type="SphereMesh" id="SphereMesh_q5us4"]
+radius = 1.0
+height = 6.556
 
 [node name="PolygonMeshWorld" type="Node3D"]
 script = ExtResource("1_5tvfr")
+Seed = 16
+LandWidth = 150.0
 explodeScene = ExtResource("2_q80so")
 terrainMeshScene = ExtResource("5_4v8u0")
 
@@ -22,19 +113,20 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 85.086, 93.106, 215.78)
 visible = false
 
 [node name="enviroment" parent="." instance=ExtResource("2_a7mq0")]
-day_time = 13.7045
-latitude = -48.03
+day_time = 10.9895
+latitude = -90.0
 time_scale = 0.005
 
 [node name="Sun" parent="enviroment" index="1"]
-transform = Transform3D(0.87724, -0.320873, 0.357059, -0.449628, -0.288611, 0.845303, -0.168184, -0.902076, -0.397454, 0, 0, 0)
+transform = Transform3D(0.376287, 0.261473, 0.888841, -0.920879, -1.14293e-08, 0.389849, 0.101935, -0.965209, 0.240785, 0, 0, 0)
 light_energy = 1.0
 shadow_bias = 0.02
 shadow_reverse_cull_face = true
 directional_shadow_max_distance = 193.2
 
 [node name="Moon" parent="enviroment" index="2"]
-transform = Transform3D(0.666966, 0.738867, 0.0960658, -0.69769, 0.664579, -0.267508, -0.261496, 0.111395, 0.958755, 0, 0, 0)
+transform = Transform3D(0.00938708, 0.839157, 0.543808, -0.999849, -3.66807e-08, 0.0172593, 0.0144832, -0.543889, 0.839032, 0, 0, 0)
+light_energy = 0.0422868
 
 [node name="Camera3D" parent="enviroment" index="3"]
 transform = Transform3D(1, 0, 0, 0, 0.991445, 0.130526, 0, -0.130526, 0.991444, 51.58, 37.55, 100.68)
@@ -44,14 +136,46 @@ visible = false
 light_energy = 0.36
 
 [node name="WaterPlane" parent="." node_paths=PackedStringArray("pos_source") instance=ExtResource("4_4v8u0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.51, -48.987)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.045, 78.554)
 pos_source = NodePath("../WasdCamera")
 
 [node name="TerrainMesh" parent="." instance=ExtResource("5_4v8u0")]
+visible = false
+
+[node name="PolygonMesh" parent="TerrainMesh" index="0"]
+material_override = SubResource("ShaderMaterial_p7cl5")
 
 [node name="PlaneMouseCapture" parent="." node_paths=PackedStringArray("camera") instance=ExtResource("5_q80so")]
 camera = NodePath("../WasdCamera")
 
 [node name="CanvasLayer" parent="." instance=ExtResource("8_kcwvj")]
 
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 151.172, 36.3305, 12.3136)
+visible = false
+omni_range = 17.864
+omni_attenuation = 0.13
+
+[node name="Sprite3D" type="Sprite3D" parent="OmniLight3D"]
+texture = ExtResource("10_bml0k")
+
+[node name="RockWallMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 213.829, 49.827, 2.0762)
+visible = false
+material_override = SubResource("ShaderMaterial_ewfcb")
+mesh = SubResource("QuadMesh_q5us4")
+
+[node name="SpotLight3D" type="SpotLight3D" parent="."]
+transform = Transform3D(0.97437, 0.0754602, -0.211917, 0, 0.942057, 0.335452, 0.224951, -0.326854, 0.917913, -0.106228, 9.30579, 6.44174)
+visible = false
+light_color = Color(0.807843, 1, 1, 1)
+light_energy = 15.712
+spot_range = 19.7526
+spot_angle = 38.7093
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 164.181, 16.878, -6.16925)
+mesh = SubResource("SphereMesh_q5us4")
+
 [editable path="enviroment"]
+[editable path="TerrainMesh"]

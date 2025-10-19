@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3 uid="uid://c53gj6rmd8a0l"]
+
+[ext_resource type="Script" uid="uid://b11n0pd1jyfm8" path="res://map_generation/landmass_terrain_poly_generator/LandmassTerrainPolyGenerator.cs" id="1_pgglq"]
+[ext_resource type="PackedScene" uid="uid://bmpujmx62v3sp" path="res://map_generation/heightmap_rects/HeightmapRects.tscn" id="2_k00p6"]
+
+[node name="LandmassTerrainPolyGenerator" type="Node2D"]
+script = ExtResource("1_pgglq")
+
+[node name="LandmassPlatformsGenerator" parent="." instance=ExtResource("2_k00p6")]

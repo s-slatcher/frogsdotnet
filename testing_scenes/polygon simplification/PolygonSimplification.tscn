@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://bbl64hei5alg5"]
+
+[ext_resource type="Script" uid="uid://bix33h1jpk4kb" path="res://testing_scenes/polygon simplification/PolygonSimplification.cs" id="1_e5r5h"]
+[ext_resource type="PackedScene" uid="uid://b8osbgmfbof24" path="res://testing_scenes/debug_camera_2d/debug_camera_2d.tscn" id="2_kvr0d"]
+
+[node name="Polygonsimplification" type="Node2D"]
+script = ExtResource("1_e5r5h")
+Epsilon = 0.115
+
+[node name="DebugCamera2d" parent="." instance=ExtResource("2_kvr0d")]
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(533, 224, 564, 145, 663, 188, 700, 221, 731, 287, 768, 354, 858, 451, 1016, 367, 1055, 221, 1152, 165, 1324, 324, 1328, 519, 1178, 732, 967, 784, 788, 623, 570, 745, 291, 761, 291, 564, 339, 479, 411, 467, 363, 321, 299, 221, 412, 145, 473, 226)
+
+[node name="SimplifiedPolygon" type="Polygon2D" parent="."]
+color = Color(0, 0, 0, 0.796078)
+polygon = PackedVector2Array(674, 160, 665, 419, 729, 642, 912, 689, 785, 209)

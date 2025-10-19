@@ -30,7 +30,6 @@ public partial class TerrainMap : GodotObject
 
     public List<Vector2> CachedTowerAnchorPoints = new();
 
-
     public TerrainMap(int seed = 0)
     {
         rand = new(seed);
@@ -60,7 +59,10 @@ public partial class TerrainMap : GodotObject
         UpdateHeightMaps();
 
         var points = heightMap.GetNextHeights(width);
+        var curve = gu.PointsToCurve(points.ToArray());
+        points = curve.Tessellate().ToList();
 
+        GD.Print("for width: ", width, " height map points: ", points.Count);
         List<Rect2> towerRects = GroupPoints(points);
         var towerPolygons = new List<Vector2[]>();
 
@@ -83,23 +85,14 @@ public partial class TerrainMap : GodotObject
         return mergedList;
     }
 
-    public TerrainPolygon GenerateNextTerrainPolygon(float width)
+    public Vector2[] GenerateNextTerrainPolygon(float width)
     {
         var mergedList = GenerateNext(width);
         var poly = mergedList[0].Polygon; // FIX EVENTUALLY, assumes only 1 polygon produced always
-        var rect = GeometryUtils.RectFromPolygon(poly);
-
-        var pointList = CachedTowerAnchorPoints;
-        Curve curve = new();
-        curve.MaxDomain = rect.Size.X;
-        curve.MinValue = 0;
-        curve.MaxValue = MaxHeight;
-        curve.MinValue = MinHeight;
-        foreach (var p in pointList) curve.AddPoint(p);
-
-
-        return new TerrainPolygon(poly, curve, rect); 
+        return poly;
     }
+
+    
 
     private List<Polygon2D> ReduceMergePolygons(List<Vector2[]> towerPolygons)
     {
@@ -122,7 +115,7 @@ public partial class TerrainMap : GodotObject
             }
 
         }
-        
+
         mergedList.Add(ConvertToPolygonInstance(currentMerge));
         return mergedList;
     }

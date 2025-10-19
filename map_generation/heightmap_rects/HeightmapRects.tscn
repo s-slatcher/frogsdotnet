@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3 uid="uid://bmpujmx62v3sp"]
+
+[ext_resource type="Script" uid="uid://dnw3s16dx647f" path="res://map_generation/heightmap_rects/HeightmapRects.cs" id="1_3ivhp"]
+[ext_resource type="PackedScene" uid="uid://b8osbgmfbof24" path="res://testing_scenes/debug_camera_2d/debug_camera_2d.tscn" id="2_rorhm"]
+
+[node name="LandmassPlatformsGenerator" type="Node2D"]
+script = ExtResource("1_3ivhp")
+AutoUpdate = true
+
+[node name="Line2D" type="Line2D" parent="."]
+z_index = 2
+scale = Vector2(1, -1)
+width = 0.515
+default_color = Color(1, 0, 1, 0.423529)
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+position = Vector2(300, 300)
+scale = Vector2(1, -1)
+uv = PackedVector2Array(-488.5, 12, -498.5, -39, -403.5, -58, -284.5, -49, -289.5, -1, -453.5, 18)
+
+[node name="DebugCamera2d" parent="." instance=ExtResource("2_rorhm")]

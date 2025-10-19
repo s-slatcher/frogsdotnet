@@ -91,7 +91,6 @@ public partial class QuadMeshDistortionApplier : GodotObject
         var distortList = ActiveDistortersMap[node.BoundingRect];
         if (distortList.Count == 0) return;
 
-
         var sortCol = distortList.OrderBy( distorter => distorter.GetDepthRange(node).X);
         var lowestRange = sortCol.ToArray()[0].GetDepthRange(node);
 
@@ -135,7 +134,6 @@ public partial class QuadMeshDistortionApplier : GodotObject
             dupeChild.Parent = node;
             node.Children[i] = dupeChild;
             ParentNodeDistortRecursive(dupeChild, newDistorter);
-
         }
 
     }

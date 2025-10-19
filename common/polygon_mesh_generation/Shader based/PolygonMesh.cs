@@ -114,6 +114,7 @@ public partial class PolygonMesh : MeshInstance3D
             st.AddVertex(vert.Position);
         }
 
+        st.Index();
         var mesh = st.Commit();
         Mesh = mesh;
         meshGenTime = Time.GetTicksMsec() - meshTime;
@@ -234,7 +235,7 @@ public partial class PolygonMesh : MeshInstance3D
                     vertNorm = closePoint.Normal.Lerp(faceNorm, delta / SmoothDistance).Normalized();
                 }
 
-                var vert = IndexVertex(pos, vertNorm, faceNorm, DefaultDepth);
+                var vert = IndexVertex(pos, vertNorm, faceNorm);
                 poly3d.Add(vert);
 
                 FrontVertexMap[posAsKey] = vert;
@@ -260,7 +261,7 @@ public partial class PolygonMesh : MeshInstance3D
 
         if (HeightDepthCurve == null || DomainDepthCurve == null)
         {
-            return DefaultDepth;
+            return MinDepth;
         }
 
         var localMaxDepth = MapWidthToMaxDepth(point.X);
@@ -289,7 +290,8 @@ public partial class PolygonMesh : MeshInstance3D
 
     private Vector3 FaceNormalAtPoint(Vector2 point)
     {
-
+        
+        
         var p1 = new Vector3(point.X, point.Y, DepthAtPoint(point));
         var p2_2d = point + new Vector2(0.1f, 0.1f);
         var p2 = new Vector3(p2_2d.X, p2_2d.Y, DepthAtPoint(p2_2d));
@@ -338,7 +340,7 @@ public partial class PolygonMesh : MeshInstance3D
             else vertNormal = backNormal.Lerp(sideNormal, distBack / SmoothDistance).Normalized();
 
 
-            edgeList.Add(IndexVertex(pos, vertNormal, edgeFaceNormal, DefaultDepth));
+            edgeList.Add(IndexVertex(pos, vertNormal, edgeFaceNormal));
 
         }
 
@@ -367,8 +369,8 @@ public partial class PolygonMesh : MeshInstance3D
             var p1 = D(poly[i], zOffset);
             var p2 = D(poly[Mod(i + 1, len)], zOffset);
 
-            var faceNorm1 = (p1 - p0).Rotated(Vector3.Back, -float.Pi / 2).Normalized();
-            var faceNorm2 = (p2 - p1).Rotated(Vector3.Back, -float.Pi / 2).Normalized();
+            var faceNorm1 = (p1 - p0).Rotated(Vector3.Back, float.Pi / 2).Normalized();
+            var faceNorm2 = (p2 - p1).Rotated(Vector3.Back, float.Pi / 2).Normalized();
 
             var angle = faceNorm1.AngleTo(faceNorm2);
             bool smoothNormals = angle < SmoothingAngleLimit;
@@ -388,7 +390,7 @@ public partial class PolygonMesh : MeshInstance3D
             // var oppositeEdgeNorm = edgePointNormal * new Vector3(1, 1, -1);
 
 
-            leftVert = rightVert = IndexVertex(p1, edgePointNormal, faceNorm1, DefaultDepth); // face norm chosen is arbitrary 
+            leftVert = rightVert = IndexVertex(p1, edgePointNormal, faceNorm1); // face norm chosen is arbitrary 
             var edgeFaceVerts = GenerateSideFaceVertices(leftVert, sideFaceNormAvg, faceNorm1);
 
 
@@ -571,7 +573,10 @@ public partial class PolygonMesh : MeshInstance3D
 
     }
 
-    private IndexedVertex IndexVertex(Vector3 position, Vector3 normal, Vector3 faceNormal, float maxDepth)
+    // CUSTOM0 stores face normal for comparison
+    // CUSTOM1 (red channel) stores the vert's default *positive* offset from 0, mirroring that depth in the negative makes total depth DOUBLE that value
+
+    private IndexedVertex IndexVertex(Vector3 position, Vector3 normal, Vector3 faceNormal)
     {
         var vert = new IndexedVertex()
         {

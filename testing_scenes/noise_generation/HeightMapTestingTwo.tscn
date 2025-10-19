@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://bvyh00cf6lwod"]
+
+[ext_resource type="Script" uid="uid://cdl80ln82csr" path="res://testing_scenes/noise_generation/HeightMapTestingTwo.cs" id="1_2vo43"]
+[ext_resource type="PackedScene" uid="uid://b8osbgmfbof24" path="res://testing_scenes/debug_camera_2d/debug_camera_2d.tscn" id="2_xv3p1"]
+
+[node name="HeightMapTestingTwo" type="Node2D"]
+script = ExtResource("1_2vo43")
+toleranceMultiplier = 1.149
+amplitude = 52.665
+noiseSeed = 3
+WidthDeleteThreshold = 16.05
+
+[node name="DebugCamera2d" parent="." instance=ExtResource("2_xv3p1")]
+position = Vector2(446.71, 0)

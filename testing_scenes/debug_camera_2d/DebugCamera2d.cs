@@ -1,4 +1,5 @@
 using Godot;
+using Microsoft.VisualBasic;
 using System;
 
 public partial class DebugCamera2d : Camera2D
@@ -10,11 +11,47 @@ public partial class DebugCamera2d : Camera2D
     
     bool isDragging = false;
 
+    string savePath = "user://resource_save/";
+    string saveName = "debugCameraData.tres";
+
+
 
     public override void _Ready()
     {
+        Error error = DirAccess.MakeDirAbsolute(savePath);
+        GD.Print(error);
+        GetTree().CreateTimer(0.5).Timeout += OnSaveTimer;
+        LoadData();
         SetScreenRect();
     }
+
+    private void OnSaveTimer()
+    {
+        WriteData();
+        GetTree().CreateTimer(0.5).Timeout += OnSaveTimer;
+    }
+
+
+    private void LoadData()
+    {
+
+        var exists = ResourceLoader.Exists(savePath + saveName);
+
+        if (exists)
+        {
+            var data = ResourceLoader.Load<DebugCameraData>(savePath + saveName);
+            Position = data.Position;
+            Zoom = data.Zoom;
+        }
+        else GD.Print("no camera data found");
+    }
+
+    private void WriteData()
+    {
+        var data = new DebugCameraData(){Position = this.Position, Zoom = this.Zoom};
+        _ = ResourceSaver.Save(data, savePath + saveName);
+    }
+
 
     public override void _PhysicsProcess(double delta)
     {
@@ -40,7 +77,7 @@ public partial class DebugCamera2d : Camera2D
         var label = GetNode<Label>("CanvasLayer/Control/MouseLabel");
         label.Position = mousePosLocal + new Vector2(0, 50);
         label.Text = mousePosGlobal.ToString();
-        
+
     }
 
     // public override void _UnhandledInput(InputEvent @event)
