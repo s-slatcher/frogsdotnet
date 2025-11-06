@@ -29,7 +29,7 @@ public partial class PolygonSimplification : Node2D
         PolygonNode = GetNode<Polygon2D>("Polygon2D");
         SimplePolygon = GetNode<Polygon2D>("SimplifiedPolygon");
 
-        var noiseEdgePoly = new NoiseEdgePoly(100, 190, 80, false);
+        var noiseEdgePoly = new NoiseEdgePoly(100, 190, 80);
         PolygonNode.Polygon = noiseEdgePoly.Polygon;
 
         GenerateSimplePoly();

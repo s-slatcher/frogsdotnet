@@ -7,3 +7,6 @@
 script = ExtResource("1_pgglq")
 
 [node name="LandmassPlatformsGenerator" parent="." instance=ExtResource("2_k00p6")]
+
+[node name="Line2D2" type="Line2D" parent="LandmassPlatformsGenerator"]
+points = PackedVector2Array(729, 105, 904.978, 191.241, 391, 532, 690, 600)

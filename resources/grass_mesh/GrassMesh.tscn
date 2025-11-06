@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://bqxbvm5ahkldx"]
+
+[sub_resource type="Curve" id="Curve_4sj0i"]
+_data = [Vector2(0, 0), 0.0, 2.88688, 0, 0, Vector2(0.987047, 0.732698), 0.0740161, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4sj0i"]
+shading_mode = 0
+albedo_color = Color(0, 0.409008, 5.77569e-07, 1)
+
+[sub_resource type="RibbonTrailMesh" id="RibbonTrailMesh_sw1na"]
+material = SubResource("StandardMaterial3D_4sj0i")
+size = 0.2
+sections = 4
+section_length = 0.375
+curve = SubResource("Curve_4sj0i")
+
+[node name="GrassMesh" type="MeshInstance3D"]
+mesh = SubResource("RibbonTrailMesh_sw1na")

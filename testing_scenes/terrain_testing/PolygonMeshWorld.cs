@@ -10,7 +10,11 @@ using Vector3 = Godot.Vector3;
 public partial class PolygonMeshWorld : Node3D
 {
     [Export] int Seed = 1;
-    [Export] float LandWidth = 20;
+    [Export] float LandWidth = 60;
+    [Export] float LandHeight = 80;
+    [Export] int TotalLandmasses = 3;
+    [Export] float PolygonDetail = 0.05f; // lower means higher detail (smaller differences allowed before collapsing)
+    [Export] float AverageLandGap = 100;
 
     [Export] PackedScene explodeScene;
     [Export] PackedScene terrainMeshScene;
@@ -35,31 +39,57 @@ public partial class PolygonMeshWorld : Node3D
         planeCap.PlaneClicked += OnPlaneClicked;
 
         GenerateTerrain();
+        var compareMeshInst = GetNode<MeshInstance3D>("HeightCompareMesh");
+        var compareMesh = (QuadMesh)compareMeshInst.Mesh;
+        compareMesh.Size = new Vector2( (LandWidth + AverageLandGap) * TotalLandmasses , LandHeight);
+        var halfSize = compareMesh.Size / 2;
+        compareMeshInst.Position = new Vector3(halfSize.X, halfSize.Y, -5);
+
+        
     }
 
     private void GenerateTerrain()
     {
+        var gUtils = new GeometryUtils();
+
         var landmassGen = new LandmassTerrainPolyGenerator((int)rng.Seed);
-        landmassGen.Height = 120;
+        landmassGen.Height = LandHeight;
+        landmassGen.Jaggedness = 2;
 
 
         // simplify poly (takes 250 points down to <100) without much visual change
-        var poly = landmassGen.GenerateTerrainPoly(0, LandWidth);
-        var gUtils = new GeometryUtils();
-        var simplePoly = gUtils.SimplifyPolygon(poly, 0.05f);
-        GD.Print("landmass poly point count: ", poly.Length);
-        GD.Print("count after simplifying: ", simplePoly.Length);
-        poly = simplePoly;
 
-        var terrainMesh = (TerrainMesh)terrainMeshScene.Instantiate();
-        terrainMesh.QuadDensity = 0.50f; //USUALLY 0.5f
-        terrainMesh.MinDepth = 3f;
-        AddChild(terrainMesh);
-        terrainMesh.TerrainPolygon = poly;
+        Vector2 nextRange = new Vector2(0, LandWidth);
 
-        TerrainRegionMap[GeometryUtils.RectFromPolygon(poly)] = terrainMesh;
-        
+
+        for (int i = 0; i < TotalLandmasses; i++)
+        {
+            var poly = landmassGen.GenerateTerrainPoly(nextRange.X, nextRange.Y);
+
+            GD.Print("unsimplified poly point count: ", poly.Length);
+            var simplePoly = gUtils.SimplifyPolygon(poly, PolygonDetail);
+            poly = simplePoly;
+            GD.Print("simplfied count: ", poly.Length);
+
+
+            var terrainMesh = (TerrainMesh)terrainMeshScene.Instantiate();
+            terrainMesh.Position = new Vector3(nextRange.X, 0, 0);
+            terrainMesh.QuadDensity = 0.5f; //NOT A MAP SETTING, PROBABLY GOES UNCHANGED?
+            terrainMesh.MinDepth = 3f; // SAME?
+            
+            AddChild(terrainMesh);
+
+            terrainMesh.TerrainPolygon = poly;
+            TerrainRegionMap[GeometryUtils.RectFromPolygon(poly)] = terrainMesh;
+
+            var waterGap = (float)rng.Randfn(AverageLandGap, 4);
+            nextRange.X = nextRange.Y + waterGap;
+            nextRange.Y = nextRange.X + LandWidth;
+        }
+
     }
+    
+
  
 
     private void OnPlaneClicked(Vector3 vector)
@@ -67,10 +97,10 @@ public partial class PolygonMeshWorld : Node3D
 
         var randRadius = (float)GD.RandRange(radiusRange.X, radiusRange.Y);
         var center2d = new Vector2(vector.X, vector.Y);
-        GD.Print("clicked at: ", center2d);
 
         var explodeRect = new Rect2(Vector2.Zero, new Godot.Vector2(randRadius * 2, randRadius * 2));
         explodeRect.Position = center2d - new Vector2(randRadius, randRadius);
+        var print_string = "explosion intersect at: ";
 
         foreach (var rect in TerrainRegionMap.Keys)
         {
@@ -79,11 +109,12 @@ public partial class PolygonMeshWorld : Node3D
 
             if (explodeRect.Intersects(newRect))
             {
+                print_string += vector.ToString() + ",";
                 mesh.ExplodeTerrain(vector, randRadius);
             }
 
         }
-
+        GD.Print(print_string);
 
 
         var explosion = (Node3D)explodeScene.Instantiate();

@@ -52,10 +52,18 @@ uniform float edge_smooth = 0.;
 uniform float depth_mulitplier = 1.;
 
 uniform float rockiness = 1.;
-varying float rock_level;
 uniform float rock_scale = 0.5;
+uniform float rock_start = 2.;
+uniform float rock_smooth_depth = 2.;
+uniform float rockiness_min = 0.15;
+uniform float rock_edge_smoothing = 1.;
+
+uniform vec2 center_mass_uv = vec2(0.5, 0.); 
+
+varying float rock_level;
 
 varying vec3 debug_color;
+
 
 // pseudo random number
 const vec3 magic = vec3(0.06711056f, 0.00583715f, 52.9829189f);
@@ -67,6 +75,11 @@ vec3 hash3(vec3 p) {
     return fract(p * fract(p.x * p.y * p.z));
 }
 
+float remap(float low_edge, float high_edge, float value, float new_low_edge, float new_high_edge)
+{
+	float lerp_a = smoothstep(low_edge, high_edge, value); //returns 0-1 inverse-lerp
+	return (new_high_edge - new_low_edge) * lerp_a + new_low_edge;
+}
 // voronoi cell defined by position and distance from vertex
 struct vorSite {
 	float d;
@@ -97,7 +110,12 @@ vec3 norm_from_color(vec3 color)
 	return (color - vec3(0.5, 0.5, 0.5)) * 2.;
 }
 
-void voronoi_sites(in vec3 position, out vorSite s1, out vorSite s2)
+bool is_even(float val)
+{
+	float div = val / 2.;
+	return fract(val) == 0.;
+}
+void voronoi_sites_alt(in vec3 position, in vec3 normal, out vorSite s1, out vorSite s2, out vorSite s3)
 {
 	float local_cell_scale = rock_scale;
 	vec3 cellCorner = floor(position * local_cell_scale);
@@ -105,6 +123,56 @@ void voronoi_sites(in vec3 position, out vorSite s1, out vorSite s2)
 	
 	s1 = vorSite(1e9, vec3(0));
 	s2 = vorSite(1e9, vec3(0));
+	s3 = vorSite(1e9, vec3(0));
+	
+	
+	
+	vorSite[27] forward_points;
+	int forward_point_count = 0;
+	
+	for(int x = -1; x <= 1; x++)
+	{
+	for (int y = -1; y <= 1; y++)
+	{
+	for (int z =-1; z <= 1; z++)
+	{
+		
+		vec3 adjCorner = cellCorner + vec3(float(x),float(y),float(z));
+		vec3 adjSite = (hash3(adjCorner) + adjCorner) / local_cell_scale;
+		
+		// random skipping of some sites to generate bigger cells
+		//if (fract(adjSite.x) < 0.3) continue;
+		
+		float dist = distance(adjSite, position);
+		vorSite site = vorSite(dist, adjSite);
+		bool is_behind = dot( (site.pos - position), normal) < 0.;
+		
+		if (is_behind && dist < s1.d) s1 = site;
+		if (!is_behind && dist < s2.d) s2 = site;
+		//if (dist < s1.d) 
+		//{
+			//s3 = s2;
+			//s2 = s1;
+			//s1 = site; 
+      //} else if (dist < s2.d) {
+         //s3 = s2;
+			//s2 = site;	
+		//} 
+		//else if (dist < s3.d)
+		//{
+			//s3 = site;
+		//}
+	}}}
+}
+void voronoi_sites(in vec3 position, out vorSite s1, out vorSite s2, out vorSite s3)
+{
+	float local_cell_scale = rock_scale;
+	vec3 cellCorner = floor(position * local_cell_scale);
+	vec3 s_base = cellCorner + hash3(cellCorner);
+	
+	s1 = vorSite(1e9, vec3(0));
+	s2 = vorSite(1e9, vec3(0));
+	s3 = vorSite(1e9, vec3(0));
 	
 	for(int x = -1; x <= 1; x++)
 	{
@@ -119,19 +187,20 @@ void voronoi_sites(in vec3 position, out vorSite s1, out vorSite s2)
 		//if (fract(adjSite.x) < 0.3) continue;
 		
 		float dist = distance(adjSite, position);
+		
 		if (dist < s1.d) 
 		{
-			//s3 = s2;
+			s3 = s2;
 			s2 = s1;
 			s1 = vorSite(dist, adjSite); 
       } else if (dist < s2.d) {
-         //s3 = s2;
+         s3 = s2;
 			s2 = vorSite(dist, adjSite);	
 		} 
-		//else if (dist < s3.d)
-		//{
-			////s3 = vorSite(dist, adjSite);
-		//}
+		else if (dist < s3.d)
+		{
+			s3 = vorSite(dist, adjSite);
+		}
 	}}}
 }
 
@@ -216,30 +285,82 @@ void vertex() {
 		}
 	}
 	
+
+//__     _____  ____   ___  _   _  ___ ___ 
+//\ \   / / _ \|  _ \ / _ \| \ | |/ _ \_ _|
+// \ \ / / | | | |_) | | | |  \| | | | | | 
+//  \ V /| |_| |  _ <| |_| | |\  | |_| | | 
+//   \_/  \___/|_| \_\\___/|_| \_|\___/___|
 	
 	
-	// Voronoi distort
+	debug_color = vec3(0.5,0.5,fract(default_vertex.x));
+	
 	vorSite s1;
 	vorSite s2;
+	vorSite s3;
 	vec3 voronoi_proj_pos;
+	vec3 voronoi_proj_pos_2;
+	vec3 voronoi_proj_pos_3;
 	vec3 voronoi_proj_norm;
+	vec3 voronoi_proj_norm_2;
+	vec3 voronoi_proj_norm_3;
 	
 	
-	float depth = default_vertex.z - VERTEX.z;
+	float is_edge = step(0.5f, abs(default_normal.z));
+	float depth = (default_vertex.z - VERTEX.z) * is_edge ;
 	
-	float rock_start = 2.5;
-	float rock_max = 4.;
-	rock_level = clamp( smoothstep(rock_start, rock_max, depth ), 0.2, 1 );
+	float central_dist = distance(center_mass_uv, UV);
+	float noise_threshold = remap(0, 0.8, central_dist, 0.1, 0.9);
+	float rock_noise = texture(grass_noise_texture, default_vertex.xy / 80.).r;
+	
+	float rock_noise_step = remap(0, noise_threshold, rock_noise, rock_start, -2.);
+	//debug_color = vec3(1.0 - rock_noise_step);
+	
+	float rock_start_remap = rock_start; // ENABLED = rock_noise_step;
+	float rock_depth_remap = rock_smooth_depth;
+	
+	
+	rock_level = clamp( smoothstep(rock_start_remap, rock_start_remap	+ rock_depth_remap, depth ), rockiness_min, 1 );
 	float local_rockiness = rock_level * rockiness;
 	//local_rockiness = 1.;
 	//if (depth < 0.) debug_color = vec3(0);
 	
 	if (local_rockiness > 0.01)
 	{
-		voronoi_sites(VERTEX, s1, s2);
+		float pre_vor_z = VERTEX.z;
+		voronoi_sites(VERTEX, s1, s2, s3);
 		voronoi_projection(VERTEX, s1, s2, voronoi_proj_pos, voronoi_proj_norm);
+		
+		
+		if (dot(voronoi_proj_norm, NORMAL) < 0.) voronoi_proj_norm *= -1.;
+		if (dot(voronoi_proj_norm_2, voronoi_proj_norm) < 0.) voronoi_proj_norm_2 *= -1.;
+		
+	
+		
+		
 		VERTEX = mix(VERTEX, voronoi_proj_pos, local_rockiness);
 		NORMAL = mix(NORMAL, voronoi_proj_norm, local_rockiness);
+		
+		// color change based on  site
+		// targets every fourth site cell corner
+		//bool s1_unique = fract(s1.pos.x * 10.) < 0.05; 
+		//bool s2_unique = fract(s2.pos.x * 10.) < 0.05; 
+		//s2_unique = false;
+		//bool face_is_unique = false;
+		//
+		//if (s1_unique || s2_unique) face_is_unique = true;
+		//if (s2.pos.z < pre_vor_z) face_is_unique = false;
+		//
+		//if (face_is_unique) debug_color = vec3(0.1);
+		
+		
+		//float frac1 = fract(s1.pos.x * 10.);
+		//
+		//float frac_thresh = 0.05;
+		//if (frac1 < frac_thresh){
+			//debug_color = vec3(0.4);
+		//}
+		
 	}
 	
 	
@@ -296,18 +417,26 @@ void fragment() {
 	float stoneiness = 1. - smoothstep(stone_start-2., stone_start, updated_vertex.z);	
 	float is_edge = step( 0.5 , abs(default_normal.z));
 	//ALBEDO = mix(ALBEDO, stone_color.rgb, stoneiness * is_edge);
-	ALBEDO = mix(dirt_color.rgb, stone_color.rgb, sqrt(stone_level) * is_edge);
+	float normalized_rock_level = (rock_level - rockiness_min) / (1.- rockiness_min);
+	ALBEDO = mix(dirt_color.rgb, stone_color.rgb, sqrt(stoneiness) * is_edge);
 	
-	float is_exploded = step( 0.01, abs(default_normal.z - updated_vertex.z));
-	float edge_color = texture(grass_texture, UV).r - is_exploded; 
-	float noise_mask_color = texture(grass_noise_texture, UV).r;
-	float grass_noise_threshold = pow(1.0f - smoothstep(0, 0.75, edge_color),1);
+	
+	// step debug color and apply
+	vec3 debug_color_snapped;
+	if (abs(debug_color.r - 0.1) < 0.01 ) debug_color_snapped = vec3(0.35);
+	else debug_color_snapped = vec3(1); 
+	
+	//ALBEDO = debug_color;
+	
+	float is_exploded = step( 0.01, abs(default_vertex.z - updated_vertex.z));
+	float edge_color = texture(grass_texture, UV).r; 
+	float noise_mask_color = texture(grass_noise_texture, updated_vertex.xy / 30.).r;
+	float grass_noise_threshold = pow(1.0f - smoothstep(0, 0.5, edge_color), 1);
 	float grass_color_step = step(grass_noise_threshold, noise_mask_color);
 	vec4 grass_tex = grass_color;
 	
 	ALBEDO = mix(ALBEDO, grass_tex.rgb, grass_color_step);
-	
-	// flat normal calc 
+	 //flat normal calc 
 	NORMAL = mix(NORMAL, get_flat_normal(updated_vertex), rock_level);
 	
 	// discard pixels that go beyond max depth
@@ -315,6 +444,8 @@ void fragment() {
 	if (depth_fade < 0.001 || depth_fade < fract(magic.z * fract(dot(FRAGCOORD.xy, magic.xy)))) {
 		discard;
 	}
+	
+
 	
 
 	////Metalic texturing (disabled)

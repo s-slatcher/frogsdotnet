@@ -1,6 +1,18 @@
-[gd_scene load_steps=2 format=3 uid="uid://cyv1wp31xapg2"]
+[gd_scene load_steps=3 format=3 uid="uid://cyv1wp31xapg2"]
 
 [ext_resource type="Script" uid="uid://ckmwvndvmw44b" path="res://testing_scenes/debug_polygon/DebugPolygon.cs" id="1_qegps"]
 
+[sub_resource type="Curve2D" id="Curve2D_qegps"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, 749, 346, 0, 0, 0, 0, 1056, 332, -22.627, -115.797, 22.627, 115.797, 1196, 423, 0, 0, 0, 0, 1119, 599, -6.655, -119.79, 6.655, 119.79, 1035, 781, 0, 0, 0, 0, 1096, 937, 0, 0, 0, 0, 1451, 1198)
+}
+point_count = 7
+
 [node name="DebugPolygon" type="Polygon2D"]
 script = ExtResource("1_qegps")
+
+[node name="Line2D" type="Line2D" parent="."]
+points = PackedVector2Array(566, 20, 175, 286, 233, 362, 247, 517, 291, 294, 411, 255, 574, 63)
+
+[node name="Path2D" type="Path2D" parent="."]
+curve = SubResource("Curve2D_qegps")

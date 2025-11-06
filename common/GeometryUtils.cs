@@ -26,6 +26,14 @@ public partial class GeometryUtils : GodotObject
         return new Vector3(vec2.X, vec2.Y, 0);
     }
     
+    public static float Remap(float value, float fromMin, float fromMax, float toMin, float toMax, bool doClamp)
+    {
+        var mapVal = (value - fromMin) / (fromMax - fromMin) * (toMax - toMin) + toMin;
+        if (toMin > toMax) (toMin, toMax) = (toMax, toMin);
+        if (doClamp) mapVal = float.Clamp(mapVal, toMin, toMax);
+        return mapVal;
+    }
+
     public static Rect2 RectFromPolygon(Vector2[] polygon)
     {
         Rect2 rect = new();
@@ -243,6 +251,7 @@ public partial class GeometryUtils : GodotObject
             float maxDistSquare = 0;
             int maxDistIndex = -1;
 
+           
             for (int i = start + 1; i < end; i++)
             {
                 var p = polygon[i];

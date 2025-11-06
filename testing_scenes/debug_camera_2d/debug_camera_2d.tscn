@@ -163,6 +163,7 @@ cache/0/30/0/underline_thickness = 0.0
 cache/0/30/0/scale = 1.0
 
 [node name="DebugCamera2d" type="Camera2D"]
+ignore_rotation = false
 script = ExtResource("1_nptnc")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
@@ -207,3 +208,11 @@ offset_right = 40.0
 offset_bottom = 23.0
 text = "mouse
 "
+
+[node name="CheckButton" type="CheckButton" parent="CanvasLayer/Control"]
+layout_mode = 0
+offset_left = 104.0
+offset_top = 38.0
+offset_right = 208.0
+offset_bottom = 114.0
+text = "flip Y"

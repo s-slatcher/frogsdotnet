@@ -14,16 +14,29 @@ public partial class DebugCamera2d : Camera2D
     string savePath = "user://resource_save/";
     string saveName = "debugCameraData.tres";
 
+    bool isFlipped = false;
 
+    
 
     public override void _Ready()
     {
+        
         Error error = DirAccess.MakeDirAbsolute(savePath);
         GD.Print(error);
         GetTree().CreateTimer(0.5).Timeout += OnSaveTimer;
         LoadData();
         SetScreenRect();
+        var button = GetNode<CheckButton>("CanvasLayer/Control/CheckButton");
+        button.Toggled += OnCheckButtonPress;
     }
+
+    private void OnCheckButtonPress(bool state)
+    {
+        if (state) RotationDegrees = 180;
+        else RotationDegrees = 0;
+        isFlipped = state;
+    }
+
 
     private void OnSaveTimer()
     {
@@ -61,6 +74,7 @@ public partial class DebugCamera2d : Camera2D
 
         var xAxis = Input.GetAxis("left", "right");
         var yAxis = Input.GetAxis("forward", "down");
+        if (isFlipped) { xAxis *= -1; yAxis *= -1; };
 
         var speed = (float)delta * trueScreenRect.Size.X * 0.75f;
         if (Input.IsActionPressed("shift")) speed *= 2;

@@ -72,7 +72,7 @@ public partial class TerrainMap : GodotObject
             var topWidth = rect.Size.X;
             var height = rect.Size.Y;
             var baseWidth = float.Tan(CliffGrade) * height * 2 + topWidth;
-            towerPolygons.Add(new NoiseEdgePoly(height, baseWidth, topWidth, false).Polygon);    
+            towerPolygons.Add(new NoiseEdgePoly(height, baseWidth, topWidth).Polygon);    
 
         }
 

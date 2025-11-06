@@ -20,10 +20,13 @@ public partial class EdgeTextureGenerator : GodotObject
         
 
         var lineSegments = gUtils.LineSegmentsFromPolygon(Polygon);
-        
-        Rect2I rectI = gUtils.RectIFromPolygon(Polygon);
-        Rect2I imageRect = new(rectI.Position * PixelPerUnit, rectI.End * PixelPerUnit);
 
+        Rect2I rectI = gUtils.RectIFromPolygon(Polygon);
+        rectI.Expand(Vector2I.Zero);
+        rectI.GrowSide(Side.Top, 1);
+        rectI.GrowSide(Side.Right, 1);
+        
+        Rect2I imageRect = new(rectI.Position * PixelPerUnit, rectI.End * PixelPerUnit);
 
         var img = Image.CreateEmpty(imageRect.Size.X, imageRect.Size.Y, false, Image.Format.Rgb8);
         img.Fill(Colors.Black);

@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3 uid="uid://bb3xkg1an64d8"]
+
+[ext_resource type="ArrayMesh" uid="uid://b4ajw7x2mwrtb" path="res://resources/grass_mesh/grass_mesh.tres" id="1_jtby1"]
+[ext_resource type="PackedScene" uid="uid://dui2lnj36uifc" path="res://resources/grass_mesh/grass.glb" id="1_k6wgd"]
+
+[sub_resource type="MultiMesh" id="MultiMesh_lbdvf"]
+transform_format = 1
+instance_count = 8
+mesh = ExtResource("1_jtby1")
+buffer = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+[node name="GrassMeshGlb" type="MultiMeshInstance3D"]
+multimesh = SubResource("MultiMesh_lbdvf")
+
+[node name="grass2" parent="." instance=ExtResource("1_k6wgd")]
+visible = false
+
+[node name="grass" parent="grass2" index="0"]
+cast_shadow = 0
+mesh = ExtResource("1_jtby1")
+
+[editable path="grass2"]

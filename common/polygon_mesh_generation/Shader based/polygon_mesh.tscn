@@ -4,21 +4,24 @@
 [ext_resource type="Shader" uid="uid://cnnmjm6ycldt7" path="res://common/polygon_mesh_generation/Shader based/PolygonMeshShader.gdshader" id="1_vlyff"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_6mu2c"]
-noise_type = 2
+noise_type = 3
 seed = 140
-frequency = 0.069
-fractal_type = 0
+frequency = 0.0002
+fractal_octaves = 3
 cellular_return_type = 6
 domain_warp_amplitude = 25.725
 domain_warp_fractal_octaves = 10
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_2hbq0"]
+width = 1200
+height = 1200
 invert = true
+seamless = true
 noise = SubResource("FastNoiseLite_6mu2c")
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_vlyff"]
 noise_type = 3
-frequency = 0.0576
+frequency = 0.0145
 fractal_type = 0
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_6mu2c"]
@@ -58,9 +61,14 @@ shader_parameter/edge_smooth = 0.0
 shader_parameter/depth_mulitplier = 1.0
 shader_parameter/rockiness = 1.0
 shader_parameter/rock_scale = 0.5
+shader_parameter/rock_start = 2.0
+shader_parameter/rock_smooth_depth = 4.0
+shader_parameter/rockiness_min = 0.15
+shader_parameter/rock_edge_smoothing = 1.0
+shader_parameter/center_mass_uv = Vector2(0.5, 0)
 
 [sub_resource type="BoxMesh" id="BoxMesh_2hbq0"]
-size = Vector3(7.53, 7.615, 1.05)
+size = Vector3(20, 20, 1.05)
 
 [node name="PolygonMesh" type="MeshInstance3D"]
 material_override = SubResource("ShaderMaterial_6mu2c")

@@ -1,0 +1,35 @@
+[gd_scene load_steps=4 format=3 uid="uid://h65e8xooktdi"]
+
+[ext_resource type="Script" uid="uid://dt6lvby8fusxj" path="res://testing_scenes/new_edge_noise_poly_testing/NewNoiseEdgePolyTesting.cs" id="1_xega4"]
+[ext_resource type="PackedScene" uid="uid://b8osbgmfbof24" path="res://testing_scenes/debug_camera_2d/debug_camera_2d.tscn" id="2_njqo4"]
+
+[sub_resource type="Gradient" id="Gradient_xega4"]
+offsets = PackedFloat32Array(0, 0.799479, 1)
+colors = PackedColorArray(1, 0, 0, 1, 0.200521, 0.799479, 0.670936, 1, 0, 1, 0.839216, 1)
+
+[node name="NewNoiseEdgePoly" type="Node2D"]
+script = ExtResource("1_xega4")
+CycleSeed = false
+HeightMapSeed = 165
+Width = 117.81
+MaxHeight = 83.48
+SmoothingEpsilon = 0.024
+MeanCliffGrade = 0.294
+EdgeSeed = 130
+MaxCaveDepth = 10.0
+
+[node name="DebugCamera2d" parent="." instance=ExtResource("2_njqo4")]
+position = Vector2(-170, 27)
+
+[node name="P" type="Polygon2D" parent="."]
+visible = false
+position = Vector2(-12, -1)
+color = Color(1, 1, 1, 0.0862745)
+polygon = PackedVector2Array(-66, -2, 29, -350, 135, -349, 180, -446, 296, -445, 380, -539, 468, -540, 516, -466, 606, -466, 794, 2)
+
+[node name="P2" type="Polygon2D" parent="."]
+
+[node name="Outline" type="Line2D" parent="."]
+width = 0.675
+default_color = Color(0.662267, 0.124809, 0.189176, 1)
+gradient = SubResource("Gradient_xega4")

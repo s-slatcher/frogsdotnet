@@ -1,27 +1,30 @@
-[gd_scene load_steps=12 format=4 uid="uid://d3teamfq15lcl"]
+[gd_scene load_steps=23 format=4 uid="uid://d3teamfq15lcl"]
 
 [ext_resource type="Script" uid="uid://piymvhyv5oxk" path="res://map_generation/terrain_mesh/TerrainMesh.cs" id="1_8i83x"]
 [ext_resource type="PackedScene" uid="uid://ckdbden2ckxda" path="res://common/polygon_mesh_generation/Shader based/polygon_mesh.tscn" id="2_g543p"]
 [ext_resource type="Shader" uid="uid://cnnmjm6ycldt7" path="res://common/polygon_mesh_generation/Shader based/PolygonMeshShader.gdshader" id="3_g543p"]
 [ext_resource type="PackedScene" uid="uid://bc0es7d2y4vvk" path="res://map_generation/terrain_texture/TerrainTexture.tscn" id="3_p7cl5"]
+[ext_resource type="Shader" uid="uid://4ut2ds7uagl3" path="res://map_generation/terrain_mesh/grass_vs.tres" id="5_72q7g"]
+[ext_resource type="PackedScene" uid="uid://dui2lnj36uifc" path="res://resources/grass_mesh/grass.glb" id="6_72q7g"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_6mu2c"]
-noise_type = 2
 seed = 140
-frequency = 0.069
-fractal_type = 0
+frequency = 0.0033
+fractal_octaves = 3
+fractal_lacunarity = 2.745
 cellular_return_type = 6
 domain_warp_amplitude = 25.725
 domain_warp_fractal_octaves = 10
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_2hbq0"]
+width = 1000
+height = 1000
 invert = true
 noise = SubResource("FastNoiseLite_6mu2c")
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_vlyff"]
 noise_type = 3
-frequency = 0.0576
-fractal_type = 0
+frequency = 0.0097
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_6mu2c"]
 noise = SubResource("FastNoiseLite_vlyff")
@@ -39,7 +42,7 @@ shader = ExtResource("3_g543p")
 shader_parameter/dirt_color = Color(0.733946, 0.422356, 7.70092e-07, 1)
 shader_parameter/dirt_color_alt = Color(0.936441, 0.545093, 0, 1)
 shader_parameter/stone_color = Color(0.31, 0.285045, 0.2449, 1)
-shader_parameter/grass_color = Color(0.223529, 0.541176, 0.137255, 1)
+shader_parameter/grass_color = Color(0.157689, 0.395059, 0.093906, 1)
 shader_parameter/grass_texture = SubResource("GradientTexture1D_6mu2c")
 shader_parameter/grass_noise_texture = SubResource("NoiseTexture2D_6mu2c")
 shader_parameter/dirt_normal = SubResource("NoiseTexture2D_2hbq0")
@@ -60,6 +63,77 @@ shader_parameter/edge_smooth = 0.0
 shader_parameter/depth_mulitplier = 1.0
 shader_parameter/rockiness = 1.0
 shader_parameter/rock_scale = 0.5
+shader_parameter/rock_start = 2.0
+shader_parameter/rock_smooth_depth = 2.0
+shader_parameter/rockiness_min = 0.05
+shader_parameter/rock_edge_smoothing = 1.0
+shader_parameter/center_mass_uv = Vector2(0.75, 0)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_72q7g"]
+noise_type = 3
+frequency = 0.0007
+fractal_type = 3
+fractal_octaves = 1
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_qekwp"]
+width = 1000
+height = 1000
+seamless = true
+seamless_blend_skirt = 1.0
+noise = SubResource("FastNoiseLite_72q7g")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_qekwp"]
+render_priority = 0
+shader = ExtResource("5_72q7g")
+shader_parameter/WindSpeed = 1.0
+shader_parameter/WorldUVScale = 0.695
+shader_parameter/WindNoise = SubResource("NoiseTexture2D_qekwp")
+shader_parameter/WindIntensity = 0.5
+shader_parameter/PlayerPosition = Vector3(0, 14.66, 7.515)
+shader_parameter/GrassBottom = Color(0.1643, 0.31, 0.1643, 1)
+shader_parameter/GrassTop = Color(0.0882, 0.42, 0.0882, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7cocp"]
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_svx1d"]
+_surfaces = [{
+"aabb": AABB(-0.590006, -0.0229912, -0.579392, 1.15746, 2.00201, 1.2573),
+"format": 34896613377,
+"index_count": 135,
+"index_data": PackedByteArray("AAABAAIAAAADAAEABAADAAAABAAFAAMABgAFAAQABwAIAAkABwAKAAgACwAKAAcACwAMAAoADQAMAAsADgAPABAADgARAA8AEgARAA4AEgATABEAFAATABIAFQAWABcAFQAYABYAGQAYABUAGQAaABgAGwAaABkAHAAdAB4AHAAfAB0AIAAfABwAIAAhAB8AIgAhACAAIwAkACUAIwAmACQAJwAmACMAJwAoACYAKQAoACcAKgArACwAKgAtACsALgAtACoALgAvAC0AMAAvAC4AMQAyADMAMQA0ADIANQA0ADEANQA2ADQANwA2ADUAOAA5ADoAOAA7ADkAPAA7ADgAPAA9ADsAPgA9ADwA"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 63,
+"vertex_data": PackedByteArray("WhO5ScpBAAA0F6sCXxsAAGIQqwK1MAAAvyO5SX8OAADxKz2Qw0MAAJQ5PZAXGQAAQFmt1do4AACka+BX2FAAABFmvQLMMgAAEWa9AnREAACka+BXaCYAAFJ8XqxHTQAAUnxerPkpAAD7l5H/oDsAAISqR0fkKQAA/JHXAmsVAADSndcCTyMAAA+OR0eACAAAP7Uxi5sdAACTnTGL1AEAACy/Es4AAAAAyZrQVv//AADNdK0BtO8AAFKIrQHP/AAA3WvQVn3gAAAapU6rWusAABB+Tqsk0QAAOamB/mjAAAAAAKxQA3kAAKwhAADpZgAA5g4AAIBqAAAjLaxQZHAAAPcCja5YhwAAhCiNriuAAAC6FGz9NasAAGGtTljNXgAAS9YrAx5RAACJvSsDKVYAAOfoTlitUgAADbbLrAxtAACS58us9mIAAOXU//9SgQAAGbqZSVnFAADyvYoC754AACG3igJFtAAAfcqZSQ6SAACw0hyQU8cAAFPgHJCnnAAA//+M1Wq8AAAiH3xG4boAACs/DAIsswAAECwMArK0AAAPTXxGNrcAAG8kZorfyQAApEpmitLGAADuOUfNt+EAAJ1jSEqxfwAAXX+CATeDAADFcY0BHnwAAEyELkrCkAAAl1wskgySAADIdxeSP6AAAFVbr9hMsgAA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_llhps"]
+resource_name = "grass_Plane_007"
+_surfaces = [{
+"aabb": AABB(-0.590006, -0.0229912, -0.579392, 1.15746, 2.00201, 1.2573),
+"attribute_data": PackedByteArray("h4ukuq2f7P9DkmX/x6vou/OQtHXHq8J2H6HsL4hcAa2ebOz/5GGk/1J2r63eYMdaUnZYW8FtFgk35hW+k/qT/+Hv7P/s/z69N+bYe5r7JXu+7is5LzxirUpQ7P/kQnv/ZFxyrphBVFtkXDZcuVHsCBIAtrGTFOz/4Ano/8wZwbESAKtWeRWzVnwFDwfwGaasNi/s/wchbv8KPNatrB91Wgo8cVu2MO0I66ukuhHA7P+nsmX/K8zou1extHUrzMJ2g8HsL0/M87224JP//9Xs/xLmG71PzJN7vuHgetvUwzh3dtO5CYe0/1V+7P9ji025d3aTc9+HJHNpfT4t"),
+"format": 34896613399,
+"index_count": 135,
+"index_data": PackedByteArray("AAABAAIAAAADAAEABAADAAAABAAFAAMABgAFAAQABwAIAAkABwAKAAgACwAKAAcACwAMAAoADQAMAAsADgAPABAADgARAA8AEgARAA4AEgATABEAFAATABIAFQAWABcAFQAYABYAGQAYABUAGQAaABgAGwAaABkAHAAdAB4AHAAfAB0AIAAfABwAIAAhAB8AIgAhACAAIwAkACUAIwAmACQAJwAmACMAJwAoACYAKQAoACcAKgArACwAKgAtACsALgAtACoALgAvAC0AMAAvAC4AMQAyADMAMQA0ADIANQA0ADEANQA2ADQANwA2ADUAOAA5ADoAOAA7ADkAPAA7ADgAPAA9ADsAPgA9ADwA"),
+"material": SubResource("StandardMaterial3D_7cocp"),
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 63,
+"vertex_data": PackedByteArray("WhO5ScpBf7Q0F6sCXxtetGIQqwK1MF60vyO5SX8Of7TxKz2Qw0MItZQ5PZAXGQi1QFmt1do4gLWka+BX2FAFwBFmvQLMMv+/EWa9AnRE/7+ka+BXaCYFwFJ8XqxHTSbAUnxerPkpJsD7l5H/oDtEwISqR0fkKTfb/JHXAmsVJtvSndcCTyMm2w+OR0eACDfbP7Uxi5sdZtuTnTGL1AFm2yy/Es4AAInbyZrQVv//SubNdK0BtO9M5lKIrQHP/Ezm3WvQVn3gSuYapU6rWutV5hB+Tqsk0VXmOamB/mjAY+YAAKxQA3kmiawhAADpZhSJ5g4AAIBqFIkjLaxQZHAmifcCja5Yh3+LhCiNriuAVIu6FGz9NaurjmGtTljNXnqJS9YrAx5RF4mJvSsDKVYXiefoTlitUnqJDbbLrAxtzoqS58us9mLOiuXU//9SgdWLGbqZSVnFf7TyvYoC755etCG3igJFtF60fcqZSQ6Sf7Sw0hyQU8cItVPgHJCnnAi1//+M1Wq8gLUiH3xG4bpyhSs/DAIssz+EECwMArK0P4QPTXxGNrdyhW8kZorfyXeIpEpmitLGd4juOUfNt+FUip1jSEqxf5iVXX+CATeDR5XFcY0BHnxHlUyELkrCkJiVl1wskgySi5bIdxeSP6CLllVbr9hMsjyX43OcEGV4ZAhleGQI43OcEBRtAx0UbQMd2GnmIuB5HAkKfKoECnyqBOB5HAksdrYQLHa2EFR0gRQqf4gHmYB8BJmAfAQqf4gHvHyoDrx8qA6Ae0oS63v/CeR8zAXkfMwF63v/CUd6ExFHehMRcHmsFAVZTypFWusoRVrrKAxZRyo+RGZBMkVXQC44zU5uVT8g6F+fEuhfnxJuVT8g30YpM99GKTOVQFM743OcEGV4ZAhleGQI43OcEBRtAx0UbQMd2GnmIgRJd0wqXVA9Kl1QPQRJd0wRNXpbETV6W2gugWCyZVjmjW3s641t7OuyZVjm/1cm3P9XJtzxUaTX")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_svx1d")
+
+[sub_resource type="MultiMesh" id="MultiMesh_72q7g"]
+transform_format = 1
+mesh = SubResource("ArrayMesh_llhps")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_72q7g"]
+albedo_color = Color(0, 0.427451, 0, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_1ovh0"]
+size = Vector2(50.345, 25)
 
 [node name="TerrainMesh" type="Node3D" node_paths=PackedStringArray("terrainTexture", "polyMesh")]
 script = ExtResource("1_8i83x")
@@ -70,3 +144,24 @@ polyMesh = NodePath("PolygonMesh")
 material_override = SubResource("ShaderMaterial_p7cl5")
 
 [node name="TerrainTexture" parent="." instance=ExtResource("3_p7cl5")]
+
+[node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="."]
+material_override = SubResource("ShaderMaterial_qekwp")
+cast_shadow = 0
+multimesh = SubResource("MultiMesh_72q7g")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+visible = false
+material_override = SubResource("StandardMaterial3D_72q7g")
+mesh = SubResource("PlaneMesh_1ovh0")
+
+[node name="grass2" parent="." instance=ExtResource("6_72q7g")]
+visible = false
+
+[node name="SpotLight3D" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -0.0360682, 0.999349, 0, -0.999349, -0.0360682, 0, 11.5415, -2.67528)
+light_energy = 14.821
+spot_range = 18.4338
+spot_angle = 52.0313
+
+[editable path="grass2"]

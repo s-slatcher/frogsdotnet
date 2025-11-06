@@ -1,7 +1,9 @@
 using Godot;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Linq;
 
@@ -20,8 +22,8 @@ public partial class TerrainMesh : Node3D
 
     public float MaxDepth = 5;
     public float MinDepth = 5;
-    public float QuadDensity = 0.25f;
-    public float GrassLength = 4f;
+    public float QuadDensity = 0.5f;
+    public float GrassLength = 2f;
 
     internal Vector2[] terrainPoly = [];
     public Vector2[] TerrainPolygon
@@ -60,14 +62,75 @@ public partial class TerrainMesh : Node3D
         polyMesh.QuadDensity = QuadDensity;
         polyMesh.MinDepth = MinDepth;
         polyMesh.GenerateMesh(terrainPoly);
-        
+
+        BuildGrass();
     }
+
+    private void BuildGrass()
+    {
+        var time = Time.GetTicksMsec();
+        MultiMeshInstance3D multiMeshInst = GetNode<MultiMeshInstance3D>("MultiMeshInstance3D");
+        // var multiMesh = new MultiMesh();
+        // multiMesh.TransformFormat = MultiMesh.TransformFormatEnum.Transform3D;
+        // var grassMeshScene = (PackedScene)GD.Load("uid://bqxbvm5ahkldx");
+
+        // var meshInst = grassMeshScene.Instantiate<MeshInstance3D>();
+        // var mat = meshInst.MaterialOverride;
+
+        var multiMesh = (MultiMesh)multiMeshInst.Multimesh.Duplicate();
+        multiMeshInst.Multimesh = multiMesh;     
+           
+        
+        // multiMeshInst.Multimesh = multiMesh;
+        // multiMeshInst.MaterialOverride = mat;
+
+        List<Transform3D> grass_positions = new();
+
+        var vertices = polyMesh.Mesh.GetFaces();
+        GD.Print("face count from loop: ", vertices.Length / 3);
+        var qualified_face_count = 0;
+
+        for (int i = 0; i < vertices.Length; i += 3)
+        {
+            var vert1 = (Vector3)vertices[i];
+            var vert2 = (Vector3)vertices[i + 1];
+            var vert3 = (Vector3)vertices[i + 2];
+
+
+            var face_norm = (vert1-vert2).Cross(vert2-vert3).Normalized() * -1;
+
+            if (!(face_norm.Y > 0.6)) continue;
+            if (GD.Randf() < 0.75) continue;
+            qualified_face_count += 1;
+
+            Vector3 centroid = (vert1 + vert2 + vert3) / 3;
+            Vector3 randOffet = new Vector3(GD.Randf(), 0, GD.Randf()) / 5;
+            Vector3 grass_pos = centroid + randOffet + new Vector3(0,-0.1f,0);
+
+            var transform = new Transform3D(Basis.Identity, grass_pos);
+            grass_positions.Add(transform);
+
+
+        }
+        GD.Print("grass faces: ", qualified_face_count, " loop time: ", Time.GetTicksMsec() - time);
+
+        multiMeshInst.Multimesh.InstanceCount = qualified_face_count;
+        for (int i = 0; i < qualified_face_count; i++)
+        {
+            multiMeshInst.Multimesh.SetInstanceTransform(i, grass_positions[i]);
+
+        }
+
+        // AddChild(multiMeshInst);
+    }
+        
+
 
     // public void SetHeightDepthCurve(TerrainPolygon terrainPoly)
     // {
 
     //     polyMesh.HeightDepthCurve = GD.Load<Curve>("uid://dnobssupgeuds");
-        
+
     //     var c = new Curve();
     //     var maxHeight = terrainPoly.BoundingRect.End.Y;
 
@@ -126,6 +189,7 @@ public partial class TerrainMesh : Node3D
     //     c.BakeResolution = 500;
     //     polyMesh.DomainDepthCurve = c;
     // }
+
 
     public void ExplodeTerrain(Vector3 position, float radius)
     {

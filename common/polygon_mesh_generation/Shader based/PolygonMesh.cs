@@ -52,9 +52,6 @@ public partial class PolygonMesh : MeshInstance3D
     int explosionCount = 0;
     const int MAX_EXPLOSIONS = 500;  //keep aligned with shader constants
 
-    
-
-
     //Debug Data
     float frontSubdivideTime = 0;
     float frontFaceIndexingTime = 0;
@@ -558,7 +555,10 @@ public partial class PolygonMesh : MeshInstance3D
     {
         if (!Geometry2D.IsPolygonClockwise(polygon)) Array.Reverse(polygon);
         var rect = GeometryUtils.RectFromPolygon(polygon);
-        BoundingRect = rect.Grow(1);
+      
+        rect.Expand(Vector2.Zero);
+        BoundingRect = rect.GrowSide(Side.Right, 1);
+        BoundingRect = rect.GrowSide(Side.Top, 1);
 
         var translatedPoly = polygon.Select(p => p - rect.Position).ToArray(); // normalize polygon to start at origin
 

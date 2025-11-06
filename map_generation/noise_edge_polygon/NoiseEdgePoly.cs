@@ -2,67 +2,83 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using Vector2 = Godot.Vector2;
 
 public partial class NoiseEdgePoly : GodotObject
 {
 
 
-    float MaxDistortWidth = 6f;
+    float MaxDistortWidth = 8f;
     float MaxDistortLayerFrequency = 0.15f;
     float MinDistortLayerFrequency = 0.04f; 
-
+    
     float BaseWidth;
     float TopWidth;
     float Height;
-    private float DistortShiftFactor = 0.33f; // degree noise pushes terrain in vs out, lower num for wider terrain
+
+    float NoisePointsPerUnit = 6;
+
 
     GeometryUtils gu = new();
 
-    HeightMap DistortMap;
+    FastNoiseLite EdgeNoise = GD.Load<FastNoiseLite>("uid://dw8jx8pbm8eps");
 
+    HeightMap DistortMap;
+    public int Seed = 0;
 
     public Vector2[] Polygon;
 
-    public NoiseEdgePoly(float height, float baseWidth, float topWidth, bool isIsland)
+    public float PolygonDetail = 0.01f;
+    public float MaxRoundedTopHeight = 5f;
+
+    public NoiseEdgePoly(float height, float baseWidth, float topWidth, int seed = 0)
     {
         BaseWidth = baseWidth;
         TopWidth = topWidth;
         Height = height;
-
-        if (isIsland) SetDistortMap(); 
-        else SetDistortMap();
-
-    
-
+        Seed = seed;
+        EdgeNoise.Seed = Seed;
+        
         var towerRect = new Rect2(Vector2.Zero, new Vector2(baseWidth, Height));
-
         Polygon = GenerateNoiseEdgePoly(height, baseWidth, topWidth).ToArray();
 
     }
 
-    
-    public void SetDistortMap()
+    List<Vector2> GeneratePoints(float startValue, float length)
     {
-        // automatically adjusting noise settings based on terrain dimensions
-        var minWidth = float.Min(BaseWidth, TopWidth);
-        var distortWidth = 8f; 
+        var sampleCount = length * NoisePointsPerUnit;
+        var pointList = new List<Vector2>();
+        for (int i = 0; i < sampleCount; i++)
+        {
+            var x = (i / NoisePointsPerUnit) + startValue;
+            var y = EdgeNoise.GetNoise1D(x);
+            var norm_y = (y + 1) / 2f;
+            var norm_x = x - startValue;
+            var point = new Vector2(norm_x, norm_y * MaxDistortWidth);
+            pointList.Add(point);
+        }
 
+        return gu.SimplifyPolygon(pointList.ToArray(), PolygonDetail).ToList();
 
-        var distortFreq = 0.06f;
-        var distortLayers = 3;
-        var layerFrequencyMult = 2f;
-        var layerStrengthMult = 0.45f;
-        DistortMap = new(1, distortFreq, distortLayers, layerFrequencyMult, layerStrengthMult);
+        // return pointList;
 
+    }
+    
+    public List<Vector2> GetNoiseLine(Vector2 line)
+    {
+        var edgeLine = DistortMap.GetNextHeights(line.Length(), true);
+        // edgeLine.RemoveAt(1);
+        // edgeLine.RemoveAt(edgeLine.Count - 2);
 
-        DistortMap.MaxHeight = distortWidth;
-        DistortMap.MinHeight = 0;
+        var rotateAngle = Vector2.Right.AngleTo(line);
+        edgeLine = edgeLine.Select(p => p.Rotated(rotateAngle)).ToList();
 
+        return edgeLine;
     }
 
 
-      public List<Vector2> GenerateNoiseEdgePoly(float height, float baseWidth, float topWidth)
+    public List<Vector2> GenerateNoiseEdgePoly(float height, float baseWidth, float topWidth)
     {
 
 
@@ -77,28 +93,46 @@ public partial class NoiseEdgePoly : GodotObject
         var sideLength = leftVector.Length();
 
         // grab noise line, both rotated the same to be mirrored
-        var leftEdgeLine = GetNoiseLine(leftVector);
-        var rightEdgeLine = GetNoiseLine(leftVector);
-       
+        // var leftEdgeLine = GetNoiseLine(leftVector);
+        // var rightEdgeLine = GetNoiseLine(leftVector);
+        var vecLen = leftVector.Length();
+
+        var leftEdgeLine = GeneratePoints(0, vecLen);
+        var rightEdgeLine = GeneratePoints(vecLen, vecLen);
+
+        var rotateAngle = Vector2.Right.AngleTo(leftVector);
+        
+        leftEdgeLine = leftEdgeLine.Select(p => p.Rotated(rotateAngle)).ToList();
+        rightEdgeLine = rightEdgeLine.Select(p => p.Rotated(rotateAngle)).ToList();
+        // GD.Print("noise edge points: ", leftEdgeLine.Count, "  simplfied version :", leftEdgeLine_simp.Count);
+
         // rightEdgeLine = rightEdgeLine.Select(p => p * new Vector2(-1, 1) + new Vector2(baseWidth, 0)).ToList();
 
         // smooth out the middle of the lines, ignoring final point 
-        var smoothLeftEdge = SmoothNoiseLine(leftEdgeLine, rightEdgeLine[0], rightEdgeLine[^1]);
-        var smoothRightEdge = SmoothNoiseLine(rightEdgeLine, leftEdgeLine[0], leftEdgeLine[^1]);
+        // var smoothLeftEdge = SmoothNoiseLine(leftEdgeLine, rightEdgeLine[0], rightEdgeLine[^1]);
+        // var smoothRightEdge = SmoothNoiseLine(rightEdgeLine, leftEdgeLine[0], leftEdgeLine[^1]);
+
+        var smoothLeftEdge = leftEdgeLine.ToArray();
+        var smoothRightEdge = rightEdgeLine.ToArray();
 
         // force slope at both ends to converge onto the average slope of the noise line (maintains the first and last point positions)
         var compressedLeftEdge = CompressNoiseLine(smoothLeftEdge);
         var compressedRightEdge = CompressNoiseLine(smoothRightEdge);
-       
+
+        var leftHeight = compressedLeftEdge[^1].Y;
+        var rightHeight = compressedRightEdge[^1].Y;
+
         // flip the right edge and translate by base width
         compressedRightEdge = compressedRightEdge.Select(p => p * new Vector2(-1, 1) + new Vector2(baseWidth, 0)).ToList();
 
+
+        
         // produce the rounded top and bottom caps connecting the noise lines
         var p1 = compressedLeftEdge[0];
-        var d1 = p1 - compressedLeftEdge[1]; 
+        var d1 = p1 - compressedLeftEdge[1];
         var p2 = compressedRightEdge[0];
         var d2 = p2 - compressedRightEdge[1];
-        var topEdge = GetRoundedEdge(p1, d1, p2, d2, 8);
+        var topEdge = GetRoundedEdge(p1, d1, p2, d2, MaxRoundedTopHeight);
 
 
         p1 = compressedLeftEdge[^1];
@@ -188,17 +222,7 @@ public partial class NoiseEdgePoly : GodotObject
 
     }
 
-    public List<Vector2> GetNoiseLine(Vector2 line)
-    {
-        var edgeLine = DistortMap.GetNextHeights(line.Length(), true);
-        // edgeLine.RemoveAt(1);
-        // edgeLine.RemoveAt(edgeLine.Count - 2);
 
-        var rotateAngle = Vector2.Right.AngleTo(line);
-        edgeLine = edgeLine.Select(p => p.Rotated(rotateAngle)).ToList();
-
-        return edgeLine;
-    }
 
 
 

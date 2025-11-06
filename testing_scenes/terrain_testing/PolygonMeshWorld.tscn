@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=4 uid="uid://c2at4wnnfrlwv"]
+[gd_scene load_steps=23 format=4 uid="uid://c2at4wnnfrlwv"]
 
 [ext_resource type="Script" uid="uid://dj7d20jbo5vto" path="res://testing_scenes/terrain_testing/PolygonMeshWorld.cs" id="1_5tvfr"]
 [ext_resource type="PackedScene" uid="uid://bjjceeyq3csc3" path="res://addons/sky shader/skyshader.tscn" id="2_a7mq0"]
@@ -67,6 +67,11 @@ shader_parameter/edge_smooth = 0.0
 shader_parameter/depth_mulitplier = 1.0
 shader_parameter/rockiness = 1.0
 shader_parameter/rock_scale = 0.5
+shader_parameter/rock_start = 2.0
+shader_parameter/rock_smooth_depth = 4.0
+shader_parameter/rockiness_min = 0.15
+shader_parameter/rock_edge_smoothing = 1.0
+shader_parameter/center_mass_uv = Vector2(0.5, 0)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ewfcb"]
 render_priority = 0
@@ -98,10 +103,15 @@ subdivide_depth = 200
 radius = 1.0
 height = 6.556
 
+[sub_resource type="QuadMesh" id="QuadMesh_ewfcb"]
+size = Vector2(4.555, 60)
+
 [node name="PolygonMeshWorld" type="Node3D"]
 script = ExtResource("1_5tvfr")
-Seed = 16
-LandWidth = 150.0
+LandWidth = 25.0
+LandHeight = 50.0
+TotalLandmasses = 5
+AverageLandGap = 60.0
 explodeScene = ExtResource("2_q80so")
 terrainMeshScene = ExtResource("5_4v8u0")
 
@@ -136,7 +146,7 @@ visible = false
 light_energy = 0.36
 
 [node name="WaterPlane" parent="." node_paths=PackedStringArray("pos_source") instance=ExtResource("4_4v8u0")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.045, 78.554)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 78.554)
 pos_source = NodePath("../WasdCamera")
 
 [node name="TerrainMesh" parent="." instance=ExtResource("5_4v8u0")]
@@ -177,5 +187,9 @@ spot_angle = 38.7093
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 164.181, 16.878, -6.16925)
 mesh = SubResource("SphereMesh_q5us4")
 
+[node name="HeightCompareMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("QuadMesh_ewfcb")
+
 [editable path="enviroment"]
 [editable path="TerrainMesh"]
+[editable path="TerrainMesh/grass2"]

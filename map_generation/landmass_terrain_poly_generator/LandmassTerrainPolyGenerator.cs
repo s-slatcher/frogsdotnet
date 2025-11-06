@@ -11,7 +11,9 @@ public partial class LandmassTerrainPolyGenerator : Resource
     public RandomNumberGenerator rng = new();
 
     public float Height = 80;
-    public float CliffGrade =  float.Pi / 10;
+    public float CliffGrade =  float.Pi / 12;
+    public float Jaggedness = 1;
+
 
     float PlatformFilteringWidth = 1;
     float BaseFilteringOdds = 0.25f;
@@ -24,6 +26,7 @@ public partial class LandmassTerrainPolyGenerator : Resource
     {
         rng.Seed = (ulong)seed;
         heightMap.NoiseSeed = seed;
+        heightMap.Jaggedness = Jaggedness;
 
     }
     
@@ -34,19 +37,20 @@ public partial class LandmassTerrainPolyGenerator : Resource
         var poly = new List<Vector2>();
 
         heightMap.Range = new Vector2(startX, endX);
+        heightMap.Height = Height;
 
         var platRects = heightMap.GetRects();
         // var filteredRects = FilterSmallPlatforms(platRects);
         var filteredRects = platRects;
 
         var towerPolygons = new List<Vector2[]>();
-
+        
         foreach (var rect in filteredRects)
         {
             var topWidth = rect.Size.X;
             var height = rect.Size.Y;
             var baseWidth = float.Tan(CliffGrade) * height * 2 + topWidth;
-            towerPolygons.Add(new NoiseEdgePoly(height, baseWidth, topWidth, false).Polygon);
+            towerPolygons.Add(new NoiseEdgePoly(height, baseWidth, topWidth, (int)rng.Randi() ).Polygon);
 
         }
 
