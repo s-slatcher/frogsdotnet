@@ -18,10 +18,11 @@ public partial class NewNoiseEdgePolyTesting : Node2D
     HeightmapRects heightMap = new();
     GeometryUtils gu = new();
 
-    [Export] bool ConstantUpdate = true;
-    [Export] bool CycleSeed = true;
+    [Export(PropertyHint.Range, "0, 1, 0.1")] float UpdateSpeed = 0;
 
     [ExportGroup("Mountain Shape")]
+    [Export] bool CycleHeightMapSeed = false;
+
     [Export] int HeightMapSeed = 0;
     [Export] float Width = 100;
     [Export] float MaxHeight = 60;
@@ -30,6 +31,7 @@ public partial class NewNoiseEdgePolyTesting : Node2D
     [Export] float MeanCliffGrade = float.Pi / 15;
 
     [ExportGroup("Edge Noise")]
+    [Export] bool CycleEdgeNoiseSeed = false;
     [Export] float HeightCutoff = 0.5f;
     [Export] float MaxYComponent = 0.75f;
     [Export] float NoiseClampingFactor = 0.8f; // ~0.8 limits clamping but seems to prevent most noise line overlaps
@@ -46,6 +48,7 @@ public partial class NewNoiseEdgePolyTesting : Node2D
     [Export] float MinCaveDepth = 5;
     [Export] float MaxCaveDepth = 10;
     
+    
 
     
 
@@ -61,9 +64,9 @@ public partial class NewNoiseEdgePolyTesting : Node2D
     public override void _PhysicsProcess(double delta)
     {
         timeSinceUpdate += delta;
-        if (!ConstantUpdate) return;
+        var deltaTarget = (1.05 - UpdateSpeed);
 
-        if (timeSinceUpdate > 0.1)
+        if (timeSinceUpdate > deltaTarget && UpdateSpeed != 0)
         {
             timeSinceUpdate = 0;
 
@@ -74,8 +77,7 @@ public partial class NewNoiseEdgePolyTesting : Node2D
     
     private void Update()
     {
-        if (CycleSeed) EdgeSeed += 1;
-        rng.Seed = (uint)EdgeSeed;
+        UpdateNoise();
 
         var poly = GenerateLandmassPoly();
         var noisePoly = GenerateSmoothNoisePoly(poly.ToArray());
@@ -108,6 +110,10 @@ public partial class NewNoiseEdgePolyTesting : Node2D
 
     private void UpdateNoise()
     {
+
+        if (CycleEdgeNoiseSeed) EdgeSeed += 1;
+        rng.Seed = (uint)EdgeSeed;
+        if (CycleHeightMapSeed) HeightMapSeed += 1;
         // noise for setting terrain shape
         heightMap.Height = MaxHeight;
         heightMap.NoiseSeed = HeightMapSeed;
@@ -133,7 +139,6 @@ public partial class NewNoiseEdgePolyTesting : Node2D
 
     private List<Vector2> GenerateLandmassPoly()
     {
-        UpdateNoise();
 
 
         // get height rects, add dummy at end to complete 
@@ -164,7 +169,7 @@ public partial class NewNoiseEdgePolyTesting : Node2D
             var platform = platformLines[i];
             platform = TranslatePlatform(platform, lastPlatform);
             platformLines[i] = platform;
-
+            landPoly.Add(lastPlatform.End);
             //step 1: get height difference and check conditions for cave
             
             Vector2 cliffVector = platform.Start - lastPlatform.End;
@@ -181,21 +186,27 @@ public partial class NewNoiseEdgePolyTesting : Node2D
                 float maxFloorPosition = (absHeight - caveHeight) / absHeight;  // limit how close cave ceiling to can be to top platform
                 float caveStartProgress = float.Clamp(rng.Randfn(0.5f, 0.1f), 0, maxFloorPosition); ;  // cave floor averages in middle, usually extends to upper half of cliff 
 
-                //step 3: establish cliff slope 
+                //step 3: establish cliff slope direction 
                 Vector2 lowPos; Vector2 highPos;
                 if (heightDelta > 0) (lowPos, highPos) = (lastPlatform.End, platform.Start);
                 else (lowPos, highPos) = (platform.Start, lastPlatform.End);
 
                 // set 4: set cave floor width and how far tucked into the mountain it is
-                var caveDepth = rng.RandfRange(MinCaveDepth, MaxCaveDepth);
+                Vector2 caveCliffPosition = (highPos - lowPos) * caveStartProgress + lowPos;
+                var caveDepth = rng.RandfRange(MinCaveDepth, MaxCaveDepth) * Math.Sign(heightDelta);
                 var caveInsetPercentage = rng.RandfRange(0.25f, 0.5f);  // 0.5 means the middle of cave floor would intersect with cliff face line;
+                // var caveInsetPercentage = 0.90f;
+                var caveTranslate = (1 - caveInsetPercentage) * caveDepth;
+                Vector2 caveEnd = caveCliffPosition + new Vector2(caveTranslate, 0);
 
-                
-                
 
-
+                List<Vector2> cavePoints = [caveEnd, new Vector2(caveDepth, 0) + caveEnd];
+                if (heightDelta < 0) cavePoints.Reverse();
+                landPoly.AddRange(cavePoints);
 
             }
+            
+            landPoly.Add(platform.Start);
             
 
             

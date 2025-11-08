@@ -9,20 +9,20 @@ colors = PackedColorArray(1, 0, 0, 1, 0.200521, 0.799479, 0.670936, 1, 0, 1, 0.8
 
 [node name="NewNoiseEdgePoly" type="Node2D"]
 script = ExtResource("1_xega4")
-CycleSeed = false
-HeightMapSeed = 165
+UpdateSpeed = 0.562
+CycleHeightMapSeed = true
+HeightMapSeed = 37
 Width = 117.81
 MaxHeight = 83.48
-SmoothingEpsilon = 0.024
+SmoothingEpsilon = 0.025
 MeanCliffGrade = 0.294
 EdgeSeed = 130
-MaxCaveDepth = 10.0
+DrawLines = true
 
 [node name="DebugCamera2d" parent="." instance=ExtResource("2_njqo4")]
 position = Vector2(-170, 27)
 
 [node name="P" type="Polygon2D" parent="."]
-visible = false
 position = Vector2(-12, -1)
 color = Color(1, 1, 1, 0.0862745)
 polygon = PackedVector2Array(-66, -2, 29, -350, 135, -349, 180, -446, 296, -445, 380, -539, 468, -540, 516, -466, 606, -466, 794, 2)
