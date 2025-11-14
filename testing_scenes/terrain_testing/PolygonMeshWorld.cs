@@ -10,9 +10,9 @@ using Vector3 = Godot.Vector3;
 public partial class PolygonMeshWorld : Node3D
 {
     [Export] int Seed = 1;
-    [Export] float LandWidth = 60;
+    [Export] float LandWidth = 120;
     [Export] float LandHeight = 80;
-    [Export] int TotalLandmasses = 3;
+    [Export] int TotalLandmasses = 2;
     [Export] float PolygonDetail = 0.05f; // lower means higher detail (smaller differences allowed before collapsing)
     [Export] float AverageLandGap = 100;
 
@@ -53,6 +53,13 @@ public partial class PolygonMeshWorld : Node3D
         var gUtils = new GeometryUtils();
 
         var landmassGen = new LandmassTerrainPolyGenerator((int)rng.Seed);
+
+
+        var terrainMap = new TerrainPolygonMap();
+        terrainMap.Settings.MaxHeight = LandHeight;
+        terrainMap.Settings.EdgeNoise.Seed = Seed;
+        terrainMap.Settings.HeightMapNoise.Seed = Seed;
+
         landmassGen.Height = LandHeight;
         landmassGen.Jaggedness = 2;
 
@@ -64,7 +71,8 @@ public partial class PolygonMeshWorld : Node3D
 
         for (int i = 0; i < TotalLandmasses; i++)
         {
-            var poly = landmassGen.GenerateTerrainPoly(nextRange.X, nextRange.Y);
+            // var poly = landmassGen.GenerateTerrainPoly(nextRange.X, nextRange.Y);
+            var poly = terrainMap.GetTerrainPolygon(nextRange);
 
             GD.Print("unsimplified poly point count: ", poly.Length);
             var simplePoly = gUtils.SimplifyPolygon(poly, PolygonDetail);

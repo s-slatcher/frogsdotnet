@@ -1,6 +1,6 @@
 [gd_resource type="FastNoiseLite" format=3 uid="uid://cvdhvoshnaiqt"]
 
 [resource]
-seed = 2
+seed = 6
 frequency = 0.0147
 fractal_octaves = 1

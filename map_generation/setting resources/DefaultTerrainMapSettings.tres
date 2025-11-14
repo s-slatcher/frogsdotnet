@@ -1,0 +1,26 @@
+[gd_resource type="Resource" load_steps=4 format=3 uid="uid://2x4wila83vee"]
+
+[ext_resource type="FastNoiseLite" uid="uid://dw8jx8pbm8eps" path="res://map_generation/noise_edge_polygon/noise_edge_poly_noise.tres" id="1_0hyis"]
+[ext_resource type="FastNoiseLite" uid="uid://cvdhvoshnaiqt" path="res://map_generation/heightmap_rects/landmass_generation_noise.tres" id="2_gohjv"]
+[ext_resource type="Script" uid="uid://8t5g801evp87" path="res://map_generation/setting resources/TerrainPolygonMapSettings.cs" id="3_p53pm"]
+
+[resource]
+script = ExtResource("3_p53pm")
+HeightMapNoise = ExtResource("2_gohjv")
+MaxHeight = 90.0
+Jaggedness = 1.0
+SmoothingEpsilon = 0.02
+EdgeNoise = ExtResource("1_0hyis")
+NoiseHeightCutoff = 0.5
+MaxYComponentForNoise = 0.75
+NoiseClampingFactor = 0.8
+MeanCliffGrade = 0.20944
+TargetCurveBuffer = 1.0
+TargetNoiseHeight = 3.0
+MinCaveHeight = 12.0
+MaxCaveHeight = 20.0
+MinHeightAllowance = 30.0
+BaseCaveChance = 0.5
+MinCaveDepth = 5.0
+MaxCaveDepth = 10.0
+CaveInsetPercentage = 0.75

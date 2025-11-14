@@ -36,10 +36,10 @@ public partial class LandmassTerrainPolyGenerator : Resource
     {
         var poly = new List<Vector2>();
 
-        heightMap.Range = new Vector2(startX, endX);
+        var range = new Vector2(startX, endX);
         heightMap.Height = Height;
 
-        var platRects = heightMap.GetRects();
+        var platRects = heightMap.GetRects(range);
         // var filteredRects = FilterSmallPlatforms(platRects);
         var filteredRects = platRects;
 

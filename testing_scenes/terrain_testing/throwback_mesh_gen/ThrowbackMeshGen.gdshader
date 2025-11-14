@@ -66,7 +66,7 @@ void vertex() {
 
 		vec4 explosion = explosion_array[i];
 		if (explosion == vec4(0.)) break;
-		
+
 		vec3 pos = explosion.xyz;
 		float radius = explosion.w;
 		if (radius + pos.x > VERTEX.x + 5.) break;

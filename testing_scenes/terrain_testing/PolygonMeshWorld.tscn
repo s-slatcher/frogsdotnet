@@ -104,14 +104,16 @@ radius = 1.0
 height = 6.556
 
 [sub_resource type="QuadMesh" id="QuadMesh_ewfcb"]
-size = Vector2(4.555, 60)
+size = Vector2(1000, 120)
 
 [node name="PolygonMeshWorld" type="Node3D"]
 script = ExtResource("1_5tvfr")
-LandWidth = 25.0
-LandHeight = 50.0
-TotalLandmasses = 5
-AverageLandGap = 60.0
+Seed = 6
+LandWidth = 400.0
+LandHeight = 120.0
+TotalLandmasses = 1
+PolygonDetail = 0.15
+AverageLandGap = 70.0
 explodeScene = ExtResource("2_q80so")
 terrainMeshScene = ExtResource("5_4v8u0")
 
@@ -135,7 +137,7 @@ shadow_reverse_cull_face = true
 directional_shadow_max_distance = 193.2
 
 [node name="Moon" parent="enviroment" index="2"]
-transform = Transform3D(0.00938708, 0.839157, 0.543808, -0.999849, -3.66807e-08, 0.0172593, 0.0144832, -0.543889, 0.839032, 0, 0, 0)
+transform = Transform3D(0.00938707, 0.839157, 0.543808, -0.999849, -3.66807e-08, 0.0172593, 0.0144832, -0.543889, 0.839032, 0, 0, 0)
 light_energy = 0.0422868
 
 [node name="Camera3D" parent="enviroment" index="3"]
