@@ -23,14 +23,10 @@ public partial class TerrainTexture : SubViewport
         var tex = GetEdgeTexture(polygon);
         Size = (Vector2I)tex.GetSize();
         
-
-
-
         // var quad_mesh = new QuadMesh() { Size = this.Size };
         // MainMesh.Mesh = quad_mesh;
         // var mat = (ShaderMaterial)MainMesh.Material;
         // mat.SetShaderParameter("grass_texture", tex);
-
 
 
         GetNode<Sprite2D>("Sprite2D").Texture = tex;

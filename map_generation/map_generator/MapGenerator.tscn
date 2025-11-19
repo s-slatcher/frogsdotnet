@@ -1,6 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://wqniop2cupas"]
+[gd_scene load_steps=4 format=3 uid="uid://wqniop2cupas"]
 
 [ext_resource type="Script" uid="uid://yakdps4bjn87" path="res://map_generation/map_generator/MapGenerator.cs" id="1_3un6x"]
+[ext_resource type="Resource" uid="uid://2x4wila83vee" path="res://map_generation/setting resources/DefaultTerrainMapSettings.tres" id="2_3un6x"]
+[ext_resource type="PackedScene" uid="uid://b8osbgmfbof24" path="res://testing_scenes/debug_camera_2d/debug_camera_2d.tscn" id="2_4jvgr"]
 
-[node name="MapGenerator" type="Node3D"]
+[node name="MapGenerator" type="Node2D"]
 script = ExtResource("1_3un6x")
+TerrainPolySettings = ExtResource("2_3un6x")
+
+[node name="DebugCamera2d" parent="." instance=ExtResource("2_4jvgr")]

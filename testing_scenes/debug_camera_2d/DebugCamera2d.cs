@@ -9,8 +9,9 @@ public partial class DebugCamera2d : Camera2D
     Vector2 dragStartMousePos;
     Vector2 dragStartCameraPos;
     
-    bool isDragging = false;
-
+    CheckButton btn;
+    bool isDragging = false;        
+    
     string savePath = "user://resource_save/";
     string saveName = "debugCameraData.tres";
 
@@ -23,11 +24,14 @@ public partial class DebugCamera2d : Camera2D
         
         Error error = DirAccess.MakeDirAbsolute(savePath);
         GD.Print(error);
-        GetTree().CreateTimer(0.5).Timeout += OnSaveTimer;
-        LoadData();
+        
+        
         SetScreenRect();
-        var button = GetNode<CheckButton>("CanvasLayer/Control/CheckButton");
-        button.Toggled += OnCheckButtonPress;
+        btn = GetNode<CheckButton>("CanvasLayer/Control/CheckButton");
+        btn.Toggled += OnCheckButtonPress;
+
+        LoadData();
+        GetTree().CreateTimer(0.5).Timeout += OnSaveTimer;
     }
 
     private void OnCheckButtonPress(bool state)
@@ -35,6 +39,7 @@ public partial class DebugCamera2d : Camera2D
         if (state) RotationDegrees = 180;
         else RotationDegrees = 0;
         isFlipped = state;
+
     }
 
 
@@ -49,20 +54,27 @@ public partial class DebugCamera2d : Camera2D
     {
 
         var exists = ResourceLoader.Exists(savePath + saveName);
-
+        
         if (exists)
         {
             var data = ResourceLoader.Load<DebugCameraData>(savePath + saveName);
             Position = data.Position;
             Zoom = data.Zoom;
+            if (data.FlipY)
+            {
+                btn.ButtonPressed = !btn.ButtonPressed;
+                OnCheckButtonPress(btn.ButtonPressed);
+            }
         }
         else GD.Print("no camera data found");
     }
 
     private void WriteData()
     {
-        var data = new DebugCameraData(){Position = this.Position, Zoom = this.Zoom};
+        var data = new DebugCameraData(){Position = this.Position, Zoom = this.Zoom, FlipY = this.isFlipped};
         _ = ResourceSaver.Save(data, savePath + saveName);
+
+        // LoadData();
     }
 
 

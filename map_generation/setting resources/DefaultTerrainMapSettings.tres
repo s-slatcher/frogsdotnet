@@ -7,9 +7,9 @@
 [resource]
 script = ExtResource("3_p53pm")
 HeightMapNoise = ExtResource("2_gohjv")
-MaxHeight = 90.0
+MaxHeight = 60.0
 Jaggedness = 1.0
-SmoothingEpsilon = 0.02
+SmoothingEpsilon = 0.025
 EdgeNoise = ExtResource("1_0hyis")
 NoiseHeightCutoff = 0.5
 MaxYComponentForNoise = 0.75

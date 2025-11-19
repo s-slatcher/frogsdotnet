@@ -34,7 +34,7 @@ public partial class GeometryUtils : GodotObject
         return mapVal;
     }
 
-    public static Rect2 RectFromPolygon(Vector2[] polygon)
+    public static Rect2 RectFromPolygon(Vector2[] polygon, float num = 0)
     {
         Rect2 rect = new();
 
@@ -53,6 +53,33 @@ public partial class GeometryUtils : GodotObject
         rect.End = max;
 
         return rect;
+    }
+    public Rect2 RectFromPolygon(Vector2[] polygon)  // WHAT IS THIS EXACTLY?
+    {
+        Rect2 rect = new();
+
+        Vector2 min = new(int.MaxValue, int.MaxValue);
+        Vector2 max = min * -1;
+
+        foreach (Vector2 point in polygon)
+        {
+            max.X = Math.Max(max.X, point.X);
+            max.Y = Math.Max(max.Y, point.Y);
+
+            min.X = Math.Min(min.X, point.X);
+            min.Y = Math.Min(min.Y, point.Y);
+        }
+        rect.Position = min;
+        rect.End = max;
+
+        return rect;
+    }
+
+    public Line2D Line2DFromPolygon(Vector2[] polygon, float width = 2, Color color = new Color())
+    {
+        var line = new Line2D(){Width = width, SelfModulate = color};
+        foreach(Vector2 p in polygon) line.AddPoint(p);
+        return line;
     }
 
     public Rect2I RectIFromPolygon(Vector2[] polygon)
@@ -91,6 +118,7 @@ public partial class GeometryUtils : GodotObject
         return vecArray;
 
     }
+    
 
     public Rect2 RectFromCircle(Vector2 center, float radius)
     {
@@ -100,6 +128,11 @@ public partial class GeometryUtils : GodotObject
         rect2.End = center - rad_vec;
         rect2 = rect2.Abs();
         return rect2;
+    }
+
+    public Rect2 RectFromCenterPoint(Vector2 center, Vector2 size)
+    {
+        return new Rect2(center - (size/2), size);
     }
 
     public Vector2[] ScalePolygon(Vector2[] polygon, Vector2 scaling)

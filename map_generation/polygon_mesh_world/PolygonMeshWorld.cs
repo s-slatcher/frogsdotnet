@@ -52,7 +52,6 @@ public partial class PolygonMeshWorld : Node3D
     {
         var gUtils = new GeometryUtils();
 
-        var landmassGen = new LandmassTerrainPolyGenerator((int)rng.Seed);
 
 
         var terrainMap = new TerrainPolygonMap();
@@ -60,40 +59,8 @@ public partial class PolygonMeshWorld : Node3D
         terrainMap.Settings.EdgeNoise.Seed = Seed;
         terrainMap.Settings.HeightMapNoise.Seed = Seed;
 
-        landmassGen.Height = LandHeight;
-        landmassGen.Jaggedness = 2;
 
-
-        // simplify poly (takes 250 points down to <100) without much visual change
-
-        Vector2 nextRange = new Vector2(0, LandWidth);
-
-
-        for (int i = 0; i < TotalLandmasses; i++)
-        {
-            // var poly = landmassGen.GenerateTerrainPoly(nextRange.X, nextRange.Y);
-            var poly = terrainMap.GetTerrainPolygon(nextRange);
-
-            GD.Print("unsimplified poly point count: ", poly.Length);
-            var simplePoly = gUtils.SimplifyPolygon(poly, PolygonDetail);
-            poly = simplePoly;
-            GD.Print("simplfied count: ", poly.Length);
-
-
-            var terrainMesh = (TerrainMesh)terrainMeshScene.Instantiate();
-            terrainMesh.Position = new Vector3(nextRange.X, 0, 0);
-            terrainMesh.QuadDensity = 0.5f; //NOT A MAP SETTING, PROBABLY GOES UNCHANGED?
-            terrainMesh.MinDepth = 3f; // SAME?
-            
-            AddChild(terrainMesh);
-
-            terrainMesh.TerrainPolygon = poly;
-            TerrainRegionMap[GeometryUtils.RectFromPolygon(poly)] = terrainMesh;
-
-            var waterGap = (float)rng.Randfn(AverageLandGap, 4);
-            nextRange.X = nextRange.Y + waterGap;
-            nextRange.Y = nextRange.X + LandWidth;
-        }
+        
 
     }
     

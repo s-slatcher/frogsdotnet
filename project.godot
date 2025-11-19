@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Frogsdotnet"
-run/main_scene="uid://c2at4wnnfrlwv"
+run/main_scene="uid://csi7biqltvfvg"
 config/features=PackedStringArray("4.4", "C#", "Forward Plus")
 run/max_fps=150
 config/icon="res://icon.svg"

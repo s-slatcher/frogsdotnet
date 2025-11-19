@@ -1,16 +1,15 @@
-[gd_scene load_steps=23 format=4 uid="uid://c2at4wnnfrlwv"]
+[gd_scene load_steps=23 format=4 uid="uid://csi7biqltvfvg"]
 
-[ext_resource type="Script" uid="uid://dj7d20jbo5vto" path="res://testing_scenes/terrain_testing/PolygonMeshWorld.cs" id="1_5tvfr"]
-[ext_resource type="PackedScene" uid="uid://bjjceeyq3csc3" path="res://addons/sky shader/skyshader.tscn" id="2_a7mq0"]
-[ext_resource type="PackedScene" uid="uid://ejp4yvckt2mv" path="res://fx/explosion/explosion_particle_system.tscn" id="2_q80so"]
-[ext_resource type="PackedScene" uid="uid://brk0cbda83ld1" path="res://interface/camera/wasd_camera.tscn" id="3_hvveg"]
-[ext_resource type="PackedScene" uid="uid://4mworqcudaam" path="res://common/water/scenes/WaterPlane.tscn" id="4_4v8u0"]
-[ext_resource type="PackedScene" uid="uid://d3teamfq15lcl" path="res://map_generation/terrain_mesh/terrain_mesh.tscn" id="5_4v8u0"]
-[ext_resource type="PackedScene" uid="uid://i888mvag6wjg" path="res://common/input_capture/PlaneMouseCapture.tscn" id="5_q80so"]
-[ext_resource type="Shader" uid="uid://cnnmjm6ycldt7" path="res://common/polygon_mesh_generation/Shader based/PolygonMeshShader.gdshader" id="7_kklvx"]
-[ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="8_kcwvj"]
-[ext_resource type="Texture2D" uid="uid://ch5r8fna4n5xl" path="res://icon.svg" id="10_bml0k"]
-[ext_resource type="Shader" uid="uid://cyvqf68e74veo" path="res://testing_scenes/terrain_testing/BreakableRock.gdshader" id="11_q5us4"]
+[ext_resource type="Script" uid="uid://bwtet8wyavbbt" path="res://map_generation/polygon_mesh_world/PolygonMeshWorld.cs" id="1_uddy7"]
+[ext_resource type="PackedScene" uid="uid://dx5lw06o45a2y" path="res://fx/explosion/explosion.tscn" id="2_1w2pk"]
+[ext_resource type="PackedScene" uid="uid://d3teamfq15lcl" path="res://map_generation/terrain_mesh/terrain_mesh.tscn" id="2_5iuj0"]
+[ext_resource type="PackedScene" uid="uid://brk0cbda83ld1" path="res://interface/camera/wasd_camera.tscn" id="3_1w2pk"]
+[ext_resource type="PackedScene" uid="uid://bjjceeyq3csc3" path="res://addons/sky shader/skyshader.tscn" id="4_86mi5"]
+[ext_resource type="PackedScene" uid="uid://4mworqcudaam" path="res://common/water/scenes/WaterPlane.tscn" id="5_asr1l"]
+[ext_resource type="Shader" uid="uid://cnnmjm6ycldt7" path="res://common/polygon_mesh_generation/Shader based/PolygonMeshShader.gdshader" id="6_08rp7"]
+[ext_resource type="PackedScene" uid="uid://i888mvag6wjg" path="res://common/input_capture/PlaneMouseCapture.tscn" id="7_pxxo4"]
+[ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="8_03vkt"]
+[ext_resource type="Texture2D" uid="uid://ch5r8fna4n5xl" path="res://icon.svg" id="9_f3i6n"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_6mu2c"]
 noise_type = 2
@@ -42,7 +41,7 @@ gradient = SubResource("Gradient_vlyff")
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_p7cl5"]
 resource_local_to_scene = true
 render_priority = 0
-shader = ExtResource("7_kklvx")
+shader = ExtResource("6_08rp7")
 shader_parameter/dirt_color = Color(0, 0, 0, 1)
 shader_parameter/dirt_color_alt = Color(0, 0, 0, 1)
 shader_parameter/stone_color = Color(0.273501, 0.208601, 0.15561, 1)
@@ -73,9 +72,198 @@ shader_parameter/rockiness_min = 0.15
 shader_parameter/rock_edge_smoothing = 1.0
 shader_parameter/center_mass_uv = Vector2(0.5, 0)
 
+[sub_resource type="Shader" id="Shader_q2583"]
+code = "// NOTE: Shader automatically converted from Godot Engine 4.4.stable.mono's StandardMaterial3D.
+
+shader_type spatial;
+render_mode world_vertex_coords, depth_draw_always, cull_back, diffuse_burley, specular_schlick_ggx;
+
+// terrain colors
+uniform vec4 stone_color : source_color;
+
+// grass updating viewport texture
+
+// dirt crack normal texture
+
+uniform vec4 albedo : source_color;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+uniform ivec2 albedo_texture_size;
+uniform float point_size : hint_range(0.1, 128.0, 0.1);
+
+uniform float roughness : hint_range(0.0, 1.0);
+uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec4 metallic_texture_channel;
+uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
+
+uniform float specular : hint_range(0.0, 1.0, 0.01);
+uniform float metallic : hint_range(0.0, 1.0, 0.01);
+varying vec3 uv1_triplanar_pos;
+
+uniform float uv1_blend_sharpness : hint_range(0.0, 150.0, 0.001);
+varying vec3 uv1_power_normal;
+
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+uniform vec4 explosion;
+uniform float maxDepth;
+
+uniform float rock_intensity;
+uniform float voronoiCellScale;
+varying float distFromSite;
+varying vec3 worldPos;
+varying vec3 testColor;
+
+// pseudo random number
+const vec3 magic = vec3(0.06711056f, 0.00583715f, 52.9829189f);
+
+vec3 hash3(vec3 p) {
+    p = fract(p * 0.3183099 + 0.1);
+    p *= 17.0;
+    return fract(p * fract(p.x * p.y * p.z));
+}
+
+struct vorSite {
+	float d;
+	vec3 pos;
+};
+
+void voronoi_sites(in vec3 position, out vorSite s1, out vorSite s2)
+{
+	float local_cell_scale = voronoiCellScale;
+	vec3 cellCorner = floor(position * local_cell_scale);
+	vec3 s_base = cellCorner + hash3(cellCorner);
+	
+	s1 = vorSite(1e9, vec3(0));
+	s2 = vorSite(1e9, vec3(0));
+	
+	for(int x = -1; x <= 1; x++)
+	{
+	for (int y = -1; y <= 1; y++)
+	{
+	for (int z = 0; z <= 1; z++)
+	{
+		vec3 adjCorner = cellCorner + vec3(float(x),float(y),float(z));
+		vec3 adjSite = (hash3(adjCorner) + adjCorner) / local_cell_scale;
+		
+		// random skipping of some sites to generate bigger cells
+		//if (fract(adjSite.x) < 0.3) continue;
+		
+		float dist = distance(adjSite, position);
+		if (dist < s1.d) 
+		{
+			//s3 = s2;
+			s2 = s1;
+			s1 = vorSite(dist, adjSite); 
+      } else if (dist < s2.d) {
+         //s3 = s2;
+			s2 = vorSite(dist, adjSite);	
+		} 
+		//else if (dist < s3.d)
+		//{
+			////s3 = vorSite(dist, adjSite);
+		//}
+	}}}
+}
+
+void voronoi_projection(in vec3 position, in vorSite site1, in vorSite site2, 
+								out vec3 proj_position, out vec3 proj_normal) {
+	
+	proj_normal = normalize(site2.pos - site1.pos); 
+	float d = 0.5 * dot(proj_normal, site1.pos + site2.pos);
+	float planeDist1 = dot(proj_normal, position) - d;
+	proj_position = position - planeDist1 * proj_normal;
+	
+}
+
+void vertex() {
+	float rand = fract(magic.z * fract(dot(VERTEX.xy, magic.xy)));
+	vec3 pos = explosion.xyz;
+	float radius = explosion.w;
+	
+	vec2 dist_vec = VERTEX.xy - pos.xy;
+	
+	float dist = length(dist_vec);
+	
+	if (dist < radius)
+	{
+		float depth_change = sqrt( (radius * radius) - (dist * dist) );
+		float new_depth = VERTEX.z - depth_change;
+		vec3 new_normal = normalize(vec3(pos.xy, 0) - VERTEX);
+		VERTEX.z = new_depth;
+		NORMAL = new_normal;
+	}
+	
+	vorSite s1;
+	vorSite s2;
+	vec3 voronoi_proj_pos;
+	vec3 voronoi_proj_norm;
+	
+	voronoi_sites(VERTEX, s1, s2);
+	voronoi_projection(VERTEX, s1, s2, voronoi_proj_pos, voronoi_proj_norm);
+	
+	VERTEX = mix(VERTEX, voronoi_proj_pos, rock_intensity);
+	NORMAL = mix(NORMAL, voronoi_proj_norm, rock_intensity);
+	
+	worldPos = VERTEX;
+	
+	// Triplanar UV
+	vec3 normal = NORMAL;
+	TANGENT = vec3(0.0, 0.0, -1.0) * abs(normal.x);
+	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.y);
+	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.z);
+	TANGENT = normalize(TANGENT);
+
+	BINORMAL = vec3(0.0, 1.0, 0.0) * abs(normal.x);
+	BINORMAL += vec3(0.0, 0.0, -1.0) * abs(normal.y);
+	BINORMAL += vec3(0.0, 1.0, 0.0) * abs(normal.z);
+	BINORMAL = normalize(BINORMAL);
+
+	// UV1 Triplanar: Enabled
+	uv1_power_normal = pow(abs(NORMAL), vec3(uv1_blend_sharpness));
+	uv1_triplanar_pos = VERTEX * uv1_scale + uv1_offset;
+	uv1_power_normal /= dot(uv1_power_normal, vec3(1.0));
+	uv1_triplanar_pos *= vec3(1.0, -1.0, 1.0);
+}
+
+vec4 triplanar_texture(sampler2D p_sampler, vec3 p_weights, vec3 p_triplanar_pos) {
+	vec4 samp = vec4(0.0);
+	samp += texture(p_sampler, p_triplanar_pos.xy) * p_weights.z;
+	samp += texture(p_sampler, p_triplanar_pos.xz) * p_weights.y;
+	samp += texture(p_sampler, p_triplanar_pos.zy * vec2(-1.0, 1.0)) * p_weights.x;
+	return samp;
+}
+
+vec3 get_flat_normal(vec3 position)
+{
+	vec3 dpdx = dFdx(position);
+   vec3 dpdy = dFdy(position);
+   return normalize(cross(dpdx, dpdy)) * -1.;
+}
+
+
+void fragment() {
+	
+	NORMAL = get_flat_normal(worldPos);
+	
+	ALBEDO = albedo.rgb + testColor;
+	
+	float depth_fade = smoothstep(-0.15 + maxDepth, -0.01 + maxDepth, worldPos.z);
+	if (depth_fade < 0.001 || depth_fade < fract(magic.z * fract(dot(FRAGCOORD.xy, magic.xy)))) {
+		discard;
+	}
+	
+	METALLIC = metallic;
+	SPECULAR = specular;
+	ROUGHNESS = roughness;
+}
+"
+
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ewfcb"]
 render_priority = 0
-shader = ExtResource("11_q5us4")
+shader = SubResource("Shader_q2583")
 shader_parameter/stone_color = Color(0.651855, 0.355896, 0.0884458, 1)
 shader_parameter/albedo = Color(0.803175, 0.473957, 0.11222, 1)
 shader_parameter/albedo_texture_size = Vector2i(0, 0)
@@ -107,24 +295,18 @@ height = 6.556
 size = Vector2(1000, 120)
 
 [node name="PolygonMeshWorld" type="Node3D"]
-script = ExtResource("1_5tvfr")
-Seed = 6
-LandWidth = 400.0
-LandHeight = 120.0
-TotalLandmasses = 1
-PolygonDetail = 0.15
-AverageLandGap = 70.0
-explodeScene = ExtResource("2_q80so")
-terrainMeshScene = ExtResource("5_4v8u0")
+script = ExtResource("1_uddy7")
+explodeScene = ExtResource("2_1w2pk")
+terrainMeshScene = ExtResource("2_5iuj0")
 
-[node name="WasdCamera" parent="." instance=ExtResource("3_hvveg")]
+[node name="WasdCamera" parent="." instance=ExtResource("3_1w2pk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 59.562, 98.1768, 131.385)
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 85.086, 93.106, 215.78)
 visible = false
 
-[node name="enviroment" parent="." instance=ExtResource("2_a7mq0")]
+[node name="enviroment" parent="." instance=ExtResource("4_86mi5")]
 day_time = 10.9895
 latitude = -90.0
 time_scale = 0.005
@@ -137,7 +319,7 @@ shadow_reverse_cull_face = true
 directional_shadow_max_distance = 193.2
 
 [node name="Moon" parent="enviroment" index="2"]
-transform = Transform3D(0.00938707, 0.839157, 0.543808, -0.999849, -3.66807e-08, 0.0172593, 0.0144832, -0.543889, 0.839032, 0, 0, 0)
+transform = Transform3D(0.00938708, 0.839157, 0.543808, -0.999849, -3.66807e-08, 0.0172593, 0.0144832, -0.543889, 0.839032, 0, 0, 0)
 light_energy = 0.0422868
 
 [node name="Camera3D" parent="enviroment" index="3"]
@@ -147,20 +329,20 @@ visible = false
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="enviroment"]
 light_energy = 0.36
 
-[node name="WaterPlane" parent="." node_paths=PackedStringArray("pos_source") instance=ExtResource("4_4v8u0")]
+[node name="WaterPlane" parent="." node_paths=PackedStringArray("pos_source") instance=ExtResource("5_asr1l")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 78.554)
 pos_source = NodePath("../WasdCamera")
 
-[node name="TerrainMesh" parent="." instance=ExtResource("5_4v8u0")]
+[node name="TerrainMesh" parent="." instance=ExtResource("2_5iuj0")]
 visible = false
 
 [node name="PolygonMesh" parent="TerrainMesh" index="0"]
 material_override = SubResource("ShaderMaterial_p7cl5")
 
-[node name="PlaneMouseCapture" parent="." node_paths=PackedStringArray("camera") instance=ExtResource("5_q80so")]
+[node name="PlaneMouseCapture" parent="." node_paths=PackedStringArray("camera") instance=ExtResource("7_pxxo4")]
 camera = NodePath("../WasdCamera")
 
-[node name="CanvasLayer" parent="." instance=ExtResource("8_kcwvj")]
+[node name="CanvasLayer" parent="." instance=ExtResource("8_03vkt")]
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 151.172, 36.3305, 12.3136)
@@ -169,7 +351,7 @@ omni_range = 17.864
 omni_attenuation = 0.13
 
 [node name="Sprite3D" type="Sprite3D" parent="OmniLight3D"]
-texture = ExtResource("10_bml0k")
+texture = ExtResource("9_f3i6n")
 
 [node name="RockWallMesh" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 213.829, 49.827, 2.0762)
