@@ -1,3 +1,16 @@
-[gd_scene format=3 uid="uid://dkiivlu0r7puk"]
+[gd_scene load_steps=3 format=3 uid="uid://dkiivlu0r7puk"]
+
+[ext_resource type="Script" uid="uid://c05hfmuvgd354" path="res://testing_scenes/polygon_custom_testing/CustomPolygonTesting.cs" id="1_jsaul"]
+[ext_resource type="PackedScene" uid="uid://b8osbgmfbof24" path="res://testing_scenes/debug_camera_2d/debug_camera_2d.tscn" id="2_pnu7w"]
 
 [node name="CustomPolygonTesting" type="Node2D"]
+script = ExtResource("1_jsaul")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+position = Vector2(269.21, 0)
+color = Color(1, 0.243137, 1, 1)
+polygon = PackedVector2Array(249.408, 225.133, 259.833, 216.713, 262.64, 183.433, 267.451, 161.781, 275.871, 159.777, 283.089, 152.158, 291.108, 149.753, 293.914, 140.13, 304.339, 132.111, 309.552, 146.545, 311.557, 167.796, 319.576, 175.815, 330.803, 183.433, 346.841, 179.023, 353.256, 183.834, 369.295, 175.414, 382.633, 174.388, 391.8, 173.683, 410.994, 172.206, 419.014, 185.438, 434.651, 193.858, 439.462, 207.491, 447.081, 213.906, 453.496, 225.133, 451.491, 274.852, 402.574, 327.778, 344.435, 340.208, 285.895, 335.397, 253.418, 299.31, 263.843, 279.262, 254, 266, 246.2, 245.983, 253.418, 238.766)
+
+[node name="Polygon2D2" type="Polygon2D" parent="."]
+
+[node name="DebugCamera2d" parent="." instance=ExtResource("2_pnu7w")]

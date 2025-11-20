@@ -358,6 +358,21 @@ public partial class GeometryUtils : GodotObject
 
     }
 
+    public bool IsPolygonLineIntersectingRect(Rect2 rect, PolygonPoint start, PolygonPoint end)
+    {
+        if (rect.HasPoint(start.Position) || rect.HasPoint(end.Position)) return true;
+
+        List<LineSegment> rectLines = LineSegmentsFromPolygon(PolygonFromRect(rect));
+        foreach (var line in rectLines)
+        {
+            var intersect = (Vector2)Geometry2D.SegmentIntersectsSegment(start.Position, end.Position, line.Start, line.End);
+            // documentation says to expect null on failed intersection but actually returns Vector2(0,0) ?  
+            if (intersect != Vector2.Zero) return true;
+        }
+
+        return false;
+    }
+
     public double ShortestDistanceBetweenSegmentAndRect(Rect2 rect, LineSegment lineSegment)
     {
         var closestDistance = double.MaxValue;
