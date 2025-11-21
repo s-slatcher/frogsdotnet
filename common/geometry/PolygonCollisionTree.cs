@@ -48,8 +48,7 @@ public partial class PolygonCollisionTree: GodotObject
             Children.Add(child);
         }
 
-        GD.Print("subdivded to size: ", sizeVector);
-
+    
     }
     
     public void RefineEdgeList()

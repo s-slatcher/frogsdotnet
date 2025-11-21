@@ -15,6 +15,7 @@ public partial class Polygon : GodotObject
     PolygonPoint firstPoint;
     PolygonCollisionTree root;
     public HashSet<PolygonCollisionTree> leafNodeCache = new();
+    public HashSet<PolygonCollisionTree> allNodeCache = new();
 
     List<Vector2> simplifiedPolyCache = new();
 
@@ -86,14 +87,13 @@ public partial class Polygon : GodotObject
 
         while (segments.Count > 0)
         {
-            
             var segment = segments[^1];
             segments.RemoveAt(segments.Count - 1);
-            
 
             // set points as key and pointing to each other
             var start = segment.Item1;
             var end = segment.Item2;
+
             start.isKey = end.isKey = true;
             start.nextKeyPoint = end;
             end.prevKeyPoint = start;
@@ -105,7 +105,7 @@ public partial class Polygon : GodotObject
             PolygonPoint nextKey = new();
             while (curr != end)
             {
-                
+
                 var p = curr.Position;
                 var close = Geometry2D.GetClosestPointToSegment(p, start.Position, end.Position);
                 var distSqr = close.DistanceSquaredTo(p);
@@ -127,14 +127,26 @@ public partial class Polygon : GodotObject
                 segments.Add(new(nextKey, end));
             }
 
-            
+
         }
 
-        
+
 
 
     }
 
+    public List<PolygonPoint> GetPolygonSegment(PolygonPoint start, PolygonPoint end)
+    {
+        var list = new List<PolygonPoint>();
+        var curr = start;
+        while (curr != end)
+        {
+            list.Add(curr);
+            curr = curr.nextPoint;
+        }
+        list.Add(end);
+        return list;
+    }
 
     public List<Vector2> GetFullDetailPolygon()
     {
@@ -159,7 +171,7 @@ public partial class Polygon : GodotObject
 
         return simplifiedPolyCache;
     }
-    
+
     public void BuildFastCollisionTree()
     {
         var KeyPointLines = new List<(PolygonPoint, PolygonPoint)>();
@@ -178,6 +190,7 @@ public partial class Polygon : GodotObject
         {
 
             var quad = queue[^1];
+            allNodeCache.Add(quad);
             queue.RemoveAt(queue.Count - 1);
             if (quad.PolygonLines.Count > 0)
             {
@@ -187,11 +200,69 @@ public partial class Polygon : GodotObject
             }
 
         }
-        
-        
 
+    }
+
+    public bool IsPointInPolygon(Vector2 point)
+    {
+        if (sourcePoints.Count == 0) return false;
+        if (!BoundingRect.HasPoint(point)) return false;
+
+        // builds ray that cross horizontally over full polygon width and includes the point to check
+        var rayStart = new Vector2(BoundingRect.Position.X, point.Y);
+        var rayEnd = point;
+        var collisionList = RaycastPolygon(rayStart, rayEnd);
         
-    }   
+        
+        // if point sits on that line after an odd-numbered collision (between 1st & 2nd, 3rd & 4th, e.g.) it sits inside the polygon
+        for (int i = 0; i < collisionList.Count; i++)
+        {
+            if (collisionList[i].X < point.X) continue;
+
+            
+            if (int.IsEvenInteger(i + 1))
+            {
+                return true;
+            }
+            else break;
+        }
+        return false;
+    }
+    
+    // always pass a line that starts and ends OUTSIDE of the bounding rect of the polygon to get even number of collions
+    public List<Vector2> RaycastPolygon(Vector2 start, Vector2 end)
+    {
+        HashSet<Vector2> unsortedCollisions = new();
+        
+        var queue = new List<PolygonCollisionTree>(){ root };
+        int queuePos = 0;
+        while (queuePos < queue.Count)
+        {
+            var node = queue[queuePos++];
+            bool intersects = gu.IsLineInstersectingRect(node.BoundingRect, start, end);
+            if (!intersects) continue;
+
+            if (node.Children.Count > 0)
+            {
+                queue.AddRange(node.Children);
+                continue;
+            }
+
+            if (node.PolygonLines.Count == 0) continue;
+
+            foreach (var line in node.PolygonLines)
+            {
+                var intersection = (Vector2)Geometry2D.SegmentIntersectsSegment(line.Item1.Position, line.Item2.Position, start, end);
+                if (intersection != Vector2.Zero) unsortedCollisions.Add(intersection);
+            }
+
+        }
+
+        var sortedCollisions = unsortedCollisions.ToList().OrderBy(c => c.DistanceSquaredTo(start));
+        return sortedCollisions.ToList();
+
+
+    }
 
 }
 

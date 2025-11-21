@@ -326,7 +326,21 @@ public partial class GeometryUtils : GodotObject
     //-----------------------------------------------------------------
     // Rect2 and LineSegment overlapping checks and distance checks 
     //-----------------------------------------------------------------
+    public bool IsLineInstersectingRect(Rect2 rect, Vector2 lineStart, Vector2 lineEnd)
+    {
+        if (rect.HasPoint(lineStart) || rect.HasPoint(lineEnd)) return true;
 
+        List<LineSegment> rectLines = LineSegmentsFromPolygon(PolygonFromRect(rect));
+        foreach (var rLine in rectLines)
+        {
+            var intersect = (Vector2)Geometry2D.SegmentIntersectsSegment(lineStart, lineEnd, rLine.Start, rLine.End);
+            // documentation says to expect null on failed intersection but actually returns Vector2(0,0) ?  
+            if (intersect != Vector2.Zero) return true;
+        }
+
+        return false;
+    }
+    
     public List<LineSegment> FilterLineSegmentsByRectIntersection(List<LineSegment> lineSegments, Rect2 rect)
     {
         List<LineSegment> intersectingLineSegments = new();
@@ -355,8 +369,9 @@ public partial class GeometryUtils : GodotObject
         }
 
         return intersectingLineSegments;
-
     }
+
+    
 
     public bool IsPolygonLineIntersectingRect(Rect2 rect, PolygonPoint start, PolygonPoint end)
     {
