@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://b5nytehuhlt8d"]
+
+[ext_resource type="Script" uid="uid://dyv18uelfxuff" path="res://testing_scenes/physics_server_test/PhysicsServerTest.cs" id="1_01o55"]
+
+[node name="PhysicsServerTest" type="Node2D"]
+script = ExtResource("1_01o55")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+visible = false
+polygon = PackedVector2Array(23.3, 220.8, 11.3, 101.8, 24.3, 52.8, 69.3, 78.8, 152.3, 11.8, 217.3, 45.8, 92.3, 90.8, 202.3, 156.8, 60.3, 136.8)
