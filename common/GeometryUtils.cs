@@ -244,7 +244,7 @@ public partial class GeometryUtils : GodotObject
     {
         List<LineSegment> lineSegments = new();
         
-        if (!Geometry2D.IsPolygonClockwise(polygon)) polygon = polygon.Reverse().ToArray();
+        // if (!Geometry2D.IsPolygonClockwise(polygon)) polygon = polygon.Reverse().ToArray();
         for (int i = 0; i < polygon.Length; i++)
         {
             Vector2 p1 = polygon[i];

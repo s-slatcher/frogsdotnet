@@ -92,8 +92,9 @@ public partial class TerrainPolygonMap : GodotObject
 
             lastPlatform = platform;
         }
-
-        return landPoly.ToArray();
+        var landPolyArr = landPoly.ToArray();
+        if (Geometry2D.TriangulatePolygon(landPolyArr).Length == 0) GD.Print("terrain polygon: failed to triangulate simple poly");
+        return landPolyArr;
     }
 
   

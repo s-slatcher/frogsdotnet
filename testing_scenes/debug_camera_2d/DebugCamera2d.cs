@@ -22,8 +22,7 @@ public partial class DebugCamera2d : Camera2D
     public override void _Ready()
     {
         
-        Error error = DirAccess.MakeDirAbsolute(savePath);
-        GD.Print(error);
+        _ = DirAccess.MakeDirAbsolute(savePath);
         
         
         SetScreenRect();

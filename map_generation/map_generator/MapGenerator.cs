@@ -49,8 +49,32 @@ public partial class MapGenerator : Node2D
 
         }
 
-        
     }
+
+    public override void _Input(InputEvent @event)
+    {
+        if (@event is InputEventMouseButton eventMouseButton)
+        {
+            
+            var camNode = GetNode<DebugCamera2d>("DebugCamera2d");
+            var pos = ToLocal(camNode.ToGlobal(camNode.GetLocalMousePosition()));
+            var query = new PhysicsPointQueryParameters2D()
+            {
+                Position = pos,
+                CollideWithAreas = true,
+            };
+            var drawRect = gu.RectFromCenterPoint(pos, new Vector2(4,4));
+            if (Space.IntersectPoint(query).Count > 0)
+            {
+                AddRectToDrawList(drawRect, Colors.Red);
+            }
+            else AddRectToDrawList(drawRect, Colors.Green);
+    
+            QueueRedraw();
+
+        }
+    }
+
     public void AddRectToDrawList(Rect2 rect, Godot.Color? color = null)
     {
         if (color == null) color = Colors.Black;
@@ -101,27 +125,38 @@ public partial class MapGenerator : Node2D
         // edgeNoise.Settings = TerrainPolySettings; 
 
         // get platforms and separate them at major division points (will be realigned later using rects)
+        
         var mapRange = new Vector2(0, MapSettings.Width);
         var rects = heightMap.GetRects(mapRange);
-        var landGroups = GroupHeightMapRects(rects);
+        var landGroups = GroupHeightMapRects(rects);        
         var landPolygons = landGroups.Select(l => terrainPolygon.GetSimpleTerrainPoly(l).ToArray()).ToList();
         var landPolyRects = new List<Rect2>();
+        float time = Time.GetTicksMsec();
         
         // translate polygons and create water gaps
         var lastEndPos = Vector2.Zero;
         for (int i = 0; i < landPolygons.Count; i++)
         {
             var land = landPolygons[i];
+            if (!Geometry2D.IsPolygonClockwise(land)) GD.Print("not clockwise");
             var rect = gu.RectFromPolygon(land);
             var translation = lastEndPos - rect.Position;
             landPolygons[i] = gu.TranslatePolygon(land, translation);
             rect.Position = lastEndPos;
             landPolyRects.Add(rect);
             
+
             // add polygon to collision
-            var colShape = PhysicsShapeFromPolygon(landPolygons[i]);
-            AddAreaToSpace(colShape, Vector2.Zero);
+            var convexPolys = Geometry2D.DecomposePolygonInConvex(landPolygons[i].ToArray());
+            foreach (var poly in convexPolys)
+            {
+                var colShape = PhysicsShapeFromConvex(poly); 
+                AddAreaToSpace(colShape, Vector2.Zero);
+            }
+            // var colShape = PhysicsShapeFromPolygon(reversed);
             AddPolyToDrawList(landPolygons[i]);
+
+           
 
             var waterGap = 30f;
             lastEndPos = rect.Position + new Vector2(rect.Size.X + waterGap, 0);
@@ -133,7 +168,8 @@ public partial class MapGenerator : Node2D
         
 
         SpawnIslands(landPolygons, spawnRects, 0);
-        
+        GD.Print(Time.GetTicksMsec() - time, "ms for island rect gen");
+
     }
 
    
@@ -156,7 +192,6 @@ public partial class MapGenerator : Node2D
             spawnPoint = GetRandomPointInSpawnRect(spawnRect);
             if (IsPointColliding(spawnPoint)) 
             {
-                GD.Print("point intersecting");
                 continue;
             }  // initial check for point collision before building rect;
             
@@ -165,7 +200,7 @@ public partial class MapGenerator : Node2D
             var maxSize = new Vector2(maxIslandWidth, maxIslandWidth * aspectRatio);
             
             Rid rectShape;
-            var steps = 0; var stepLimit = 12; 
+            var steps = 0; var stepLimit = 6; 
             while(steps++ < stepLimit)
             {
                 var midSize = minSize + (maxSize - minSize) / 2;
@@ -198,7 +233,15 @@ public partial class MapGenerator : Node2D
         // recurse with updated list if not enough width accumlated
         var islandPoly = gu.PolygonFromRect(islandRect);
         lands.Add(islandPoly);
-        spawningRects.Add(GetSpawnZoneFromTerrainRect(islandRect));
+        
+        // dont allow overly small islands to be sources of new island spawns
+        if (islandRect.Size.X > 0.5*maxIslandWidth)
+        {
+           spawningRects.Add(GetSpawnZoneFromTerrainRect(islandRect)); 
+        }
+        
+        
+        
         AddRectToDrawList(islandRect);
 
         
@@ -207,7 +250,6 @@ public partial class MapGenerator : Node2D
         AddAreaToSpace(shape, spawnPoint);
 
         accumLandWidth += islandRect.Size.X;
-        GD.Print(accumLandWidth);
         if (accumLandWidth > targetLandWidth) return;
 
         SpawnIslands(lands, spawningRects, accumLandWidth, targetLandWidth);
@@ -252,19 +294,25 @@ public partial class MapGenerator : Node2D
         heightMap.Height = TerrainPolySettings.MaxHeight;
         heightMap.Jaggedness = TerrainPolySettings.Jaggedness;
     }
-    public Rid PhysicsShapeFromPolygon(Vector2[] polygon)
+    // public Rid PhysicsShapeFromPolygon(Vector2[] polygon)
+    // {
+    //     var shape = PhysicsServer2D.ConcavePolygonShapeCreate();
+        
+    //     // convert polygon into format for ShapeSetData (in sets of 2 forming segments)
+    //     List<Vector2> pointSegmentList = new();
+    //     var segments = gu.LineSegmentsFromPolygon(polygon);
+    //     foreach (var seg in segments)
+    //     {
+    //         pointSegmentList.AddRange([seg.Start, seg.End]);
+    //     }
+        
+    //     PhysicsServer2D.ShapeSetData(shape, pointSegmentList.ToArray());
+    //     return shape;
+    // }
+    private Rid PhysicsShapeFromConvex(Vector2[] poly)
     {
-        var shape = PhysicsServer2D.ConcavePolygonShapeCreate();
-        
-        // convert polygon into format for ShapeSetData (in sets of 2 forming segments)
-        List<Vector2> pointSegmentList = new();
-        var segments = gu.LineSegmentsFromPolygon(polygon);
-        foreach (var seg in segments)
-        {
-            pointSegmentList.AddRange([seg.Start, seg.End]);
-        }
-        
-        PhysicsServer2D.ShapeSetData(shape, pointSegmentList.ToArray());
+        var shape = PhysicsServer2D.ConvexPolygonShapeCreate();
+        PhysicsServer2D.ShapeSetData(shape, poly);
         return shape;
     }
     public Rid PhysicsShapeFromRectangle(Vector2 size)
@@ -300,11 +348,30 @@ public partial class MapGenerator : Node2D
             CollideWithAreas = true,
 
         };
+        
         return Space.GetRestInfo(query).Count != 0;
 
     }
     public bool IsPointColliding(Vector2 point)
     {
+        // var rayEnd = new Vector2(-50, point.Y);
+        // var rayQuery = PhysicsRayQueryParameters2D.Create(point, rayEnd );  // make sure ray end is beyond map bounds 
+        // rayQuery.CollideWithAreas = true;
+        // rayQuery.HitFromInside = true;
+
+        // var result = Space.IntersectRay(rayQuery);
+        // if (result.Count > 0)
+        // {
+        //     var norm = (Vector2)result["normal"];
+            
+        //     if (norm == Vector2.Zero)
+        //     {
+        //         GD.Print("from inside");
+        //         return true;
+        //     }
+        //     else return false;
+        // }
+
         var query = new PhysicsPointQueryParameters2D()
         {
             Position = point,
