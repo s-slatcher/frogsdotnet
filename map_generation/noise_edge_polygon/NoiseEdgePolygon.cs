@@ -20,6 +20,9 @@ public partial class NoiseEdgePolygon : GodotObject
 
     public Vector2[] ApplyNoiseEdge(Vector2[] inputPolygon)
     {
+        // enforce settings
+        Settings.EdgeNoise.Seed = Settings.Seed;
+
         var gu = new GeometryUtils();
         var lineSegs = gu.LineSegmentsFromPolygon(inputPolygon.ToArray());
         var lineCount = lineSegs.Count;
@@ -109,7 +112,7 @@ public partial class NoiseEdgePolygon : GodotObject
         float NoiseDistortHeight = Settings.TargetNoiseHeight;
         NoiseDistortHeight = float.Clamp(NoiseDistortHeight, 0, line.Length() / 6);
 
-        if (line.GetNormal().Y > Settings.MaxYComponentForNoise
+        if ( Math.Abs(line.GetNormal().Y) > Settings.MaxYComponentForNoise
         || line.Start.Y < Settings.NoiseHeightCutoff
         || line.End.Y < Settings.NoiseHeightCutoff)
         {

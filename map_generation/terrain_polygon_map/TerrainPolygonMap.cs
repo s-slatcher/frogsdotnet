@@ -20,16 +20,12 @@ public partial class TerrainPolygonMap : GodotObject
     float NoiseStart = 0;  // tallys up over lifetime of terrain map to avoid repeat noise on same seed
 
 
-    private void UpdateSettings()
-    {
-        heightMap.Noise = Settings.HeightMapNoise;
-        heightMap.Epsilon = Settings.SmoothingEpsilon;
-        heightMap.Height = Settings.MaxHeight;
-        heightMap.Jaggedness = Settings.Jaggedness;
-    }
+    
 
     public Vector2[] GetSimpleTerrainPoly(List<Rect2> platformList)
     {
+
+        rng.Seed = (ulong)Settings.Seed;
          // convert rects to line segments;
         var platformLines = platformList.Select(rect => new LineSegment(rect.End - new Vector2(rect.Size.X, 0), rect.End)).ToList();
         var landPoly = new List<Vector2>();
@@ -89,9 +85,21 @@ public partial class TerrainPolygonMap : GodotObject
             }
 
             landPoly.Add(platform.Start);
-
             lastPlatform = platform;
         }
+
+        // add in a bottom peak points (for floating islands)
+        var width = landPoly[^1].X;
+        var midPoint = new Vector2(width/2, 0);
+        var platWidth = Settings.BottomPlatformWidth;
+        var platHeight = Settings.BottomPointHeight;
+        var bottomPlat = new LineSegment(
+            new Vector2(platWidth/2, -platHeight) + midPoint,
+            new Vector2(platWidth/-2, -platHeight) + midPoint
+        );
+        landPoly.AddRange([bottomPlat.Start, bottomPlat.End]);
+
+
         var landPolyArr = landPoly.ToArray();
         if (Geometry2D.TriangulatePolygon(landPolyArr).Length == 0) GD.Print("terrain polygon: failed to triangulate simple poly");
         return landPolyArr;
@@ -109,6 +117,7 @@ public partial class TerrainPolygonMap : GodotObject
         return new LineSegment(newPlatStart, newPlatStart + platform.DirectionVector());
     }
 
+   
     
 
 

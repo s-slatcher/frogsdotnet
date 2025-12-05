@@ -4,6 +4,8 @@ using System;
 
 public partial class TerrainPolygonMapSettings : Resource
 {
+
+    [Export] public int Seed;
     // loads "noise_edge_poly_noise.tres" by default
     [ExportGroup("height map settings")]
     [Export] public FastNoiseLite HeightMapNoise = GD.Load<FastNoiseLite>("uid://cvdhvoshnaiqt");  // "landmass_generation_noise"
@@ -17,6 +19,8 @@ public partial class TerrainPolygonMapSettings : Resource
     [Export] public float MaxYComponentForNoise = 0.75f;
     [Export] public float NoiseClampingFactor = 0.8f; // ~0.8 limits clamping but seems to prevent most noise line overlaps
     [Export] public float MeanCliffGrade = float.Pi / 15;
+    [Export] public float BottomPointHeight = 0;
+    [Export] public float BottomPlatformWidth = 0;
     [Export] public float TargetCurveBuffer = 1;  
     [Export] public float TargetNoiseHeight = 3f;
 

@@ -2,6 +2,7 @@ using Godot;
 using Godot.NativeInterop;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Drawing;
 using System.Linq;
 
@@ -10,52 +11,65 @@ public partial class MapGenerator : Node2D
 
     // will need to again split up these settings files, since height map rects and edge noising will be separate now
     [Export] public MapSettings MapSettings = new();
+    [Export] public TerrainPolygonMapSettings IslandPolySettings = new();
     [Export] public TerrainPolygonMapSettings TerrainPolySettings = new();
+    
+    [Export] public bool DrawDebugDrawings = false;
+
     HeightmapRects heightMap = new();
+
+
+    TerrainPolygonMap terrainPolygonMap = new();
+    TerrainPolygonMap islandPolygonMap = new();
+    
     GeometryUtils gu = new();
     RandomNumberGenerator rng = new();
 
     List<(Rect2, Godot.Color)> DebugRectDrawList = new();
     List<Vector2[]> DebugPolyList = new();
 
-    const float targetTotalIslandWidth = 100;
-    float maxIslandWidth = 30;
-    float minIslandWidth = 5;    
+    List<Vector2[]> SimpleLandmasses = new();
+    List<Vector2[]> NoisyLandmasses = new();
+    Dictionary<Vector2[], Rect2> LandmassRectMap = new();
+
+
+    const float targetTotalIslandWidth = 120;
+    float maxIslandWidth = 35;
+    float minIslandWidth = 10;    
 
     public PhysicsDirectSpaceState2D Space { get; private set; }
 
+    private void SetHeightMap(TerrainPolygonMapSettings settings)
+    {
+        heightMap.Noise = settings.HeightMapNoise;
+        heightMap.Noise.Seed = settings.Seed;
+        heightMap.Epsilon = settings.SmoothingEpsilon;
+        heightMap.Height = settings.MaxHeight;
+        heightMap.Jaggedness = settings.Jaggedness;
+    }
 
     public override void _Ready()
     {
         Space = PhysicsServer2D.SpaceGetDirectState(GetWorld2D().Space);
-
+        rng.Seed = (uint)TerrainPolySettings.Seed;
+        
+        terrainPolygonMap.Settings = TerrainPolySettings;
+        islandPolygonMap.Settings = IslandPolySettings;
         GenerateTerrainMap();
-        rng.Seed = (uint)TerrainPolySettings.HeightMapNoise.Seed;
 
         QueueRedraw();
     }
-    public override void _Draw()
+
+    public List<Vector2[]> GetPolygons()
     {
-        foreach (var drawRect in DebugRectDrawList)
-        {
-            DrawRect(drawRect.Item1, drawRect.Item2, false, 1);
-        }
-
-        foreach (var poly in DebugPolyList)
-        {
-            // var colorArray = new Godot.Color[poly.Length];
-            // Array.Fill(colorArray, Godot.Colors.Black);
-            DrawPolyline(poly, Colors.Red);
-
-        }
-
+        return new(NoisyLandmasses){};
     }
-
+    
     public override void _Input(InputEvent @event)
     {
         if (@event is InputEventMouseButton eventMouseButton)
         {
-            
+            if (eventMouseButton.ButtonIndex != MouseButton.Left) return;
             var camNode = GetNode<DebugCamera2d>("DebugCamera2d");
             var pos = ToLocal(camNode.ToGlobal(camNode.GetLocalMousePosition()));
             var query = new PhysicsPointQueryParameters2D()
@@ -74,7 +88,26 @@ public partial class MapGenerator : Node2D
 
         }
     }
+    
+    public override void _Draw()
+    {
+        if (!DrawDebugDrawings) return;
+        foreach (var drawRect in DebugRectDrawList)
+        {
+            DrawRect(drawRect.Item1, drawRect.Item2, false, 1);
+        }
 
+        foreach (var poly in DebugPolyList)
+        {
+            // var colorArray = new Godot.Color[poly.Length];
+            // Array.Fill(colorArray, Godot.Colors.Black);
+            
+            DrawPolyline(poly, Colors.Red);
+            DrawPolyline([poly[^1], poly[0]], Colors.Red);
+
+        }
+    }
+    
     public void AddRectToDrawList(Rect2 rect, Godot.Color? color = null)
     {
         if (color == null) color = Colors.Black;
@@ -85,17 +118,6 @@ public partial class MapGenerator : Node2D
     {
         DebugPolyList.Add(polygon);
     }
-
-    
-
-    // notes on new spawn islands function
-    // 1. create dedicated "spawn zone" function that takes a rect, grabs its top line, and creates another rect around it 
-    //
-    // 2. then pass to a funtion to sample randomly inside that rect
-    //
-    // 3. pass along spawn zones, (for now) just pick a random spawn zone above a specific width
-    // 4. track total landmass area and stop after target
-    // 5. 
 
     public Rect2 GetSpawnZoneFromTerrainRect(Rect2 terrain)
     {
@@ -117,24 +139,19 @@ public partial class MapGenerator : Node2D
    
     public void GenerateTerrainMap()
     {
-        SetHeightMap();
-
-        // var edgeNoise = new NoiseEdgePolygon();
-        var terrainPolygon = new TerrainPolygonMap();
-        terrainPolygon.Settings = TerrainPolySettings;
-        // edgeNoise.Settings = TerrainPolySettings; 
-
-        // get platforms and separate them at major division points (will be realigned later using rects)
+        
+        SetHeightMap(TerrainPolySettings);
         
         var mapRange = new Vector2(0, MapSettings.Width);
         var rects = heightMap.GetRects(mapRange);
         var landGroups = GroupHeightMapRects(rects);        
-        var landPolygons = landGroups.Select(l => terrainPolygon.GetSimpleTerrainPoly(l).ToArray()).ToList();
+        var landPolygons = landGroups.Select(l => terrainPolygonMap.GetSimpleTerrainPoly(l).ToArray()).ToList();
         var landPolyRects = new List<Rect2>();
         float time = Time.GetTicksMsec();
         
         // translate polygons and create water gaps
         var lastEndPos = Vector2.Zero;
+        var accumLandWidth = 0f;
         for (int i = 0; i < landPolygons.Count; i++)
         {
             var land = landPolygons[i];
@@ -143,19 +160,19 @@ public partial class MapGenerator : Node2D
             var translation = lastEndPos - rect.Position;
             landPolygons[i] = gu.TranslatePolygon(land, translation);
             rect.Position = lastEndPos;
-            landPolyRects.Add(rect);
-            
+
+            SimpleLandmasses.Add(landPolygons[i]);            
+            LandmassRectMap[landPolygons[i]] = rect;
+
+            accumLandWidth += rect.Size.X;
 
             // add polygon to collision
-            var convexPolys = Geometry2D.DecomposePolygonInConvex(landPolygons[i].ToArray());
-            foreach (var poly in convexPolys)
-            {
-                var colShape = PhysicsShapeFromConvex(poly); 
-                AddAreaToSpace(colShape, Vector2.Zero);
-            }
+            
+            var colShapes = PhysicsShapesFromConcave(landPolygons[i]); 
+            
+            AddAreaToSpace(colShapes, new());
             // var colShape = PhysicsShapeFromPolygon(reversed);
-            AddPolyToDrawList(landPolygons[i]);
-
+            
            
 
             var waterGap = 30f;
@@ -167,18 +184,44 @@ public partial class MapGenerator : Node2D
 
         
 
-        SpawnIslands(landPolygons, spawnRects, 0);
+        SpawnIslands(accumLandWidth, targetTotalIslandWidth + accumLandWidth);
         GD.Print(Time.GetTicksMsec() - time, "ms for island rect gen");
+
+        var noisePolyApplier = new NoiseEdgePolygon();
+        noisePolyApplier.Settings = TerrainPolySettings;
+        
+        foreach (var landPoly in SimpleLandmasses)
+        {
+            
+            var noisePoly = noisePolyApplier.ApplyNoiseEdge(landPoly);
+            NoisyLandmasses.Add(noisePoly);
+            AddPolyToDrawList(noisePoly);
+
+
+        }
 
     }
 
    
 
 
-    private void SpawnIslands(List<Vector2[]> lands, List<Rect2> spawningRects, float accumLandWidth, float targetLandWidth = targetTotalIslandWidth)
+    private void SpawnIslands(float accumLandWidth, float targetLandWidth)
     {
-        // pick random spawn rect
-        var spawnRect = spawningRects[rng.RandiRange(0, spawningRects.Count-1)];
+        // pick random spawn rect weighted by width
+        var spawnWidthTarget = rng.Randf() * accumLandWidth;
+        Rect2 spawnRect = new();
+        var w = 0f;
+        for (int i = 0; i < SimpleLandmasses.Count; i++)
+        {
+            var land = SimpleLandmasses[i];
+            var rect = LandmassRectMap[land];
+            w += rect.Size.X; 
+            if (w > spawnWidthTarget)
+            {
+                spawnRect = GetSpawnZoneFromTerrainRect(rect);
+                break;
+            }
+        }
 
         // get valid point:
         // after a non-intersecting point is chosen, binary search looks for max size rect to fit in area
@@ -195,7 +238,7 @@ public partial class MapGenerator : Node2D
                 continue;
             }  // initial check for point collision before building rect;
             
-            var aspectRatio = rng.RandfRange(0.5f,1); //randomly range from square to double wide
+            var aspectRatio = rng.RandfRange(0.6f,0.85f); //randomly range from square to double wide
             var minSize = new Vector2(minIslandWidth, minIslandWidth * aspectRatio);
             var maxSize = new Vector2(maxIslandWidth, maxIslandWidth * aspectRatio);
             
@@ -231,14 +274,12 @@ public partial class MapGenerator : Node2D
         // convert island rect into an island poly
         // add the land and the spawning rect to lists, and add to accumulated width
         // recurse with updated list if not enough width accumlated
-        var islandPoly = gu.PolygonFromRect(islandRect);
-        lands.Add(islandPoly);
+        var islandPoly = IslandLandmassFromRect(islandRect);
+        
+        SimpleLandmasses.Add(islandPoly);
+        LandmassRectMap[islandPoly] = islandRect;
         
         // dont allow overly small islands to be sources of new island spawns
-        if (islandRect.Size.X > 0.5*maxIslandWidth)
-        {
-           spawningRects.Add(GetSpawnZoneFromTerrainRect(islandRect)); 
-        }
         
         
         
@@ -252,9 +293,36 @@ public partial class MapGenerator : Node2D
         accumLandWidth += islandRect.Size.X;
         if (accumLandWidth > targetLandWidth) return;
 
-        SpawnIslands(lands, spawningRects, accumLandWidth, targetLandWidth);
+        SpawnIslands(accumLandWidth, targetLandWidth);
     }
 
+    private Vector2[] IslandLandmassFromRect(Rect2 rect)
+    {
+
+        // shrink rect to add buffer between landmasses
+        rect = gu.RectFromCenterPoint(rect.Size/2 + rect.Position, rect.Size * 0.9f);
+
+        // split height across max height and bottom slope extension
+        var halfHeight = rect.Size.Y / 2;
+        var width = rect.Size.X; // final poly width ends up wider than this value; shrunk down to this size
+        
+        IslandPolySettings.MaxHeight = halfHeight;
+        IslandPolySettings.BottomPointHeight = halfHeight;
+        IslandPolySettings.BottomPlatformWidth = 3;
+
+        SetHeightMap(IslandPolySettings);
+        var heightRects = heightMap.GetRects(new Vector2(rect.Position.X, rect.End.X));
+        var simplePoly = islandPolygonMap.GetSimpleTerrainPoly(heightRects);
+        var simpleRect = gu.RectFromPolygon(simplePoly);
+
+        var scale = rect.Size / simpleRect.Size; 
+        simplePoly = gu.TranslatePolygon(simplePoly, -simpleRect.Position);
+        simplePoly = gu.ScalePolygon(simplePoly, scale);
+        var translation = rect.Position;
+        var translatedPoly = gu.TranslatePolygon(simplePoly, translation);
+
+        return translatedPoly;
+    }
 
 
 
@@ -287,33 +355,21 @@ public partial class MapGenerator : Node2D
         
     } 
 
-    private void SetHeightMap()
+    
+ 
+    private List<Rid> PhysicsShapesFromConcave(Vector2[] poly)
     {
-        heightMap.Noise = TerrainPolySettings.HeightMapNoise;
-        heightMap.Epsilon = TerrainPolySettings.SmoothingEpsilon;
-        heightMap.Height = TerrainPolySettings.MaxHeight;
-        heightMap.Jaggedness = TerrainPolySettings.Jaggedness;
-    }
-    // public Rid PhysicsShapeFromPolygon(Vector2[] polygon)
-    // {
-    //     var shape = PhysicsServer2D.ConcavePolygonShapeCreate();
-        
-    //     // convert polygon into format for ShapeSetData (in sets of 2 forming segments)
-    //     List<Vector2> pointSegmentList = new();
-    //     var segments = gu.LineSegmentsFromPolygon(polygon);
-    //     foreach (var seg in segments)
-    //     {
-    //         pointSegmentList.AddRange([seg.Start, seg.End]);
-    //     }
-        
-    //     PhysicsServer2D.ShapeSetData(shape, pointSegmentList.ToArray());
-    //     return shape;
-    // }
-    private Rid PhysicsShapeFromConvex(Vector2[] poly)
-    {
-        var shape = PhysicsServer2D.ConvexPolygonShapeCreate();
-        PhysicsServer2D.ShapeSetData(shape, poly);
-        return shape;
+        var convexPolys = Geometry2D.DecomposePolygonInConvex(poly.ToArray());
+        var shapes = new List<Rid>();
+        foreach(var conPol in convexPolys)
+        { 
+            var shape = PhysicsServer2D.ConvexPolygonShapeCreate();
+            PhysicsServer2D.ShapeSetData(shape, conPol);
+            shapes.Add(shape);
+
+        }
+       
+        return shapes;
     }
     public Rid PhysicsShapeFromRectangle(Vector2 size)
     {
@@ -332,6 +388,13 @@ public partial class MapGenerator : Node2D
 
 		PhysicsServer2D.AreaSetSpace(area, GetWorld2D().Space);
         
+    }
+    public void AddAreaToSpace(List<Rid> shapes, List<Vector2> shapeOrigins)
+    {
+        for (int i = 0; i < shapes.Count; i++)
+        {
+            AddAreaToSpace(shapes[i], shapeOrigins.Count == shapes.Count ? shapeOrigins[0] : Vector2.Zero);
+        }
     }
     public void RemoveAreaFromSpace(Rid area)
     {
@@ -354,23 +417,6 @@ public partial class MapGenerator : Node2D
     }
     public bool IsPointColliding(Vector2 point)
     {
-        // var rayEnd = new Vector2(-50, point.Y);
-        // var rayQuery = PhysicsRayQueryParameters2D.Create(point, rayEnd );  // make sure ray end is beyond map bounds 
-        // rayQuery.CollideWithAreas = true;
-        // rayQuery.HitFromInside = true;
-
-        // var result = Space.IntersectRay(rayQuery);
-        // if (result.Count > 0)
-        // {
-        //     var norm = (Vector2)result["normal"];
-            
-        //     if (norm == Vector2.Zero)
-        //     {
-        //         GD.Print("from inside");
-        //         return true;
-        //     }
-        //     else return false;
-        // }
 
         var query = new PhysicsPointQueryParameters2D()
         {

@@ -39,25 +39,38 @@ public partial class PolygonMeshWorld : Node3D
         planeCap.PlaneClicked += OnPlaneClicked;
 
         GenerateTerrain();
-        var compareMeshInst = GetNode<MeshInstance3D>("HeightCompareMesh");
-        var compareMesh = (QuadMesh)compareMeshInst.Mesh;
-        compareMesh.Size = new Vector2( (LandWidth + AverageLandGap) * TotalLandmasses , LandHeight);
-        var halfSize = compareMesh.Size / 2;
-        compareMeshInst.Position = new Vector3(halfSize.X, halfSize.Y, -5);
+        // var compareMeshInst = GetNode<MeshInstance3D>("HeightCompareMesh");
+        // var compareMesh = (QuadMesh)compareMeshInst.Mesh;
+        // compareMesh.Size = new Vector2( (LandWidth + AverageLandGap) * TotalLandmasses , LandHeight);
+        // var halfSize = compareMesh.Size / 2;
+        // compareMeshInst.Position = new Vector3(halfSize.X, halfSize.Y, -5);
 
         
     }
 
     private void GenerateTerrain()
     {
-        var gUtils = new GeometryUtils();
+        // var gUtils = new GeometryUtils();
 
 
+        var mapGenerator = GetNode<MapGenerator>("MapGenerator");
+        var polygons = mapGenerator.GetPolygons();
+        GD.Print(polygons.Count);
 
-        var terrainMap = new TerrainPolygonMap();
-        terrainMap.Settings.MaxHeight = LandHeight;
-        terrainMap.Settings.EdgeNoise.Seed = Seed;
-        terrainMap.Settings.HeightMapNoise.Seed = Seed;
+        foreach ( var poly in polygons)
+        {
+            var terrainMesh = (TerrainMesh)terrainMeshScene.Instantiate();
+            terrainMesh.Position = new Vector3(poly[0].X, poly[0].Y, 0);
+            AddChild(terrainMesh);
+            GD.Print(poly.Length);
+            terrainMesh.TerrainPolygon = poly;
+            
+            
+        }
+        // var terrainMap = new TerrainPolygonMap();
+        // terrainMap.Settings.MaxHeight = LandHeight;
+        // terrainMap.Settings.EdgeNoise.Seed = Seed;
+        // terrainMap.Settings.HeightMapNoise.Seed = Seed;
 
 
         
