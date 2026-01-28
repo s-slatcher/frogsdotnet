@@ -1,7 +1,7 @@
 [gd_scene load_steps=24 format=4 uid="uid://csi7biqltvfvg"]
 
 [ext_resource type="Script" uid="uid://bwtet8wyavbbt" path="res://map_generation/polygon_mesh_world/PolygonMeshWorld.cs" id="1_uddy7"]
-[ext_resource type="PackedScene" uid="uid://dx5lw06o45a2y" path="res://fx/explosion/explosion.tscn" id="2_1w2pk"]
+[ext_resource type="PackedScene" uid="uid://ejp4yvckt2mv" path="res://fx/explosion/explosion_particle_system.tscn" id="2_1w2pk"]
 [ext_resource type="PackedScene" uid="uid://d3teamfq15lcl" path="res://map_generation/terrain_mesh/terrain_mesh.tscn" id="2_5iuj0"]
 [ext_resource type="PackedScene" uid="uid://brk0cbda83ld1" path="res://interface/camera/wasd_camera.tscn" id="3_1w2pk"]
 [ext_resource type="PackedScene" uid="uid://bjjceeyq3csc3" path="res://addons/sky shader/skyshader.tscn" id="4_86mi5"]
@@ -320,7 +320,7 @@ shadow_reverse_cull_face = true
 directional_shadow_max_distance = 193.2
 
 [node name="Moon" parent="enviroment" index="2"]
-transform = Transform3D(0.00938707, 0.839157, 0.543808, -0.999849, -3.66807e-08, 0.0172593, 0.0144832, -0.543889, 0.839032, 0, 0, 0)
+transform = Transform3D(0.00938708, 0.839157, 0.543808, -0.999849, -3.66807e-08, 0.0172593, 0.0144832, -0.543889, 0.839032, 0, 0, 0)
 light_energy = 0.0422868
 
 [node name="Camera3D" parent="enviroment" index="3"]
@@ -377,7 +377,6 @@ visible = false
 mesh = SubResource("QuadMesh_ewfcb")
 
 [node name="MapGenerator" parent="." instance=ExtResource("11_1w2pk")]
-DrawDebugDrawings = true
 
 [editable path="enviroment"]
 [editable path="TerrainMesh"]

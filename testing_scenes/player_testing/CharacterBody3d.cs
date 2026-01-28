@@ -20,6 +20,8 @@ public partial class CharacterBody3d : CharacterBody3D
         var axis = Input.GetAxis("ui_left", "ui_right");
         if (axis != 0) bodyAnimations.Scale = new Vector3(axis, 1, 1);
         var velocityY = Velocity.Y + (gravity * (float)delta);
+        
+        
         var targetSpeed = (float)maxSpeed * axis;   
         var currentSpeed = float.Lerp(Velocity.X, targetSpeed, (float)(1.0 - Math.Exp(-delta * AccelSmoothing)));
         

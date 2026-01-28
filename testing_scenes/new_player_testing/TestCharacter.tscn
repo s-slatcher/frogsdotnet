@@ -1,0 +1,55 @@
+[gd_scene load_steps=5 format=3 uid="uid://c64xtlq2ftpmr"]
+
+[ext_resource type="Script" uid="uid://wvsd3ndla8j" path="res://testing_scenes/new_player_testing/TestCharacter.cs" id="1_h8815"]
+[ext_resource type="Texture2D" uid="uid://ch5r8fna4n5xl" path="res://icon.svg" id="2_g1t3k"]
+[ext_resource type="Texture2D" uid="uid://bdov7fjxe54d8" path="res://testing_scenes/new_player_testing/leg_PNG4804.png" id="3_i2wf1"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_dsfme"]
+radius = 13.47
+
+[node name="TestCharacter" type="CharacterBody2D"]
+script = ExtResource("1_h8815")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_dsfme")
+
+[node name="sprite" type="Node2D" parent="."]
+
+[node name="Icon" type="Sprite2D" parent="sprite"]
+position = Vector2(0, -9)
+scale = Vector2(0.140625, 0.140625)
+texture = ExtResource("2_g1t3k")
+
+[node name="leg1" type="Sprite2D" parent="sprite"]
+position = Vector2(-6, 7)
+scale = Vector2(-0.023, 0.023)
+texture = ExtResource("3_i2wf1")
+
+[node name="leg2" type="Sprite2D" parent="sprite"]
+position = Vector2(5, 7)
+scale = Vector2(-0.023, 0.023)
+texture = ExtResource("3_i2wf1")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="MovementHoldIndicator" type="ProgressBar" parent="CanvasLayer"]
+top_level = true
+offset_left = 21.0
+offset_top = 17.0
+offset_right = 116.0
+offset_bottom = 403.0
+max_value = 1.0
+fill_mode = 3
+
+[node name="HangTime" type="RichTextLabel" parent="CanvasLayer"]
+offset_left = 129.0
+offset_top = 20.0
+offset_right = 285.0
+offset_bottom = 60.0
+text = "Hang Time: "
+
+[node name="Velocity" type="RichTextLabel" parent="CanvasLayer"]
+offset_left = 132.0
+offset_top = 45.0
+offset_right = 530.0
+offset_bottom = 88.0

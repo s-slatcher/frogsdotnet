@@ -11,6 +11,11 @@ public partial class ExplosionParticleSystem : Node3D
         mesh.Radius = Scale.X * 1.5f * 0.5f;
         mesh.Height = Scale.X * 1.5f;
         explosion.Emitting = true;
+        explosion.Finished += OnExplosionFinish;
     }
 
+    private void OnExplosionFinish()
+    {
+        QueueFree();
+    }
 }

@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=3 uid="uid://brd8hwoj1g02f"]
+
+[ext_resource type="PackedScene" uid="uid://c64xtlq2ftpmr" path="res://testing_scenes/new_player_testing/TestCharacter.tscn" id="1_3a156"]
+[ext_resource type="Script" uid="uid://32kk6odxgnp7" path="res://testing_scenes/new_player_testing/PlayerTrackCamera.cs" id="1_gwq71"]
+[ext_resource type="Texture2D" uid="uid://dbvtgpi1chj65" path="res://GiYjTk2WMAAnxvd.jpg" id="3_51u2l"]
+
+[node name="CharacterTestArea" type="Node2D"]
+
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D"]
+polygon = PackedVector2Array(4, 790, 664.042, 789.316, 664, 770, 702, 770, 702, 789, 969, 789, 976, 1063, 2, 1065)
+
+[node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("player")]
+position = Vector2(489, 689)
+zoom = Vector2(2.14, 2.14)
+script = ExtResource("1_gwq71")
+player = NodePath("../TestCharacter")
+TrackPlayer = false
+
+[node name="TestCharacter" parent="." instance=ExtResource("1_3a156")]
+position = Vector2(497.25, 738.07)
+
+[node name="GiYjTk2wmaAnxvd" type="Sprite2D" parent="."]
+position = Vector2(510.5, 341.25)
+scale = Vector2(0.366917, 0.0212182)
+texture = ExtResource("3_51u2l")

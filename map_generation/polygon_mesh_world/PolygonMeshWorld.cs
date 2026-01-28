@@ -85,7 +85,7 @@ public partial class PolygonMeshWorld : Node3D
 
         var randRadius = (float)GD.RandRange(radiusRange.X, radiusRange.Y);
         var center2d = new Vector2(vector.X, vector.Y);
-
+    
         var explodeRect = new Rect2(Vector2.Zero, new Godot.Vector2(randRadius * 2, randRadius * 2));
         explodeRect.Position = center2d - new Vector2(randRadius, randRadius);
         var print_string = "explosion intersect at: ";
