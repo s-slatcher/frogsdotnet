@@ -8,7 +8,7 @@ public partial class PlayerTrackCamera : Camera2D
 
     Vector2 targetPos;
     [Export] bool TrackPlayer = true;
-    float AccelSmoothing = 20;
+    float AccelSmoothing = 5;
 
     public override void _Ready()
     {
