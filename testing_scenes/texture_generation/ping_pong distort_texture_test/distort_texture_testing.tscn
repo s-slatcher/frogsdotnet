@@ -1,0 +1,26 @@
+[gd_scene load_steps=6 format=3 uid="uid://dkhwv0f3066ot"]
+
+[ext_resource type="Script" uid="uid://b4k7voj04iw2k" path="res://testing_scenes/texture_generation/ping_pong distort_texture_test/DistortTextureTesting.cs" id="1_2xxhx"]
+[ext_resource type="Shader" uid="uid://che6a2ec2gvns" path="res://testing_scenes/texture_generation/ping_pong distort_texture_test/distort_texture_testing.gdshader" id="2_3qgbl"]
+[ext_resource type="PackedScene" uid="uid://diccy7ucnpp8u" path="res://map_generation/MeshDistortTexture/mesh_distort_texture.tscn" id="3_cwtyq"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_cwtyq"]
+shader = ExtResource("2_3qgbl")
+
+[sub_resource type="QuadMesh" id="QuadMesh_2xxhx"]
+size = Vector2(500, 500)
+
+[node name="DistortTextureTesting" type="Node2D" node_paths=PackedStringArray("mesh", "meshDistortTexture")]
+script = ExtResource("1_2xxhx")
+mesh = NodePath("MeshInstance2D")
+meshDistortTexture = NodePath("MeshDistortTexture")
+
+[node name="MeshInstance2D" type="MeshInstance2D" parent="."]
+material = SubResource("ShaderMaterial_cwtyq")
+position = Vector2(1312, 363)
+mesh = SubResource("QuadMesh_2xxhx")
+
+[node name="MeshDistortTexture" parent="." instance=ExtResource("3_cwtyq")]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(954, 529)

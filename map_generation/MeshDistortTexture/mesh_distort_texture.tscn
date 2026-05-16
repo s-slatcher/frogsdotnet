@@ -1,0 +1,114 @@
+[gd_scene load_steps=11 format=3 uid="uid://diccy7ucnpp8u"]
+
+[ext_resource type="Script" uid="uid://bsdbm3khmqndi" path="res://map_generation/MeshDistortTexture/MeshDistortTexture.cs" id="1_sbo37"]
+[ext_resource type="Shader" uid="uid://quoroxo5ff3f" path="res://map_generation/MeshDistortTexture/mesh_distort_shader_a.gdshader" id="2_jny27"]
+[ext_resource type="Shader" uid="uid://ctwjepd1ftpsi" path="res://map_generation/MeshDistortTexture/mesh_distort_shader_b.gdshader" id="3_gnhy5"]
+[ext_resource type="Shader" uid="uid://80y50spvmumh" path="res://map_generation/MeshDistortTexture/mesh_distort_update_mask_shader.gdshader" id="4_sg0n1"]
+[ext_resource type="PackedScene" uid="uid://1ail0ksu6o77" path="res://common/debug/viewport_visualizer.tscn" id="5_8q0kc"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gnhy5"]
+shader = ExtResource("2_jny27")
+shader_parameter/distort_coordinates = Vector4(0, 0, 0, 0)
+shader_parameter/meter_size = Vector2(0, 0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_jny27"]
+shader = ExtResource("2_jny27")
+shader_parameter/distort_coordinates = Vector4(0, 0, 0, 0)
+shader_parameter/meter_size = Vector2(0, 0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sg0n1"]
+shader = ExtResource("3_gnhy5")
+shader_parameter/distort_radius_data = Vector4(0, 0, 0, 0)
+shader_parameter/meter_size = Vector2(0, 0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_8q0kc"]
+shader = ExtResource("3_gnhy5")
+shader_parameter/distort_radius_data = Vector4(0, 0, 0, 0)
+shader_parameter/meter_size = Vector2(0, 0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hl32u"]
+shader = ExtResource("4_sg0n1")
+shader_parameter/distort_coordinates = Vector4(0, 0, 0, 0)
+shader_parameter/distort_radius_data = Vector2(0, 0)
+shader_parameter/meter_size = Vector2(0, 0)
+
+[node name="MeshDistortTexture" type="Node2D" node_paths=PackedStringArray("vp_a_read", "vp_a_write", "vp_b_read", "vp_b_write", "vp_update_mask")]
+script = ExtResource("1_sbo37")
+vp_a_read = NodePath("viewport1")
+vp_a_write = NodePath("viewport2")
+vp_b_read = NodePath("viewport3")
+vp_b_write = NodePath("viewport4")
+vp_update_mask = NodePath("viewport5")
+
+[node name="viewport1" type="SubViewport" parent="."]
+disable_3d = true
+use_hdr_2d = true
+render_target_update_mode = 0
+
+[node name="ColorRect" type="ColorRect" parent="viewport1"]
+material = SubResource("ShaderMaterial_gnhy5")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="viewport2" type="SubViewport" parent="."]
+disable_3d = true
+use_hdr_2d = true
+render_target_update_mode = 0
+
+[node name="ColorRect" type="ColorRect" parent="viewport2"]
+material = SubResource("ShaderMaterial_jny27")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="viewport3" type="SubViewport" parent="."]
+disable_3d = true
+use_hdr_2d = true
+render_target_update_mode = 0
+
+[node name="ColorRect" type="ColorRect" parent="viewport3"]
+material = SubResource("ShaderMaterial_sg0n1")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="viewport4" type="SubViewport" parent="."]
+disable_3d = true
+use_hdr_2d = true
+render_target_update_mode = 0
+
+[node name="ColorRect" type="ColorRect" parent="viewport4"]
+material = SubResource("ShaderMaterial_8q0kc")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="viewport5" type="SubViewport" parent="."]
+disable_3d = true
+use_hdr_2d = true
+render_target_update_mode = 0
+
+[node name="ColorRect" type="ColorRect" parent="viewport5"]
+material = SubResource("ShaderMaterial_hl32u")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="ViewportVisualizer" parent="." node_paths=PackedStringArray("vpList") instance=ExtResource("5_8q0kc")]
+vpList = [NodePath("../viewport1"), NodePath("../viewport2"), NodePath("../viewport3"), NodePath("../viewport4"), NodePath("../viewport5"), null, null, null, null, null]

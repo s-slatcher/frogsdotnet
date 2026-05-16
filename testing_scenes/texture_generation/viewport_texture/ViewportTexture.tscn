@@ -38,11 +38,14 @@ color = Color(0, 1, 0, 1)
 polygon = PackedVector2Array(1111, 140, 890, 527, 924, 816, 1270, 895, 1578, 645, 1536, 337, 1198, 178)
 
 [node name="Line2D" type="Line2D" parent="SubViewport"]
-visible = false
 points = PackedVector2Array(0, 0, 1000, 800)
 width = 83.135
 gradient = SubResource("Gradient_mywiq")
 texture_mode = 2
+
+[node name="BackBufferCopy" type="BackBufferCopy" parent="SubViewport"]
+copy_mode = 2
+rect = Rect2(-100.67, -100, 200, 200)
 
 [node name="SubViewport2" type="SubViewport" parent="."]
 size = Vector2i(1920, 1080)

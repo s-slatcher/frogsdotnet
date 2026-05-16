@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=4 uid="uid://d3teamfq15lcl"]
+[gd_scene load_steps=24 format=4 uid="uid://d3teamfq15lcl"]
 
 [ext_resource type="Script" uid="uid://piymvhyv5oxk" path="res://map_generation/terrain_mesh/TerrainMesh.cs" id="1_8i83x"]
 [ext_resource type="PackedScene" uid="uid://ckdbden2ckxda" path="res://common/polygon_mesh_generation/Shader based/polygon_mesh.tscn" id="2_g543p"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://bc0es7d2y4vvk" path="res://map_generation/terrain_texture/TerrainTexture.tscn" id="3_p7cl5"]
 [ext_resource type="Shader" uid="uid://4ut2ds7uagl3" path="res://map_generation/terrain_mesh/grass_vs.tres" id="5_72q7g"]
 [ext_resource type="PackedScene" uid="uid://dui2lnj36uifc" path="res://resources/grass_mesh/grass.glb" id="6_72q7g"]
+[ext_resource type="PackedScene" uid="uid://diccy7ucnpp8u" path="res://map_generation/MeshDistortTexture/mesh_distort_texture.tscn" id="7_qekwp"]
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_6mu2c"]
 seed = 140
@@ -163,5 +164,7 @@ transform = Transform3D(1, 0, 0, 0, -0.0360682, 0.999349, 0, -0.999349, -0.03606
 light_energy = 14.821
 spot_range = 18.4338
 spot_angle = 52.0313
+
+[node name="MeshDistortTexture" parent="." instance=ExtResource("7_qekwp")]
 
 [editable path="grass2"]

@@ -20,9 +20,10 @@ public partial class PolygonMeshWorld : Node3D
     [Export] PackedScene terrainMeshScene;
     TerrainMesh terrainMesh;
 
+    GeometryUtils gUtils = new();
     RandomNumberGenerator rng = new();
 
-    Vector2 radiusRange = new Vector2(2, 8);
+    Vector2 radiusRange = new Vector2(2,7);
 
     Vector2 lastClick = Vector2.Zero;
 
@@ -60,7 +61,11 @@ public partial class PolygonMeshWorld : Node3D
         foreach ( var poly in polygons)
         {
             var terrainMesh = (TerrainMesh)terrainMeshScene.Instantiate();
-            terrainMesh.Position = new Vector3(poly[0].X, poly[0].Y, 0);
+            terrainMesh.MinDepth = 3;
+            var terrainRect = gUtils.RectFromPolygon(poly);
+
+            terrainMesh.Position = new Vector3(terrainRect.Position.X  , terrainRect.Position.Y, 0);
+            TerrainRegionMap.Add(terrainRect, terrainMesh);
             AddChild(terrainMesh);
             GD.Print(poly.Length);
             terrainMesh.TerrainPolygon = poly;
@@ -85,7 +90,7 @@ public partial class PolygonMeshWorld : Node3D
 
         var randRadius = (float)GD.RandRange(radiusRange.X, radiusRange.Y);
         var center2d = new Vector2(vector.X, vector.Y);
-    
+        
         var explodeRect = new Rect2(Vector2.Zero, new Godot.Vector2(randRadius * 2, randRadius * 2));
         explodeRect.Position = center2d - new Vector2(randRadius, randRadius);
         var print_string = "explosion intersect at: ";
@@ -94,11 +99,11 @@ public partial class PolygonMeshWorld : Node3D
         {
             var mesh = TerrainRegionMap[rect];
             var newRect = new Rect2(rect.Position + new Vector2(mesh.Position.X, mesh.Position.Y), rect.Size);
-
-            if (explodeRect.Intersects(newRect))
+            GD.Print(rect.Position);
+            if (explodeRect.Intersects(rect))
             {
                 print_string += vector.ToString() + ",";
-                mesh.ExplodeTerrain(vector, randRadius);
+                mesh.ExplodeTerrain( vector, randRadius);
             }
 
         }

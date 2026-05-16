@@ -23,7 +23,7 @@ public partial class LineSegment(Vector2 start, Vector2 end) : GodotObject
 
     public float Length()
     {
-        return start.DistanceTo(end);
+        return Start.DistanceTo(End);
     }
 
     public void Translate(Vector2 translation)
@@ -33,9 +33,9 @@ public partial class LineSegment(Vector2 start, Vector2 end) : GodotObject
     
     public void ExpandLine(float startExpand, float endExpand)
     {
-        var normalized = (end - start).Normalized();
-        start += startExpand * normalized;
-        end -= endExpand * normalized;
+        var normalized = (End - Start).Normalized();
+        Start += startExpand * normalized;
+        End -= endExpand * normalized;
 
     }
 

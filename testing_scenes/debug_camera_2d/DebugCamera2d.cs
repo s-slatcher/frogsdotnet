@@ -5,6 +5,9 @@ using System;
 public partial class DebugCamera2d : Camera2D
 {
 
+    static int idCount = 0;
+    int id;
+
     public Rect2 trueScreenRect;
     Vector2 dragStartMousePos;
     Vector2 dragStartCameraPos;
@@ -22,6 +25,10 @@ public partial class DebugCamera2d : Camera2D
     public override void _Ready()
     {
         
+        id = idCount;
+        idCount++;
+        
+        saveName = id.ToString() + saveName;
         _ = DirAccess.MakeDirAbsolute(savePath);
         
         

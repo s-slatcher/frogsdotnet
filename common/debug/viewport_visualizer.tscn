@@ -1,0 +1,27 @@
+[gd_scene load_steps=3 format=3 uid="uid://1ail0ksu6o77"]
+
+[ext_resource type="Script" uid="uid://c5ccpp3jp5mtr" path="res://common/debug/ViewportVisualizer.cs" id="1_sd3as"]
+[ext_resource type="PackedScene" uid="uid://b8osbgmfbof24" path="res://testing_scenes/debug_camera_2d/debug_camera_2d.tscn" id="2_p1u0g"]
+
+[node name="ViewportVisualizer" type="Node2D"]
+script = ExtResource("1_sd3as")
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 3
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="Control"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="GridContainer" type="GridContainer" parent="."]
+offset_right = 40.0
+offset_bottom = 40.0
+scale = Vector2(1.75, 1.75)
+columns = 3
+
+[node name="DebugCamera2d" parent="." instance=ExtResource("2_p1u0g")]
