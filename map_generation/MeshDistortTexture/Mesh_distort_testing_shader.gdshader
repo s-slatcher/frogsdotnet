@@ -1,17 +1,10 @@
 shader_type canvas_item;
 
-// one piece of the distort data, the two center coordinates defining a tunnel
-uniform vec3 distort_data;
-
-
-// the copy of this texture holding last frames data 
-uniform sampler2D sister_texture: filter_nearest; 
-
 uniform vec2 meter_size;
+uniform sampler2D distort_texture: filter_nearest;
 
 vec4 encode_color(vec4 data) { return vec4( data.xyz/max(meter_size.x, meter_size.y), 1) ; }
 vec4 decode_color(vec4 color) {return vec4( color.xyz * max(meter_size.x, meter_size.y), 1) ; }
-
 
 vec2 closestPointOnSegment(vec2 p, vec2 a, vec2 b)
 {
@@ -28,7 +21,6 @@ vec2 closestPointOnSegment(vec2 p, vec2 a, vec2 b)
 
 float get_depth_at_frag(vec2 uv, vec2 center1, vec2 center2, float xy_rad, float depth_rad)
 {
-	
 	vec2 meter_pos = uv * meter_size;
 	//vec2 relative_center = closestPointOnSegment(meter_pos, center1, center2);
 	vec2 relative_center = center1;
@@ -39,36 +31,23 @@ float get_depth_at_frag(vec2 uv, vec2 center1, vec2 center2, float xy_rad, float
 	return depth_from_explosion;
 }
 
-
 void vertex() {
-	// Called for every vertex the material is visible on.
+	
 }
 
 void fragment() {
-	vec2 meter_pos = UV * meter_size; 
+	vec2 meter_pos = UV * meter_size;
+	vec4 distort_color = texture(distort_texture, UV);
+	vec4 distort_data = decode_color(distort_color);
 	
-	vec4 prev_color = texture(sister_texture, UV);
-	vec3 prev_distort = decode_color(prev_color).xyz;
 	
-	vec2 prev_distort_center = prev_distort.xy;
-	float prev_distort_rad = prev_distort.z;
-	
-	vec4 new_color = encode_color(vec4(distort_data,1));
-	vec2 new_distort_center = distort_data.xy;
-	float new_distort_rad = distort_data.z;
-	
-	float prev_depth = get_depth_at_frag(UV, prev_distort_center, prev_distort_center, prev_distort_rad, prev_distort_rad);
-	float new_depth = get_depth_at_frag(UV, new_distort_center, new_distort_center, new_distort_rad, new_distort_rad);
-	
-	COLOR = mix(prev_color, new_color, step(prev_depth, new_depth - 0.001));
-	//COLOR = vec4(new_depth/10., 0., 0., 1.);
-	
-	//float r = distance(meter_pos, new_distort_center) / 100.;
-	//COLOR = vec4(vec3(r),1);
-	
+	vec2 distort_center = distort_data.xy;
+	float distort_rad = distort_data.z;
+	float depth = get_depth_at_frag(UV, distort_center, distort_center, distort_rad, distort_rad);
+	float relative_depth = 1. - clamp( depth/15., 0, 1 ); // presume max depth to be 15.
+	COLOR = vec4( vec3(relative_depth), 1);
+	// Called for every pixel the material is visible on.
 }
-
-
 
 //void light() {
 //	// Called for every pixel for every light affecting the CanvasItem.

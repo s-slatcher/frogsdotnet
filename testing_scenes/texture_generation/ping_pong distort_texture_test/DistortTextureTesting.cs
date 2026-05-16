@@ -25,8 +25,8 @@ public partial class DistortTextureTesting : Node2D
 
     private void OnTimeout()
     {
-        meshDistortTexture.ApplyDistortion(new TerrainDistortion(GD.Randf() * 3, new Godot.Vector2(GD.Randf() * 100, GD.Randf() * 100)));
+        // meshDistortTexture.ApplyDistortion(new TerrainDistortion(GD.Randf() * 3, new Godot.Vector2(GD.Randf() * 100, GD.Randf() * 100)));
 
-        meshMaterial.SetShaderParameter("distort_texture", meshDistortTexture.GetTexture());
+        // meshMaterial.SetShaderParameter("distort_texture", meshDistortTexture.GetTexture());
     }
 }

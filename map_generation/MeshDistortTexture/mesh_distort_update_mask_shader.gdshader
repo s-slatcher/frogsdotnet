@@ -15,6 +15,10 @@ struct distort_data {
 	float depth_rad; 
 };
 
+
+vec4 encode_coord_color(vec4 coords) { return coords/1000.; }
+vec4 decode_coord_color(vec4 color) {return color * 1000.; }
+
 // CHATGPT WRITTEN FUNCTION
 vec2 closestPointOnSegment(vec2 p, vec2 a, vec2 b)
 {
@@ -31,13 +35,6 @@ vec2 closestPointOnSegment(vec2 p, vec2 a, vec2 b)
 
 float get_depth_at_frag(vec2 uv, vec2 center1, vec2 center2, float xy_rad, float depth_rad)
 {
-	//vec4 coords_color = texture(viewport_coords, uv);
-	//vec4 distort_radius_color = texture(viewport_radius, uv);
-	
-	//vec2 center1 = coords_color.rg;
-	//vec2 center2 = coords_color.ba;
-	//float xy_radius = distort_radius_color.r;
-	//float depth_radius = distort_radius_color.g;  // FOR NOW IGNORING "SQUISH" FACTOR
 	
 	vec2 meter_pos = uv * meter_size;
 	vec2 relative_center = closestPointOnSegment(meter_pos, center1, center2);
@@ -58,6 +55,8 @@ void vertex() {
 void fragment() {
 	
 	vec4 coords_color = texture(viewport_coords, UV);
+	vec4 old_coords = decode_coord_color(coords_color);
+	
 	vec4 distort_radius_color = texture(viewport_radius, UV);
 	float prev_depth = get_depth_at_frag(
 		UV, coords_color.xy, coords_color.zw, distort_radius_color.x, distort_radius_color.y
