@@ -37,7 +37,7 @@ public partial class MeshDistortTexture : Node2D
     List<TerrainDistortion> DistortQueue = new();
 
 
-    int PixelPerUnit = 4;
+    int PixelPerUnit = 6;
 
     Rect2 rect = new();
     [Export] SubViewport vp_a_read;
@@ -59,6 +59,30 @@ public partial class MeshDistortTexture : Node2D
 
     }
 
+    public void ExplosionStressTest()
+    {
+        Vector2 lastPos = new();
+        Vector2 nextPos = new();
+        float rad = 4;
+        float length = 1;
+        for (int i = 0; i < rect.Size.X / (rad*2+2); i++)
+        {
+            nextPos.X += (rad*2+2);
+            nextPos.Y = 0;
+            lastPos = nextPos;
+            for (int j = 0; j < (rect.Size.Y / length); j++)
+            {
+                nextPos.Y += length;
+                var distort = new TerrainDistortion(rad, rad, lastPos, nextPos);
+                lastPos = nextPos;
+                ApplyDistortion(distort);
+            }
+        }
+    }
+
+    
+
+
     public void ApplyDistortion(TerrainDistortion distortion)
     {
         DistortQueue.Add(distortion);
@@ -66,15 +90,16 @@ public partial class MeshDistortTexture : Node2D
 
     public override void _Ready()
     {
-        if (DebugExplosionsInQueue) GetTree().CreateTimer(1).Timeout += OnDebugExplodeTimer;
+        // if (DebugExplosionsInQueue) GetTree().CreateTimer(1).Timeout += OnDebugExplodeTimer;
+        if (DebugExplosionsInQueue) GetTree().CreateTimer(5).Timeout += ExplosionStressTest;
         SetRect(new Rect2(){Size  = new Vector2(100,100)});
     }
 
     private void OnDebugExplodeTimer()
     {
-        var ranRad = (GD.Randf() * 15f) + 2f;
+        var ranRad = (GD.Randf() * 10f) + 1f;
         var ranPos1 = rect.Size * (new Vector2(GD.Randf(), GD.Randf()));
-        var ranPos2 = (rect.Size - ranPos1) * new Vector2(GD.Randf(), GD.Randf()) * 0.5f;
+        var ranPos2 = ranPos1 + ( new Vector2( 5, 5) );
         var explosion = new TerrainDistortion(ranRad, ranRad, ranPos1, ranPos2);
         DistortQueue.Add(explosion);
         GetTree().CreateTimer(1.5f).Timeout += OnDebugExplodeTimer;
@@ -124,7 +149,14 @@ public partial class MeshDistortTexture : Node2D
 
     private void SetNewDistortParams(TerrainDistortion dis)
     {
-       SetParam(vp_a_write, "distort_data", new Vector3(dis.center1.X, dis.center1.Y, dis.width));
+
+        // uniform vec2 distort_pos_a;
+        // uniform vec2 distort_pos_b;
+        // uniform float distort_r;
+
+       SetParam(vp_a_write, "distort_pos_a", dis.center1);
+       SetParam(vp_a_write, "distort_pos_b", dis.center2);
+       SetParam(vp_a_write, "distort_r", dis.width);
     }
 
     public void SetupViewports()

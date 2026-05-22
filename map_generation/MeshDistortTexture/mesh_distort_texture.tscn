@@ -8,11 +8,17 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_gnhy5"]
 shader = ExtResource("2_jny27")
 shader_parameter/distort_data = Vector3(0, 0, 0)
+shader_parameter/distort_pos_a = Vector2(0, 0)
+shader_parameter/distort_pos_b = Vector2(0, 0)
+shader_parameter/distort_r = 0.0
 shader_parameter/meter_size = Vector2(0, 0)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_jny27"]
 shader = ExtResource("2_jny27")
 shader_parameter/distort_data = Vector3(0, 0, 0)
+shader_parameter/distort_pos_a = Vector2(0, 0)
+shader_parameter/distort_pos_b = Vector2(0, 0)
+shader_parameter/distort_r = 0.0
 shader_parameter/meter_size = Vector2(0, 0)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_8q0kc"]

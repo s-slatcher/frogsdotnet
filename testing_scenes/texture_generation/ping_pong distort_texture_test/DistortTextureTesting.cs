@@ -1,12 +1,12 @@
-using Godot;
+ using Godot;
 using System;
 using System.ComponentModel;
 using System.Numerics;
 
-public partial class DistortTextureTesting : Node2D
+public partial class DistortTextureTesting : Node3D
 {
 
-    [Export] MeshInstance2D mesh;
+    [Export] MeshInstance3D mesh;
     ShaderMaterial meshMaterial;
     [Export] MeshDistortTexture meshDistortTexture;
 
@@ -15,13 +15,23 @@ public partial class DistortTextureTesting : Node2D
 
         Rect2 rect = new(){Size = new Godot.Vector2(100,100)};
         meshDistortTexture.SetRect(rect);
-        meshMaterial = (ShaderMaterial)mesh.Material;
+        
+        meshMaterial = (ShaderMaterial)mesh.MaterialOverride;
+
+        meshDistortTexture.TextureUpdated += OnTextureUpdated;
 
 
-        GetTree().CreateTimer(3).Timeout += OnTimeout;
+        // GetTree().CreateTimer(3).Timeout += OnTimeout;
 
 
     }
+
+    private void OnTextureUpdated(Godot.ViewportTexture texture)
+    {
+        var meshMat = (ShaderMaterial)mesh.MaterialOverride;
+        meshMat.SetShaderParameter("explosion_map", texture);
+    }
+
 
     private void OnTimeout()
     {

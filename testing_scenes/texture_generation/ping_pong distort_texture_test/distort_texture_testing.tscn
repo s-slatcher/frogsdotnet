@@ -1,26 +1,153 @@
-[gd_scene load_steps=6 format=3 uid="uid://dkhwv0f3066ot"]
+[gd_scene load_steps=11 format=3 uid="uid://dkhwv0f3066ot"]
 
 [ext_resource type="Script" uid="uid://b4k7voj04iw2k" path="res://testing_scenes/texture_generation/ping_pong distort_texture_test/DistortTextureTesting.cs" id="1_2xxhx"]
-[ext_resource type="Shader" uid="uid://che6a2ec2gvns" path="res://testing_scenes/texture_generation/ping_pong distort_texture_test/distort_texture_testing.gdshader" id="2_3qgbl"]
+[ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="2_8vm7i"]
+[ext_resource type="Texture2D" uid="uid://dffs6vsvyeq3c" path="res://resources/textures/rock_tex.png" id="3_8vm7i"]
 [ext_resource type="PackedScene" uid="uid://diccy7ucnpp8u" path="res://map_generation/MeshDistortTexture/mesh_distort_texture.tscn" id="3_cwtyq"]
 
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_3qgbl"]
+sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+ground_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+
+[sub_resource type="Sky" id="Sky_cwtyq"]
+sky_material = SubResource("ProceduralSkyMaterial_3qgbl")
+
+[sub_resource type="Environment" id="Environment_8vm7i"]
+background_mode = 2
+sky = SubResource("Sky_cwtyq")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="Shader" id="Shader_3qgbl"]
+code = "// NOTE: Shader automatically converted from Godot Engine 4.4.stable.mono's StandardMaterial3D.
+
+shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx, shadows_disabled;
+
+uniform sampler2D explosion_map : filter_nearest;
+uniform vec2 meter_size;
+
+uniform vec4 albedo : source_color;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+uniform ivec2 albedo_texture_size;
+uniform float point_size : hint_range(0.1, 128.0, 0.1);
+
+uniform float roughness : hint_range(0.0, 1.0);
+uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec4 metallic_texture_channel;
+uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
+
+uniform float specular : hint_range(0.0, 1.0, 0.01);
+uniform float metallic : hint_range(0.0, 1.0, 0.01);
+
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+vec4 encode_color(vec4 data) { return vec4( data.xyz/max(meter_size.x, meter_size.y), 1) ; }
+vec4 decode_color(vec4 color) {return vec4( color.xyz * max(meter_size.x, meter_size.y), 1) ; }
+
+vec2 closestPointOnSegment(vec2 p, vec2 a, vec2 b)
+{
+    vec2 ab = b - a;
+
+    // Project AP onto AB, normalized by |AB|^2
+    float t = dot(p - a, ab) / dot(ab, ab);
+
+    // Clamp so it stays on the segment
+    t = clamp(t, 0.0, 1.0);
+
+    return a + ab * t;
+}
+
+float get_depth_at_frag(vec2 uv, vec2 center1, vec2 center2, float xy_rad, float depth_rad)
+{
+	vec2 meter_pos = uv * meter_size;
+	//vec2 relative_center = closestPointOnSegment(meter_pos, center1, center2);
+	vec2 relative_center = center1;
+	float dist_from_cent = distance(meter_pos, relative_center);
+	
+	if (dist_from_cent >= xy_rad) return 0.;
+	float depth_from_explosion = sqrt( (xy_rad * xy_rad) - (dist_from_cent * dist_from_cent ) );
+	return depth_from_explosion;
+}
+void vertex() {
+	//UV = UV * uv1_scale.xy + uv1_offset.xy;
+	vec4 explode_color = texture(explosion_map, UV);
+	vec4 explode_data = decode_color(explode_color);
+	
+	float depth = get_depth_at_frag(UV, explode_data.xy, explode_data.xy, explode_data.z, explode_data.z);
+	
+	VERTEX.z -= depth;
+	vec3 new_normal = normalize(vec3(explode_data.xy,0.) - vec3(VERTEX));
+	if (depth != 0.) NORMAL = new_normal;
+}
+
+void fragment() {
+	vec2 base_uv = UV;
+
+	vec4 albedo_tex = texture(texture_albedo, base_uv);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+
+	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
+	METALLIC = metallic_tex * metallic;
+	SPECULAR = specular;
+
+	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
+	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
+	ROUGHNESS = roughness_tex * roughness;
+}
+"
+
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_cwtyq"]
-shader = ExtResource("2_3qgbl")
+render_priority = 0
+shader = SubResource("Shader_3qgbl")
+shader_parameter/meter_size = Vector2(100, 100)
+shader_parameter/albedo = Color(0.341266, 0.308138, 0.277414, 1)
+shader_parameter/texture_albedo = ExtResource("3_8vm7i")
+shader_parameter/albedo_texture_size = Vector2i(0, 0)
+shader_parameter/point_size = 0.1
+shader_parameter/roughness = 1.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/specular = 0.55
+shader_parameter/metallic = 0.0
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
 
-[sub_resource type="QuadMesh" id="QuadMesh_2xxhx"]
-size = Vector2(500, 500)
+[sub_resource type="QuadMesh" id="QuadMesh_3qgbl"]
+size = Vector2(100, 100)
+subdivide_width = 200
+subdivide_depth = 200
 
-[node name="DistortTextureTesting" type="Node2D" node_paths=PackedStringArray("mesh", "meshDistortTexture")]
+[node name="DistortTextureTesting" type="Node3D" node_paths=PackedStringArray("mesh", "meshDistortTexture")]
 script = ExtResource("1_2xxhx")
-mesh = NodePath("MeshInstance2D")
+mesh = NodePath("MeshInstance3D")
 meshDistortTexture = NodePath("MeshDistortTexture")
 
-[node name="MeshInstance2D" type="MeshInstance2D" parent="."]
-material = SubResource("ShaderMaterial_cwtyq")
-position = Vector2(1312, 363)
-mesh = SubResource("QuadMesh_2xxhx")
+[node name="CanvasLayer" parent="." instance=ExtResource("2_8vm7i")]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.950686, -0.266508, -0.158652, -0.00436329, -0.499981, 0.866025, -0.310126, 0.82401, 0.474162, 0, 48.2014, 65.2558)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_8vm7i")
 
 [node name="MeshDistortTexture" parent="." instance=ExtResource("3_cwtyq")]
+visible = false
 
-[node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(954, 529)
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.144242, 0.123592, -0.0320482)
+material_override = SubResource("ShaderMaterial_cwtyq")
+mesh = SubResource("QuadMesh_3qgbl")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 77.0263)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.357, 1.97, 10.2828)
+light_energy = 2.462
+omni_range = 64.753
