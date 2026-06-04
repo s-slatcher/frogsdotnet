@@ -1,7 +1,8 @@
 shader_type canvas_item;
+render_mode blend_mix;
 
 uniform vec2 meter_size;
-uniform sampler2D distort_texture: filter_nearest;
+uniform sampler2D distort_texture: filter_nearest, source_color;
 
 vec4 encode_color(vec4 data) { return vec4( data.xyz/max(meter_size.x, meter_size.y), 1) ; }
 vec4 decode_color(vec4 color) {return vec4( color.xyz * max(meter_size.x, meter_size.y), 1) ; }

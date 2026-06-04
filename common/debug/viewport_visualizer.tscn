@@ -23,3 +23,5 @@ offset_right = 40.0
 offset_bottom = 40.0
 scale = Vector2(1.75, 1.75)
 columns = 3
+
+[node name="Sprite2D" type="Sprite2D" parent="."]

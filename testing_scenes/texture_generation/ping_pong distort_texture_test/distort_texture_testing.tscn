@@ -45,8 +45,11 @@ uniform vec3 uv1_offset;
 uniform vec3 uv2_scale;
 uniform vec3 uv2_offset;
 
-vec4 encode_color(vec4 data) { return vec4( data.xyz/max(meter_size.x, meter_size.y), 1) ; }
-vec4 decode_color(vec4 color) {return vec4( color.xyz * max(meter_size.x, meter_size.y), 1) ; }
+vec4 encode_color(vec2 center, float radius, float depth_multiplier) {
+	float div = max(meter_size.x, meter_size.y);
+	return vec4( center/div, radius/div, depth_multiplier) ; 
+}
+vec4 decode_color(vec4 color) {return vec4( color.xyz * max(meter_size.x, meter_size.y), color.a) ; }
 
 vec2 closestPointOnSegment(vec2 p, vec2 a, vec2 b)
 {
@@ -61,23 +64,22 @@ vec2 closestPointOnSegment(vec2 p, vec2 a, vec2 b)
     return a + ab * t;
 }
 
-float get_depth_at_frag(vec2 uv, vec2 center1, vec2 center2, float xy_rad, float depth_rad)
+float get_depth_at_frag(vec2 uv, vec2 center, float xy_rad, float depth_multiplier)
 {
-	vec2 meter_pos = uv * meter_size;
-	//vec2 relative_center = closestPointOnSegment(meter_pos, center1, center2);
-	vec2 relative_center = center1;
-	float dist_from_cent = distance(meter_pos, relative_center);
 	
+	vec2 meter_pos = uv * meter_size;
+	float dist_from_cent = distance(meter_pos, center);
 	if (dist_from_cent >= xy_rad) return 0.;
-	float depth_from_explosion = sqrt( (xy_rad * xy_rad) - (dist_from_cent * dist_from_cent ) );
+	float depth_from_explosion = sqrt( (xy_rad * xy_rad) - (dist_from_cent * dist_from_cent ) ) * depth_multiplier;
 	return depth_from_explosion;
 }
+
 void vertex() {
 	//UV = UV * uv1_scale.xy + uv1_offset.xy;
 	vec4 explode_color = texture(explosion_map, UV);
 	vec4 explode_data = decode_color(explode_color);
 	
-	float depth = get_depth_at_frag(UV, explode_data.xy, explode_data.xy, explode_data.z, explode_data.z);
+	float depth = get_depth_at_frag(UV, explode_data.xy, explode_data.z, explode_data.a);
 	
 	VERTEX.z -= depth;
 	vec3 new_normal = normalize(vec3(explode_data.xy,0.) - vec3(VERTEX));
@@ -86,7 +88,16 @@ void vertex() {
 
 void fragment() {
 	vec2 base_uv = UV;
-
+	
+	//vec2 meter_pos = UV * meter_size; 
+	//vec4 explode_color = texture(explosion_map, UV);
+	//vec4 explode_data = decode_color(explode_color);
+	//float depth = get_depth_at_frag(UV, explode_data.xy, explode_data.xy, explode_data.z, explode_data.z);
+	//
+	//vec3 frag_pos = vec3(meter_pos, -depth);
+	//vec3 new_normal = normalize(vec3(explode_data.xy,0.) - frag_pos);
+	//if (depth > 0.0001) NORMAL = new_normal;
+	
 	vec4 albedo_tex = texture(texture_albedo, base_uv);
 	ALBEDO = albedo.rgb * albedo_tex.rgb;
 
@@ -137,7 +148,6 @@ shadow_enabled = true
 environment = SubResource("Environment_8vm7i")
 
 [node name="MeshDistortTexture" parent="." instance=ExtResource("3_cwtyq")]
-visible = false
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.144242, 0.123592, -0.0320482)

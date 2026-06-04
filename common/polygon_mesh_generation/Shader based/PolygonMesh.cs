@@ -119,22 +119,16 @@ public partial class PolygonMesh : MeshInstance3D
 
         var shader = (ShaderMaterial)MaterialOverride;
         shader.SetShaderParameter("edge_smooth", SmoothingBump);
-
-        if (PrintDebug)
-        {
-            GD.Print("mesh id:", id);
-            GD.Print("Mesh bounding rect size: ", BoundingRect.Size);
-            GD.Print("Total vertices: ", VertexList.Count);
-            GD.Print("total time: ", Time.GetTicksMsec() - time);
-            GD.Print("front face subdivision: ", frontSubdivideTime);
-            GD.Print("front vert indexing time: ", frontFaceIndexingTime);
-            GD.Print("mesh gen time: ", meshGenTime);
-            GD.Print("---------");
-        }
+        
+        if (PrintDebug) PrintDebugMessage(time);
+        
+        
+            
+        
 
     }
 
-   
+    
 
 
     private List<PolygonQuad> SubdivideMainFace(PolygonQuad rootQuad)
@@ -634,6 +628,18 @@ public partial class PolygonMesh : MeshInstance3D
     {
         // returns center X value + radius
         return explosion.X + explosion.W; 
+    }
+
+    private void PrintDebugMessage(float timeToGenerate)
+    {
+        GD.Print("mesh id:", id);
+        GD.Print("Mesh bounding rect size: ", BoundingRect.Size);
+        GD.Print("Total vertices: ", VertexList.Count);
+        GD.Print("total time: ", Time.GetTicksMsec() - timeToGenerate);
+        GD.Print("front face subdivision: ", frontSubdivideTime);
+        GD.Print("front vert indexing time: ", frontFaceIndexingTime);
+        GD.Print("mesh gen time: ", meshGenTime);
+        GD.Print("---------");
     }
 
     

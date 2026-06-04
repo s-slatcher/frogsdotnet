@@ -10,11 +10,11 @@ public partial class ViewportVisualizer : Node2D
 
     public override void _Ready()
     {
-        CallDeferred("GrabViewports");
+        CallDeferred("ArrangeViewports");
         
     }
 
-    void GrabViewports()
+    void ArrangeViewports()
     {
         var gridCon = GetNode<GridContainer>("GridContainer");        
         foreach(var vp in vpList)

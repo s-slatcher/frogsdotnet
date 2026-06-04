@@ -8,17 +8,19 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_gnhy5"]
 shader = ExtResource("2_jny27")
 shader_parameter/distort_data = Vector3(0, 0, 0)
-shader_parameter/distort_pos_a = Vector2(0, 0)
-shader_parameter/distort_pos_b = Vector2(0, 0)
-shader_parameter/distort_r = 0.0
+shader_parameter/pos_a = Vector2(0, 0)
+shader_parameter/pos_b = Vector2(0, 0)
+shader_parameter/rad = 0.0
+shader_parameter/depth_mult = 0.0
 shader_parameter/meter_size = Vector2(0, 0)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_jny27"]
 shader = ExtResource("2_jny27")
 shader_parameter/distort_data = Vector3(0, 0, 0)
-shader_parameter/distort_pos_a = Vector2(0, 0)
-shader_parameter/distort_pos_b = Vector2(0, 0)
-shader_parameter/distort_r = 0.0
+shader_parameter/pos_a = Vector2(0, 0)
+shader_parameter/pos_b = Vector2(0, 0)
+shader_parameter/rad = 0.0
+shader_parameter/depth_mult = 0.0
 shader_parameter/meter_size = Vector2(0, 0)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_8q0kc"]
@@ -64,7 +66,7 @@ grow_vertical = 2
 color = Color(0, 0, 0, 1)
 
 [node name="ViewportVisualizer" parent="." node_paths=PackedStringArray("vpList") instance=ExtResource("5_8q0kc")]
-vpList = [NodePath("../viewport1"), NodePath("../viewport2"), null, null, null, null, null]
+vpList = [NodePath("../viewport1"), null, null, null, NodePath("../viewport2"), null, null]
 
 [node name="TestRect" type="ColorRect" parent="."]
 texture_filter = 1
