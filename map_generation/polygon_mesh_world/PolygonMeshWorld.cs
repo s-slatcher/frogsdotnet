@@ -47,6 +47,7 @@ public partial class PolygonMeshWorld : Node3D
         // compareMeshInst.Position = new Vector3(halfSize.X, halfSize.Y, -5);
 
         
+        
     }
 
     private void GenerateTerrain()
@@ -55,27 +56,47 @@ public partial class PolygonMeshWorld : Node3D
 
 
         var mapGenerator = GetNode<MapGenerator>("MapGenerator");
-        var polygons = mapGenerator.GetPolygons();
+        List<NormalPoly> polygons = mapGenerator.GetPolygons();
         GD.Print(polygons.Count);
 
-        foreach ( var poly in polygons)
+
+        // how old loop works:
+        // - generate list of polygons with world-aligned point positions
+        // - find the corner of that polygon, so the mesh node can be world aligned
+        // - terrain mesh class passes polygon to polymesh where THERE it is normalized and given margin
+
+            
+            // foreach ( var poly in polygons)
+            // {
+            //     var terrainMesh = (TerrainMesh)terrainMeshScene.Instantiate();
+            //     terrainMesh.MinDepth = 3;
+            //     var terrainRect = gUtils.RectFromPolygon(poly);
+
+            //     terrainMesh.Position = new Vector3(terrainRect.Position.X  , terrainRect.Position.Y, 0);
+            //     TerrainRegionMap.Add(terrainRect, terrainMesh);
+            //     AddChild(terrainMesh);
+            //     GD.Print(poly.Length);
+            //     terrainMesh.TerrainPolygon = poly;
+                
+            
+        // }
+
+        // new system passes a normalized poly from MapGenerator, so all parties receive same poly with same bounding rect;
+        // in future, can refactor so mapGenerator itself is generator normalPolys from step 1
+
+        foreach (NormalPoly poly in polygons)
         {
             var terrainMesh = (TerrainMesh)terrainMeshScene.Instantiate();
-            terrainMesh.MinDepth = 3;
-            var terrainRect = gUtils.RectFromPolygon(poly);
-
-            terrainMesh.Position = new Vector3(terrainRect.Position.X  , terrainRect.Position.Y, 0);
-            TerrainRegionMap.Add(terrainRect, terrainMesh);
             AddChild(terrainMesh);
-            GD.Print(poly.Length);
+            terrainMesh.MinDepth = 3;
+
+            TerrainRegionMap.Add(poly.Rect, terrainMesh);
+
             terrainMesh.TerrainPolygon = poly;
-            
-            
-        }
-        // var terrainMap = new TerrainPolygonMap();
-        // terrainMap.Settings.MaxHeight = LandHeight;
-        // terrainMap.Settings.EdgeNoise.Seed = Seed;
-        // terrainMap.Settings.HeightMapNoise.Seed = Seed;
+
+
+        }  
+      
 
 
         

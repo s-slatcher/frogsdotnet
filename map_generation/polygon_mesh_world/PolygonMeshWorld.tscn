@@ -27,7 +27,7 @@ noise = SubResource("FastNoiseLite_6mu2c")
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_vlyff"]
 noise_type = 3
-frequency = 0.0576
+frequency = 0.2342
 fractal_type = 0
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_6mu2c"]
@@ -46,7 +46,7 @@ shader = ExtResource("6_08rp7")
 shader_parameter/dirt_color = Color(0, 0, 0, 1)
 shader_parameter/dirt_color_alt = Color(0, 0, 0, 1)
 shader_parameter/stone_color = Color(0.273501, 0.208601, 0.15561, 1)
-shader_parameter/grass_color = Color(0.223529, 0.541176, 0.137255, 1)
+shader_parameter/grass_color = Color(1, 0.541176, 0.137255, 1)
 shader_parameter/grass_texture = SubResource("GradientTexture1D_6mu2c")
 shader_parameter/grass_noise_texture = SubResource("NoiseTexture2D_6mu2c")
 shader_parameter/dirt_normal = SubResource("NoiseTexture2D_2hbq0")
@@ -300,9 +300,6 @@ script = ExtResource("1_uddy7")
 explodeScene = ExtResource("2_1w2pk")
 terrainMeshScene = ExtResource("2_5iuj0")
 
-[node name="WasdCamera" parent="." instance=ExtResource("3_1w2pk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 59.562, 98.1768, 131.385)
-
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 85.086, 93.106, 215.78)
 visible = false
@@ -320,7 +317,7 @@ shadow_reverse_cull_face = true
 directional_shadow_max_distance = 193.2
 
 [node name="Moon" parent="enviroment" index="2"]
-transform = Transform3D(0.00938708, 0.839157, 0.543808, -0.999849, -3.66807e-08, 0.0172593, 0.0144832, -0.543889, 0.839032, 0, 0, 0)
+transform = Transform3D(0.00938707, 0.839157, 0.543808, -0.999849, -3.66807e-08, 0.0172593, 0.0144832, -0.543889, 0.839032, 0, 0, 0)
 light_energy = 0.0422868
 
 [node name="Camera3D" parent="enviroment" index="3"]
@@ -331,11 +328,10 @@ visible = false
 light_energy = 0.36
 
 [node name="WaterPlane" parent="." node_paths=PackedStringArray("pos_source") instance=ExtResource("5_asr1l")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 78.554)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12.995, 78.554)
 pos_source = NodePath("../WasdCamera")
 
 [node name="TerrainMesh" parent="." instance=ExtResource("2_5iuj0")]
-visible = false
 
 [node name="PolygonMesh" parent="TerrainMesh" index="0"]
 material_override = SubResource("ShaderMaterial_p7cl5")
@@ -377,6 +373,9 @@ visible = false
 mesh = SubResource("QuadMesh_ewfcb")
 
 [node name="MapGenerator" parent="." instance=ExtResource("11_1w2pk")]
+
+[node name="WasdCamera" parent="." instance=ExtResource("3_1w2pk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 59.562, 98.1768, 131.385)
 
 [editable path="enviroment"]
 [editable path="TerrainMesh"]

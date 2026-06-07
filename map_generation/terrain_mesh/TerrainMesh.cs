@@ -25,8 +25,8 @@ public partial class TerrainMesh : Node3D
     public float QuadDensity = 0.5f;
     public float GrassLength = 2f;
 
-    private Vector2[] terrainPoly = [];
-    public Vector2[] TerrainPolygon
+    private NormalPoly terrainPoly;
+    public NormalPoly TerrainPolygon
     {
         get { return terrainPoly; }
         set
@@ -39,13 +39,15 @@ public partial class TerrainMesh : Node3D
 
     public override void _Ready()
     {
-        if (terrainPoly.Length != 0) SetMesh();  
+        if (terrainPoly != null && terrainPoly.Polygon.Length != 0) SetMesh();  
     }
 
 
     private void SetMesh()
     {
 
+        Position = new Vector3(terrainPoly.Position.X, terrainPoly.Position.Y, 0);
+        
         // if (!IsNodeReady()) GD.PrintErr("called generate before in scene tree");
 
 
@@ -54,6 +56,8 @@ public partial class TerrainMesh : Node3D
         // SetHeightDepthCurve(terrainPoly);
         // GD.Print(terrainTexture);
 
+
+        // TODO implement with new NormalPoly
         
         terrainTexture.SetPolygon(terrainPoly, GrassLength);
         var grass_texture = terrainTexture.GetTexture();
@@ -65,7 +69,7 @@ public partial class TerrainMesh : Node3D
         polyMesh.MinDepth = MinDepth;
         polyMesh.GenerateMesh(terrainPoly);
 
-        BuildGrass();
+        // BuildGrass();
     }
 
     private void BuildGrass()

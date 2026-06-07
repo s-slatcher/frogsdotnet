@@ -422,14 +422,16 @@ void fragment() {
 	
 	//ALBEDO = debug_color;
 	
-	float is_exploded = step( 0.01, abs(default_vertex.z - updated_vertex.z));
+	//float is_exploded = step( 0.01, abs(default_vertex.z - updated_vertex.z));
 	float edge_color = texture(grass_texture, UV).r; 
-	float noise_mask_color = texture(grass_noise_texture, updated_vertex.xy / 30.).r;
-	float grass_noise_threshold = pow(1.0f - smoothstep(0, 0.5, edge_color), 1);
-	float grass_color_step = step(grass_noise_threshold, noise_mask_color);
-	vec4 grass_tex = grass_color;
+	//float noise_mask_color = texture(grass_noise_texture, updated_vertex.xy).r;
+	//float grass_noise_threshold = pow(1.0f - smoothstep(0, 0.5, edge_color), 1);
+	//float grass_color_step = step(grass_noise_threshold, noise_mask_color);
+	//vec4 grass_tex = grass_color;
+	//ALBEDO = mix(ALBEDO, grass_tex.rgb, grass_color_step);
 	
-	ALBEDO = mix(ALBEDO, grass_tex.rgb, grass_color_step);
+	ALBEDO = mix(ALBEDO, vec3(0,edge_color,0), edge_color);
+	
 	 //flat normal calc 
 	NORMAL = mix(NORMAL, get_flat_normal(updated_vertex), rock_level);
 	

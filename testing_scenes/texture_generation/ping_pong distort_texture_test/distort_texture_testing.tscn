@@ -51,19 +51,6 @@ vec4 encode_color(vec2 center, float radius, float depth_multiplier) {
 }
 vec4 decode_color(vec4 color) {return vec4( color.xyz * max(meter_size.x, meter_size.y), color.a) ; }
 
-vec2 closestPointOnSegment(vec2 p, vec2 a, vec2 b)
-{
-    vec2 ab = b - a;
-
-    // Project AP onto AB, normalized by |AB|^2
-    float t = dot(p - a, ab) / dot(ab, ab);
-
-    // Clamp so it stays on the segment
-    t = clamp(t, 0.0, 1.0);
-
-    return a + ab * t;
-}
-
 float get_depth_at_frag(vec2 uv, vec2 center, float xy_rad, float depth_multiplier)
 {
 	
@@ -88,15 +75,6 @@ void vertex() {
 
 void fragment() {
 	vec2 base_uv = UV;
-	
-	//vec2 meter_pos = UV * meter_size; 
-	//vec4 explode_color = texture(explosion_map, UV);
-	//vec4 explode_data = decode_color(explode_color);
-	//float depth = get_depth_at_frag(UV, explode_data.xy, explode_data.xy, explode_data.z, explode_data.z);
-	//
-	//vec3 frag_pos = vec3(meter_pos, -depth);
-	//vec3 new_normal = normalize(vec3(explode_data.xy,0.) - frag_pos);
-	//if (depth > 0.0001) NORMAL = new_normal;
 	
 	vec4 albedo_tex = texture(texture_albedo, base_uv);
 	ALBEDO = albedo.rgb * albedo_tex.rgb;

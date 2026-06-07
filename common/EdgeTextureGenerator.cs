@@ -7,7 +7,7 @@ using System.Linq;
 public partial class EdgeTextureGenerator : GodotObject
 {
 
-    public Vector2[] Polygon;
+    public NormalPoly normPoly;
     public int PixelPerUnit = 8;
     public float edgeDistanceLimit = 1; // measured in units based on provided polygon, not image pixels
     public float edgeBuffer = 1; // expand lines by x polygon units so grass doesn't end abruptly at edges 
@@ -19,19 +19,15 @@ public partial class EdgeTextureGenerator : GodotObject
 
         
 
-        var lineSegments = gUtils.LineSegmentsFromPolygon(Polygon);
+        var lineSegments = gUtils.LineSegmentsFromPolygon(normPoly.Polygon);
 
-        Rect2I rectI = gUtils.RectIFromPolygon(Polygon);
-        rectI.Expand(Vector2I.Zero);
-        rectI.GrowSide(Side.Top, 1);
-        rectI.GrowSide(Side.Right, 1);
-        
-        Rect2I imageRect = new(rectI.Position * PixelPerUnit, rectI.End * PixelPerUnit);
+        Rect2I normRect = normPoly.Rect;
+        Rect2I imageRect = new(normRect.Position * PixelPerUnit, normRect.End * PixelPerUnit);
 
         var img = Image.CreateEmpty(imageRect.Size.X, imageRect.Size.Y, false, Image.Format.Rgb8);
         img.Fill(Colors.Black);
 
-        List<LineSegment> horizontalEdges = lineSegments.Where(lineSeg => lineSeg.GetNormal().Y > 0.9).ToList();
+        List<LineSegment> horizontalEdges = lineSegments.Where(lineSeg => lineSeg.GetNormal().Y > 0.8).ToList();
         
         var pixelRectMap = new Dictionary<LineSegment, Rect2I>();
         

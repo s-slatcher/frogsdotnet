@@ -15,6 +15,7 @@ public partial class PolygonMesh : MeshInstance3D
     static int idTotal = 0;
     public int id;
 
+    
     Vector2[] polygon;
 
     bool hasPrintedEdgeList = false;
@@ -25,7 +26,7 @@ public partial class PolygonMesh : MeshInstance3D
     public float MaxDepth = 10;
     public float QuadDensity = 0.25f;
 
-    public Rect2 BoundingRect;
+    public Rect2I BoundingRect;
     // assumes curves are normalized between 0 - 1 on both domain and range
     // usings bounding rect and Max/Min depth to produces a depth value at each xy coord
     public Curve HeightDepthCurve = null;
@@ -75,23 +76,28 @@ public partial class PolygonMesh : MeshInstance3D
     }
 
 
-    public void GenerateMesh(Vector2[] polygon)
+    public void GenerateMesh(NormalPoly normalPoly)
     {
 
         var time = Time.GetTicksMsec();
 
-        var translatedPoly = PreparePolygon(polygon);
-        var interpolatedPolygon = InterpolatePolygonEdge(translatedPoly);
+        // var translatedPoly = PreparePolygon(polygon);
+        polygon = normalPoly.Polygon;
+        BoundingRect = normalPoly.Rect; 
+
+        var interpolatedPolygon = InterpolatePolygonEdge(polygon);
 
         // index interpolated edge polygon as vertices, return a list of sets of two vertices joined in a face
         // each vertex is used in two faces unless per-face normals are enabled
 
-        var faceQuad = PolygonQuad.CreateRootQuad(translatedPoly, QuadDensity);
+        var faceQuad = PolygonQuad.CreateRootQuad(polygon, QuadDensity);
         SubdivideMainFace(faceQuad);
 
+        GD.Print(interpolatedPolygon.Length);
+
         List<int> sideFaceIndices = GenerateSideFaces(interpolatedPolygon);
-        List<int> frontFaceIndices = GenerateFrontFace(translatedPoly);
-        // List<int> backFaceIndices = GenerateBackFace(translatedPoly);
+        List<int> frontFaceIndices = GenerateFrontFace(polygon);
+        // List<int> backFaceIndices = GenerateBackFace(polygon);
         var indices = sideFaceIndices.Concat(frontFaceIndices);//.Concat(backFaceIndices);
 
         var st = new SurfaceTool();
@@ -544,21 +550,6 @@ public partial class PolygonMesh : MeshInstance3D
         return newPoly.ToArray();
     }
 
-
-    private Vector2[] PreparePolygon(Vector2[] polygon)
-    {
-        if (!Geometry2D.IsPolygonClockwise(polygon)) Array.Reverse(polygon);
-        var rect = GeometryUtils.RectFromPolygon(polygon);
-      
-        rect.Expand(Vector2.Zero);
-        BoundingRect = rect.GrowSide(Side.Right, 1);
-        BoundingRect = rect.GrowSide(Side.Top, 1);
-
-        var translatedPoly = polygon.Select(p => p - rect.Position).ToArray(); // normalize polygon to start at origin
-
-        return translatedPoly;
-
-    }
 
     Godot.Color ColorFromNormal(Vector3 normal)
     {

@@ -45,6 +45,7 @@ public partial class WasdCamera : Camera3D
 
         targetPosition.Y = float.Clamp(targetPosition.Y, HeightLimit, 999);
 
+        MakeCurrent();
 
     }
 

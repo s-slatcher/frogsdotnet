@@ -13,14 +13,13 @@ public partial class TerrainTexture : SubViewport
 
     }
 
-    public void SetPolygon(Vector2[] polygon, float grassLength = 3)
+    public void SetPolygon(NormalPoly normPoly, float grassLength = 3)
     {
 
         // var polyInst = new Polygon2D() { Polygon = polygon };
         // AddChild(polyInst);
-        GD.Print(polygon.Length == 0);
         GrassLength = grassLength;
-        var tex = GetEdgeTexture(polygon);
+        var tex = GetEdgeTexture(normPoly);
         Size = (Vector2I)tex.GetSize();
         
         // var quad_mesh = new QuadMesh() { Size = this.Size };
@@ -58,9 +57,9 @@ public partial class TerrainTexture : SubViewport
         AddChild(line2d);
     }
 
-    ImageTexture GetEdgeTexture(Vector2[] polygon)
+    ImageTexture GetEdgeTexture(NormalPoly normPoly)
     {
-        edgeTexture.Polygon = polygon;
+        edgeTexture.normPoly = normPoly;
         edgeTexture.edgeDistanceLimit = GrassLength;
         edgeTexture.edgeBuffer = 2;
         Image image = edgeTexture.Generate();

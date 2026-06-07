@@ -12,6 +12,9 @@ public partial class Polygon : GodotObject
 {
     public Rect2 BoundingRect;
     List<Vector2> sourcePoints = new();
+    
+    
+    // collision tree NOT USED FOR NOW (slow?)
     PolygonPoint firstPoint;
     PolygonCollisionTree root;
     public HashSet<PolygonCollisionTree> leafNodeCache = new();
@@ -82,6 +85,7 @@ public partial class Polygon : GodotObject
         {
             (firstPoint, lastPoint)
         };
+        
         firstPoint.prevKeyPoint = lastPoint;
         lastPoint.nextKeyPoint = firstPoint;
 

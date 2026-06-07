@@ -29,7 +29,8 @@ public partial class MapGenerator : Node2D
     List<Vector2[]> DebugPolyList = new();
 
     List<Vector2[]> SimpleLandmasses = new();
-    List<Vector2[]> NoisyLandmasses = new();
+
+    List<NormalPoly> NoisyLandmasses = new();
     Dictionary<Vector2[], Rect2> LandmassRectMap = new();
 
 
@@ -60,7 +61,7 @@ public partial class MapGenerator : Node2D
         QueueRedraw();
     }
 
-    public List<Vector2[]> GetPolygons()
+    public List<NormalPoly> GetPolygons()
     {
         return new(NoisyLandmasses){};
     }
@@ -194,7 +195,8 @@ public partial class MapGenerator : Node2D
         {
             
             var noisePoly = noisePolyApplier.ApplyNoiseEdge(landPoly);
-            NoisyLandmasses.Add(noisePoly);
+            var normalPoly = new NormalPoly(noisePoly);
+            NoisyLandmasses.Add(normalPoly);
             AddPolyToDrawList(noisePoly);
 
 

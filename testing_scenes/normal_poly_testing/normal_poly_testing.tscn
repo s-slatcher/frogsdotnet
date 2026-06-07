@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://uaf6dcgbuly"]
+
+[ext_resource type="Script" uid="uid://rw7u41fhefrn" path="res://testing_scenes/normal_poly_testing/NormalPolyTesting.cs" id="1_pcgti"]
+
+[node name="NormalPolyTesting" type="Node2D" node_paths=PackedStringArray("polyNode")]
+script = ExtResource("1_pcgti")
+polyNode = NodePath("Polygon2D")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(833, 606, 813, 507, 748, 452, 762, 310, 948, 404, 1109, 345, 1116, 472, 1045, 538, 1050, 618, 928, 678)
