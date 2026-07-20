@@ -28,6 +28,8 @@ public partial class EdgeTextureGenerator : GodotObject
         img.Fill(Colors.Black);
 
         List<LineSegment> horizontalEdges = lineSegments.Where(lineSeg => lineSeg.GetNormal().Y > 0.8).ToList();
+
+        GD.Print("diff size: ", horizontalEdges.Count, " ", lineSegments.Count);
         
         var pixelRectMap = new Dictionary<LineSegment, Rect2I>();
         
@@ -50,8 +52,8 @@ public partial class EdgeTextureGenerator : GodotObject
         {
             Rect2I rect = pixelRectMap[edge];
             var pixelLimit = edgeDistanceLimit * PixelPerUnit; 
-            // translation applied to points relative to this rect's origin, to make them relative to the larger image rect's origin
-            var pixelTranslation = rect.Position - imageRect.Position;
+           
+
             for (int x = rect.Position.X; x < rect.Size.X + rect.Position.X; x++)
             {
                 for (int y = rect.Position.Y; y < rect.Size.Y + rect.Position.Y; y++ )
@@ -67,11 +69,11 @@ public partial class EdgeTextureGenerator : GodotObject
 
                     var angleFactor = edge.GetNormal().Dot((closePoint - point).Normalized());
                     // angleFactor = (angleFactor + 1) / 2;  // map to 0 - 1;
-                    if (angleFactor < 0) continue;
+                    // if (angleFactor < 0) continue;
 
                     // angleFactor *= angleFactor;
                     var distFactor = 1f - (dist / pixelLimit);
-                    var redVal = distFactor * angleFactor;
+                    var redVal = Math.Abs(distFactor);
                     var pixelColor = img.GetPixelv(point);
                     if (redVal > pixelColor.R) img.SetPixelv(point, new Color(redVal, 0, 0, 1)); // set the red channel in texture to match distance factor
 

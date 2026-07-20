@@ -1,11 +1,14 @@
 using Godot;
 using System;
+using System.Linq;
+
 
 public partial class TerrainTexture : SubViewport
 {
 
     EdgeTextureGenerator edgeTexture = new();
     public float GrassLength;
+    public ImageTexture grassImage;
 
     public override void _Ready()
     {
@@ -59,12 +62,28 @@ public partial class TerrainTexture : SubViewport
 
     ImageTexture GetEdgeTexture(NormalPoly normPoly)
     {
-        edgeTexture.normPoly = normPoly;
-        edgeTexture.edgeDistanceLimit = GrassLength;
-        edgeTexture.edgeBuffer = 2;
-        Image image = edgeTexture.Generate();
-        var texture = ImageTexture.CreateFromImage(image);
-        return texture;
+        var gd = new GeometryUtils();
+        var floorSegments = gd.LineSegmentsFromPolygon(normPoly.Polygon).Where(line => line.GetNormal().Y > 0.8);
+        var edgeTex = new LineSegmentDistanceTexture(floorSegments.ToList(), normPoly.Rect);
+        edgeTex.PixelPerUnit = 8; 
+        edgeTex.PerpDist = 5;
+        edgeTex.ParallelDist = 3f;
+        return edgeTex.GetTexture();
+
+
+
+        
+
+
+        // var time = Time.GetTicksMsec();
+        // edgeTexture.normPoly = normPoly;
+        // edgeTexture.edgeDistanceLimit = GrassLength;
+        // edgeTexture.edgeBuffer = 2;
+        // Image image = edgeTexture.Generate();
+        // var texture = ImageTexture.CreateFromImage(image);
+        // grassImage = texture;
+
+        // GD.Print("time to get edge tex: ", Time.GetTicksMsec()- time);
     }
 
     public override void _Process(double delta)

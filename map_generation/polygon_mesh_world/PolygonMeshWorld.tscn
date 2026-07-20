@@ -317,7 +317,7 @@ shadow_reverse_cull_face = true
 directional_shadow_max_distance = 193.2
 
 [node name="Moon" parent="enviroment" index="2"]
-transform = Transform3D(0.00938707, 0.839157, 0.543808, -0.999849, -3.66807e-08, 0.0172593, 0.0144832, -0.543889, 0.839032, 0, 0, 0)
+transform = Transform3D(0.00938707, 0.839157, 0.543808, -0.999848, -3.66807e-08, 0.0172593, 0.0144832, -0.543889, 0.839032, 0, 0, 0)
 light_energy = 0.0422868
 
 [node name="Camera3D" parent="enviroment" index="3"]
@@ -335,6 +335,9 @@ pos_source = NodePath("../WasdCamera")
 
 [node name="PolygonMesh" parent="TerrainMesh" index="0"]
 material_override = SubResource("ShaderMaterial_p7cl5")
+
+[node name="MeshDistortTexture" parent="TerrainMesh" index="6"]
+DebugExplosionsInQueue = false
 
 [node name="PlaneMouseCapture" parent="." node_paths=PackedStringArray("camera") instance=ExtResource("7_pxxo4")]
 camera = NodePath("../WasdCamera")

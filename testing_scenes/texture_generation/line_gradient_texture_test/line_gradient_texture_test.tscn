@@ -1,0 +1,51 @@
+[gd_scene load_steps=6 format=3 uid="uid://cjye5rmf1u4ya"]
+
+[ext_resource type="Script" uid="uid://ckirnimroev3v" path="res://testing_scenes/texture_generation/line_gradient_texture_test/LineGradientTextureTest.cs" id="1_umwq0"]
+[ext_resource type="Shader" uid="uid://d3v5oe0g3e62p" path="res://testing_scenes/texture_generation/line_gradient_texture_test/line_gradient_texture_test.gdshader" id="2_y3hbo"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_61t6c"]
+shader = ExtResource("2_y3hbo")
+shader_parameter/rect_size = Vector2(0, 0)
+shader_parameter/line_width = 0.0
+
+[sub_resource type="Gradient" id="Gradient_umwq0"]
+offsets = PackedFloat32Array(0.819945, 0.969529)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_y3hbo"]
+gradient = SubResource("Gradient_umwq0")
+
+[node name="LineGradientTextureTest" type="Node2D" node_paths=PackedStringArray("line", "subViewport", "colorRect")]
+script = ExtResource("1_umwq0")
+line = NodePath("SubViewportContainer/SubViewport/Line2D")
+subViewport = NodePath("SubViewportContainer/SubViewport")
+colorRect = NodePath("ColorRect")
+
+[node name="ColorRect2" type="ColorRect" parent="."]
+offset_right = 1898.0
+offset_bottom = 1076.0
+color = Color(0.850433, 0.797945, 0.858599, 1)
+
+[node name="ColorRect" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_61t6c")
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="."]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="SubViewport" type="SubViewport" parent="SubViewportContainer"]
+disable_3d = true
+transparent_bg = true
+handle_input_locally = false
+use_hdr_2d = true
+canvas_item_default_texture_filter = 0
+render_target_update_mode = 4
+
+[node name="Line2D" type="Line2D" parent="SubViewportContainer/SubViewport"]
+points = PackedVector2Array(31, 1, 556, 102, 793, 133, 877, 316, 975, 614)
+closed = true
+width = 22.23
+texture = SubResource("GradientTexture1D_y3hbo")
+texture_mode = 2
+end_cap_mode = 2

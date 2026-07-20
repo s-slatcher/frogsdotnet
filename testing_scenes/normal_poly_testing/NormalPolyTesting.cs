@@ -10,7 +10,7 @@ public partial class NormalPolyTesting : Node2D
     {
         var points = polyNode.Polygon;
 
-        var normPoly = new NormalPoly(points, 30, true);
+        var normPoly = new NormalPoly(points, 30);
         
         Rect2I boundingRect = normPoly.Rect;
 

@@ -64,6 +64,9 @@ public partial class TerrainMesh : Node3D
         var shader = (ShaderMaterial)polyMesh.MaterialOverride;
         shader.SetShaderParameter("grass_texture", grass_texture);
 
+        var sprite = new Sprite2D();
+        sprite.Texture = terrainTexture.grassImage;
+        AddChild(sprite);
 
         polyMesh.QuadDensity = QuadDensity;
         polyMesh.MinDepth = MinDepth;

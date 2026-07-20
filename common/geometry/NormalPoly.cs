@@ -12,7 +12,7 @@ public partial class NormalPoly : RefCounted
     public Rect2I Rect;
     public Vector2 Position;
 
-    public NormalPoly(Vector2[] pointSet, int margin = 1, bool normalizePosition = true)
+    public NormalPoly(Vector2[] pointSet, int margin = 1)
     {
         SourcePoints = pointSet;
 
@@ -25,7 +25,7 @@ public partial class NormalPoly : RefCounted
         
         // translate poly to first normalize to 0,0 position, then add small margin to corner
         Vector2 cornerMargin = new Vector2I(margin,margin);
-        var translatedPoly = normalizePosition ? gu.TranslatePolygon(pointSet, -pos + cornerMargin) : pointSet;
+        var translatedPoly = gu.TranslatePolygon(pointSet, -pos + cornerMargin);
         
         // compensate for margin added to polygon corner, and extra margin on top and right sides
         // add an additional 1 meter to compensate for flooring value 
@@ -54,6 +54,11 @@ public partial class NormalPoly : RefCounted
 
         }
 
+    }
+
+    public Vector2 GetPointAsUV(int index)
+    {
+        return Polygon[index] / Rect.Size;
     }
 
 }

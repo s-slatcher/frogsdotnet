@@ -66,29 +66,31 @@ public partial class MapGenerator : Node2D
         return new(NoisyLandmasses){};
     }
     
-    public override void _Input(InputEvent @event)
-    {
-        if (@event is InputEventMouseButton eventMouseButton)
-        {
-            if (eventMouseButton.ButtonIndex != MouseButton.Left) return;
-            var camNode = GetNode<DebugCamera2d>("DebugCamera2d");
-            var pos = ToLocal(camNode.ToGlobal(camNode.GetLocalMousePosition()));
-            var query = new PhysicsPointQueryParameters2D()
-            {
-                Position = pos,
-                CollideWithAreas = true,
-            };
-            var drawRect = gu.RectFromCenterPoint(pos, new Vector2(4,4));
-            if (Space.IntersectPoint(query).Count > 0)
-            {
-                AddRectToDrawList(drawRect, Colors.Red);
-            }
-            else AddRectToDrawList(drawRect, Colors.Green);
-    
-            QueueRedraw();
+    // public override void _Input(InputEvent @event)
+    // {
+    //     if (@event is InputEventMouseButton eventMouseButton)
+    //     {
+    //         if (eventMouseButton.ButtonIndex != MouseButton.Left) return;
 
-        }
-    }
+    //         var camNode = GetNode<DebugCamera2d>("DebugCamera2d");
+            
+    //         var pos = ToLocal(camNode.ToGlobal(camNode.GetLocalMousePosition()));
+    //         var query = new PhysicsPointQueryParameters2D()
+    //         {
+    //             Position = pos,
+    //             CollideWithAreas = true,
+    //         };
+    //         var drawRect = gu.RectFromCenterPoint(pos, new Vector2(4,4));
+    //         if (Space.IntersectPoint(query).Count > 0)
+    //         {
+    //             AddRectToDrawList(drawRect, Colors.Red);
+    //         }
+    //         else AddRectToDrawList(drawRect, Colors.Green);
+    
+    //         QueueRedraw();
+
+    //     }
+    // }
     
     public override void _Draw()
     {

@@ -82,7 +82,7 @@ public partial class PolygonMeshWorld : Node3D
         // }
 
         // new system passes a normalized poly from MapGenerator, so all parties receive same poly with same bounding rect;
-        // in future, can refactor so mapGenerator itself is generator normalPolys from step 1
+        // in future, can refactor so mapGenerator itself is using NormalPolys from step 1
 
         foreach (NormalPoly poly in polygons)
         {
@@ -94,13 +94,8 @@ public partial class PolygonMeshWorld : Node3D
 
             terrainMesh.TerrainPolygon = poly;
 
-
         }  
       
-
-
-        
-
     }
     
 

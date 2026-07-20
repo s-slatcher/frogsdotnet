@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
@@ -75,7 +76,7 @@ public partial class GeometryUtils : GodotObject
         return rect;
     }
 
-    public Line2D Line2DFromPolygon(Vector2[] polygon, float width = 2, Color color = new Color())
+    public Line2D Line2DFromPolygon(Vector2[] polygon, float width = 2, Godot.Color color = new Godot.Color())
     {
         var line = new Line2D(){Width = width, SelfModulate = color};
         foreach(Vector2 p in polygon) line.AddPoint(p);
@@ -116,6 +117,24 @@ public partial class GeometryUtils : GodotObject
         ];
 
         return vecArray;
+
+    }
+
+    public List<Vector2> PolygonFromCircle( Vector2 pos, float radius, float angleLimit)
+    {
+        var points = new List<Vector2>();
+        var radVec = new Vector2(radius, 0);
+        int totalPoints = (int)( (2 * float.Pi) / angleLimit);
+        for (int i = 0; i < totalPoints; i++)
+        {
+            var curAngle = ((float)i / totalPoints) * (2 * float.Pi);
+            var angVec = radVec.Rotated(curAngle);
+            var pointPos = pos + angVec;
+            points.Add(pointPos);
+        }
+
+        return points;
+
 
     }
     
