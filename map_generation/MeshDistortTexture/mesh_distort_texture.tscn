@@ -31,7 +31,6 @@ shader_parameter/meter_size = Vector2(0, 0)
 script = ExtResource("1_sbo37")
 vp_a_read = NodePath("viewport1")
 vp_a_write = NodePath("viewport2")
-DebugExplosionsInQueue = true
 
 [node name="viewport1" type="SubViewport" parent="."]
 disable_3d = true

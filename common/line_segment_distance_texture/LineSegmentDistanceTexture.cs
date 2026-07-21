@@ -180,13 +180,17 @@ public partial class LineSegmentDistanceTexture : GodotObject
 
     private Vector2I PixelPos(Vector2 point)
     {
-        return new Vector2I((int)(point.X * PixelPerUnit), (int)(point.Y * PixelPerUnit) );
+        var pos = new Vector2I((int)(point.X * PixelPerUnit), (int)(point.Y * PixelPerUnit) );
+        pos = pos.Abs();
+        return pos;
     }
 
     private void PaintToImage(Vector2 pos, Godot.Color color, Image img)
     {
         var posI = new Vector2I((int)Math.Round(pos.X), (int)Math.Round(pos.Y));
         var pixelPos = PixelPos(pos);
+        
+        if (posI.X < 0 || posI.Y < 0) return;
 
         if (!normalRect.HasPoint(posI)) return;
 

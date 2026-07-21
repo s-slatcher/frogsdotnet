@@ -12,11 +12,20 @@ public partial class PlaneMouseCapture : Node
     public Vector3 LastMousePos = new Vector3();
 
 
+    public override void _Ready()
+    {
+        
+    }
 
     public override void _Input(InputEvent @event)
     {
+
         if (@event is InputEventMouseMotion eventMouseMotion)
         {
+            Camera3D cam = GetViewport().GetCamera3D();
+            if (cam == null) return;
+            else camera = cam; 
+
             var mousePos = eventMouseMotion.Position;
             var pos3D = dropPlane.IntersectsRay(camera.ProjectRayOrigin(mousePos), camera.ProjectLocalRayNormal(mousePos));
 
@@ -25,7 +34,9 @@ public partial class PlaneMouseCapture : Node
         if (Input.IsActionJustPressed("click"))
         {
             if (LastMousePos == Vector3.Zero) return;
+            
             PlaneClicked.Invoke(LastMousePos);
+
         }
     }
 

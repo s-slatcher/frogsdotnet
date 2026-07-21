@@ -1,74 +1,12 @@
-[gd_scene load_steps=24 format=4 uid="uid://d3teamfq15lcl"]
+[gd_scene load_steps=17 format=4 uid="uid://d3teamfq15lcl"]
 
 [ext_resource type="Script" uid="uid://piymvhyv5oxk" path="res://map_generation/terrain_mesh/TerrainMesh.cs" id="1_8i83x"]
 [ext_resource type="PackedScene" uid="uid://ckdbden2ckxda" path="res://common/polygon_mesh_generation/Shader based/polygon_mesh.tscn" id="2_g543p"]
-[ext_resource type="Shader" uid="uid://cnnmjm6ycldt7" path="res://common/polygon_mesh_generation/Shader based/PolygonMeshShader.gdshader" id="3_g543p"]
 [ext_resource type="PackedScene" uid="uid://bc0es7d2y4vvk" path="res://map_generation/terrain_texture/TerrainTexture.tscn" id="3_p7cl5"]
+[ext_resource type="Material" uid="uid://bektvfl4evqow" path="res://map_generation/terrain_mesh/default_terrain_shader/default_terrain_shader_material.tres" id="3_qekwp"]
 [ext_resource type="Shader" uid="uid://4ut2ds7uagl3" path="res://map_generation/terrain_mesh/grass_vs.tres" id="5_72q7g"]
 [ext_resource type="PackedScene" uid="uid://dui2lnj36uifc" path="res://resources/grass_mesh/grass.glb" id="6_72q7g"]
 [ext_resource type="PackedScene" uid="uid://diccy7ucnpp8u" path="res://map_generation/MeshDistortTexture/mesh_distort_texture.tscn" id="7_qekwp"]
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_6mu2c"]
-seed = 140
-frequency = 0.0033
-fractal_octaves = 3
-fractal_lacunarity = 2.745
-cellular_return_type = 6
-domain_warp_amplitude = 25.725
-domain_warp_fractal_octaves = 10
-
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_2hbq0"]
-width = 1000
-height = 1000
-invert = true
-noise = SubResource("FastNoiseLite_6mu2c")
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_vlyff"]
-noise_type = 3
-frequency = 0.0065
-
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_6mu2c"]
-noise = SubResource("FastNoiseLite_vlyff")
-
-[sub_resource type="Gradient" id="Gradient_vlyff"]
-offsets = PackedFloat32Array(0.997859, 1)
-
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_6mu2c"]
-gradient = SubResource("Gradient_vlyff")
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_p7cl5"]
-resource_local_to_scene = true
-render_priority = 0
-shader = ExtResource("3_g543p")
-shader_parameter/dirt_color = Color(0.733946, 0.422356, 7.70092e-07, 1)
-shader_parameter/dirt_color_alt = Color(0.936441, 0.545093, 0, 1)
-shader_parameter/stone_color = Color(0.31, 0.285045, 0.2449, 1)
-shader_parameter/grass_color = Color(0.157689, 0.395059, 0.093906, 1)
-shader_parameter/grass_texture = SubResource("GradientTexture1D_6mu2c")
-shader_parameter/grass_noise_texture = SubResource("NoiseTexture2D_6mu2c")
-shader_parameter/dirt_normal = SubResource("NoiseTexture2D_2hbq0")
-shader_parameter/albedo = Color(0, 0, 0, 1)
-shader_parameter/albedo_texture_size = Vector2i(0, 0)
-shader_parameter/point_size = 1.0
-shader_parameter/roughness = 0.0
-shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
-shader_parameter/specular = 0.0
-shader_parameter/metallic = 0.0
-shader_parameter/uv1_blend_sharpness = 1.0
-shader_parameter/uv1_scale = Vector3(1, 1, 1)
-shader_parameter/uv1_offset = Vector3(0, 0, 0)
-shader_parameter/uv2_scale = Vector3(1, 1, 1)
-shader_parameter/uv2_offset = Vector3(0, 0, 0)
-shader_parameter/explosion_array = PackedVector4Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-shader_parameter/edge_smooth = 0.0
-shader_parameter/depth_mulitplier = 1.0
-shader_parameter/rockiness = 1.0
-shader_parameter/rock_scale = 0.5
-shader_parameter/rock_start = 2.0
-shader_parameter/rock_smooth_depth = 2.0
-shader_parameter/rockiness_min = 0.05
-shader_parameter/rock_edge_smoothing = 1.0
-shader_parameter/center_mass_uv = Vector2(0.75, 0)
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_72q7g"]
 noise_type = 3
@@ -142,7 +80,7 @@ terrainTexture = NodePath("TerrainTexture")
 polyMesh = NodePath("PolygonMesh")
 
 [node name="PolygonMesh" parent="." instance=ExtResource("2_g543p")]
-material_override = SubResource("ShaderMaterial_p7cl5")
+material_override = ExtResource("3_qekwp")
 
 [node name="TerrainTexture" parent="." instance=ExtResource("3_p7cl5")]
 

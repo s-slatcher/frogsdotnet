@@ -1,0 +1,12 @@
+[gd_scene load_steps=4 format=3 uid="uid://cw6kl3osnv5ru"]
+
+[ext_resource type="Script" uid="uid://dwsm6841u7q8w" path="res://common/debug/debug_explosion_generator/DebugExplosionGenerator.cs" id="1_orpq4"]
+[ext_resource type="PackedScene" uid="uid://i888mvag6wjg" path="res://common/input_capture/PlaneMouseCapture.tscn" id="2_kq1kj"]
+[ext_resource type="PackedScene" uid="uid://ejp4yvckt2mv" path="res://fx/explosion/explosion_particle_system.tscn" id="2_rkgxn"]
+
+[node name="DebugExplosionGenerator" type="Node3D" node_paths=PackedStringArray("capturePlane")]
+script = ExtResource("1_orpq4")
+capturePlane = NodePath("PlaneMouseCapture")
+explodeScene = ExtResource("2_rkgxn")
+
+[node name="PlaneMouseCapture" parent="." instance=ExtResource("2_kq1kj")]

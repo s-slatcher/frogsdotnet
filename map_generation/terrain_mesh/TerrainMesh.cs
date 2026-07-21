@@ -10,202 +10,255 @@ using System.Linq;
 public partial class TerrainMesh : Node3D
 {
 
-    [Export] TerrainTexture terrainTexture;
-    [Export] PolygonMesh polyMesh;
+	[Export] TerrainTexture terrainTexture;
+	[Export] PolygonMesh polyMesh;
 
 
-    public enum TerrainType
-    {
-        Landmass,
-        FloatingIsland,
-    }
+	public enum TerrainType
+	{
+		Landmass,
+		FloatingIsland,
+	}
 
-    public float MaxDepth = 5;
-    public float MinDepth = 5;
-    public float QuadDensity = 0.5f;
-    public float GrassLength = 2f;
+	public float MaxDepth = 5;
+	public float MinDepth = 5;
+	public float QuadDensity = 0.5f;
+	public float GrassLength = 2f;
 
-    private NormalPoly terrainPoly;
-    public NormalPoly TerrainPolygon
-    {
-        get { return terrainPoly; }
-        set
-        {
-            terrainPoly = value;
-            if (IsNodeReady()) SetMesh();
-            else GD.PrintErr("Add terrain mesh to scene BEFORE assigning a polygon");
-        }
-    }
+	public Rect2 BoundingRect2d = new();
 
-    public override void _Ready()
-    {
-        if (terrainPoly != null && terrainPoly.Polygon.Length != 0) SetMesh();  
-    }
+	public List<Vector4> ExplodeList = new();
+	int explosionCount = 0;
+	const int MAX_EXPLOSIONS = 500;  //keep aligned with shader constants
 
+	private NormalPoly terrainPoly;
+	public NormalPoly TerrainPolygon
+	{
+		get { return terrainPoly; }
+		set
+		{
+			terrainPoly = value;
+			if (IsNodeReady()) SetMesh();
+			else GD.PrintErr("Add terrain mesh to scene BEFORE assigning a polygon");
+		}
+	}
 
-    private void SetMesh()
-    {
+	public override void _Ready()
+	{
 
-        Position = new Vector3(terrainPoly.Position.X, terrainPoly.Position.Y, 0);
-        
-        // if (!IsNodeReady()) GD.PrintErr("called generate before in scene tree");
+		if (terrainPoly != null && terrainPoly.Polygon.Length != 0)
+		{
+			
+			SetMesh();  
+			
+		}
 
+	}
+	private void SetMesh()
+	{
+		BoundingRect2d = terrainPoly.Rect;
+		BoundingRect2d.Position = terrainPoly.Position;
+		Position = new Vector3(terrainPoly.Position.X, terrainPoly.Position.Y, 0);
+		
+		// if (!IsNodeReady()) GD.PrintErr("called generate before in scene tree");
 
+		// SetDomainDepthCurve(terrainPoly);
+		// SetHeightDepthCurve(terrainPoly);
+		// GD.Print(terrainTexture);
 
-        // SetDomainDepthCurve(terrainPoly);
-        // SetHeightDepthCurve(terrainPoly);
-        // GD.Print(terrainTexture);
+		// TODO implement with new NormalPoly
+	
+		terrainTexture.SetPolygon(terrainPoly, GrassLength);
+		var grass_texture = terrainTexture.GetTexture();
+		var shader = (ShaderMaterial)polyMesh.MaterialOverride;
+		shader.SetShaderParameter("grass_texture", grass_texture);
 
+		var sprite = new Sprite2D();
+		
+		sprite.Texture = terrainTexture.grassImage;
+		AddChild(sprite);
 
-        // TODO implement with new NormalPoly
-        
-        terrainTexture.SetPolygon(terrainPoly, GrassLength);
-        var grass_texture = terrainTexture.GetTexture();
-        var shader = (ShaderMaterial)polyMesh.MaterialOverride;
-        shader.SetShaderParameter("grass_texture", grass_texture);
+		polyMesh.QuadDensity = QuadDensity;
+		polyMesh.MinDepth = MinDepth;
+		polyMesh.GenerateMesh(terrainPoly);
 
-        var sprite = new Sprite2D();
-        sprite.Texture = terrainTexture.grassImage;
-        AddChild(sprite);
+		// BuildGrass();
+	}
 
-        polyMesh.QuadDensity = QuadDensity;
-        polyMesh.MinDepth = MinDepth;
-        polyMesh.GenerateMesh(terrainPoly);
+	private void BuildGrass()
+	{
+		var time = Time.GetTicksMsec();
+		MultiMeshInstance3D multiMeshInst = GetNode<MultiMeshInstance3D>("MultiMeshInstance3D");
+		// var multiMesh = new MultiMesh();
+		// multiMesh.TransformFormat = MultiMesh.TransformFormatEnum.Transform3D;
+		// var grassMeshScene = (PackedScene)GD.Load("uid://bqxbvm5ahkldx");
 
-        // BuildGrass();
-    }
+		// var meshInst = grassMeshScene.Instantiate<MeshInstance3D>();
+		// var mat = meshInst.MaterialOverride;
 
-    private void BuildGrass()
-    {
-        var time = Time.GetTicksMsec();
-        MultiMeshInstance3D multiMeshInst = GetNode<MultiMeshInstance3D>("MultiMeshInstance3D");
-        // var multiMesh = new MultiMesh();
-        // multiMesh.TransformFormat = MultiMesh.TransformFormatEnum.Transform3D;
-        // var grassMeshScene = (PackedScene)GD.Load("uid://bqxbvm5ahkldx");
+		var multiMesh = (MultiMesh)multiMeshInst.Multimesh.Duplicate();
+		multiMeshInst.Multimesh = multiMesh;     
+		   
+		
+		// multiMeshInst.Multimesh = multiMesh;
+		// multiMeshInst.MaterialOverride = mat;
 
-        // var meshInst = grassMeshScene.Instantiate<MeshInstance3D>();
-        // var mat = meshInst.MaterialOverride;
+		List<Transform3D> grass_positions = new();
 
-        var multiMesh = (MultiMesh)multiMeshInst.Multimesh.Duplicate();
-        multiMeshInst.Multimesh = multiMesh;     
-           
-        
-        // multiMeshInst.Multimesh = multiMesh;
-        // multiMeshInst.MaterialOverride = mat;
+		var vertices = polyMesh.Mesh.GetFaces();
+		GD.Print("face count from loop: ", vertices.Length / 3);
+		var qualified_face_count = 0;
 
-        List<Transform3D> grass_positions = new();
-
-        var vertices = polyMesh.Mesh.GetFaces();
-        GD.Print("face count from loop: ", vertices.Length / 3);
-        var qualified_face_count = 0;
-
-        for (int i = 0; i < vertices.Length; i += 3)
-        {
-            var vert1 = (Vector3)vertices[i];
-            var vert2 = (Vector3)vertices[i + 1];
-            var vert3 = (Vector3)vertices[i + 2];
-
-
-            var face_norm = (vert1-vert2).Cross(vert2-vert3).Normalized() * -1;
-
-            if (!(face_norm.Y > 0.6)) continue;
-            if (GD.Randf() < 0.75) continue;
-            qualified_face_count += 1;
-
-            Vector3 centroid = (vert1 + vert2 + vert3) / 3;
-            Vector3 randOffet = new Vector3(GD.Randf(), 0, GD.Randf()) / 5;
-            Vector3 grass_pos = centroid + randOffet + new Vector3(0,-0.1f,0);
-
-            var transform = new Transform3D(Basis.Identity, grass_pos);
-            grass_positions.Add(transform);
+		for (int i = 0; i < vertices.Length; i += 3)
+		{
+			var vert1 = (Vector3)vertices[i];
+			var vert2 = (Vector3)vertices[i + 1];
+			var vert3 = (Vector3)vertices[i + 2];
 
 
-        }
-        GD.Print("grass faces: ", qualified_face_count, " loop time: ", Time.GetTicksMsec() - time);
+			var face_norm = (vert1-vert2).Cross(vert2-vert3).Normalized() * -1;
 
-        multiMeshInst.Multimesh.InstanceCount = qualified_face_count;
-        for (int i = 0; i < qualified_face_count; i++)
-        {
-            multiMeshInst.Multimesh.SetInstanceTransform(i, grass_positions[i]);
+			if (!(face_norm.Y > 0.6)) continue;
+			if (GD.Randf() < 0.75) continue;
+			qualified_face_count += 1;
 
-        }
+			Vector3 centroid = (vert1 + vert2 + vert3) / 3;
+			Vector3 randOffet = new Vector3(GD.Randf(), 0, GD.Randf()) / 5;
+			Vector3 grass_pos = centroid + randOffet + new Vector3(0,-0.1f,0);
 
-        // AddChild(multiMeshInst);
-    }
-        
-
-
-    // public void SetHeightDepthCurve(TerrainPolygon terrainPoly)
-    // {
-
-    //     polyMesh.HeightDepthCurve = GD.Load<Curve>("uid://dnobssupgeuds");
-
-    //     var c = new Curve();
-    //     var maxHeight = terrainPoly.BoundingRect.End.Y;
-
-    //     // c.MinDomain = 0;
-    //     // c.MaxDomain = 1;
-    //     // c.MinValue = MinDepth;
-    //     // c.MaxValue = MaxDepth;
-
-    //     // highest depth value aligned with lowest height
-    //     var startPoint = new Vector2(0, 1);
-    //     var endPoint = new Vector2(1, 0);
-
-    //     c.AddPoint(startPoint);
-    //     c.AddPoint(endPoint);
-    //     c.BakeResolution = 500;
-    //     polyMesh.HeightDepthCurve = c;
-    // }
-
-    // public void SetDomainDepthCurve(TerrainPolygon terrainPoly)
-    // {
-    //     if (terrainPoly.SimplifiedHeightCurve == null || terrainPoly.SimplifiedHeightCurve.PointCount == 0)
-    //     {
-    //         polyMesh.DomainDepthCurve = null;
-    //         return;
-    //     }
-
-    //     var baseCurve = terrainPoly.SimplifiedHeightCurve;
-    //     var width = terrainPoly.BoundingRect.Size.X;
-    //     var c = new Curve();
-
-    //     // c.MinDomain = 0;
-    //     // c.MaxDomain = baseCurve.MaxDomain;
-    //     // c.MinValue = 0;
-    //     // c.MaxValue = 1;
+			var transform = new Transform3D(Basis.Identity, grass_pos);
+			grass_positions.Add(transform);
 
 
-    //     var baseCurvePoints = new List<Vector2>();
-    //     for (int i = 0; i < baseCurve.PointCount; i++) baseCurvePoints.Add(baseCurve.GetPointPosition(i));
+		}
+		GD.Print("grass faces: ", qualified_face_count, " loop time: ", Time.GetTicksMsec() - time);
 
-    //     var newPoints = baseCurvePoints
-    //         .Select(p => new Vector2(p.X / width, float.Sqrt(p.Y / baseCurve.MaxValue))).ToList();
+		multiMeshInst.Multimesh.InstanceCount = qualified_face_count;
+		for (int i = 0; i < qualified_face_count; i++)
+		{
+			multiMeshInst.Multimesh.SetInstanceTransform(i, grass_positions[i]);
 
-    //     var pF = newPoints[0];
-    //     var pL = newPoints[^1];
+		}
 
-    //     var midValue = float.Sqrt(0.35f);
-
-    //     // conditional tapering on edges of curve 
-    //     var startValue = pF.Y > midValue ? float.Max(midValue, pF.Y * 0.5f) : pF.Y;
-    //     var endValue = pL.Y > midValue ? float.Max(midValue, pL.Y * 0.5f) : pL.Y;
-
-    //     newPoints.Insert(0, new Vector2(0, startValue));
-    //     newPoints.Add(new Vector2(c.MaxDomain, endValue));
-
-    //     foreach (var p in newPoints) c.AddPoint(p);
-    //     c.BakeResolution = 500;
-    //     polyMesh.DomainDepthCurve = c;
-    // }
+		// AddChild(multiMeshInst);
+	}
+		
 
 
-    public void ExplodeTerrain(Vector3 position, float radius)
-    {
-        polyMesh.ExplodeTerrain(position, radius);
-    }
-    
+	// public void SetHeightDepthCurve(TerrainPolygon terrainPoly)
+	// {
+
+	//     polyMesh.HeightDepthCurve = GD.Load<Curve>("uid://dnobssupgeuds");
+
+	//     var c = new Curve();
+	//     var maxHeight = terrainPoly.BoundingRect.End.Y;
+
+	//     // c.MinDomain = 0;
+	//     // c.MaxDomain = 1;
+	//     // c.MinValue = MinDepth;
+	//     // c.MaxValue = MaxDepth;
+
+	//     // highest depth value aligned with lowest height
+	//     var startPoint = new Vector2(0, 1);
+	//     var endPoint = new Vector2(1, 0);
+
+	//     c.AddPoint(startPoint);
+	//     c.AddPoint(endPoint);
+	//     c.BakeResolution = 500;
+	//     polyMesh.HeightDepthCurve = c;
+	// }
+
+	// public void SetDomainDepthCurve(TerrainPolygon terrainPoly)
+	// {
+	//     if (terrainPoly.SimplifiedHeightCurve == null || terrainPoly.SimplifiedHeightCurve.PointCount == 0)
+	//     {
+	//         polyMesh.DomainDepthCurve = null;
+	//         return;
+	//     }
+
+	//     var baseCurve = terrainPoly.SimplifiedHeightCurve;
+	//     var width = terrainPoly.BoundingRect.Size.X;
+	//     var c = new Curve();
+
+	//     // c.MinDomain = 0;
+	//     // c.MaxDomain = baseCurve.MaxDomain;
+	//     // c.MinValue = 0;
+	//     // c.MaxValue = 1;
 
 
+	//     var baseCurvePoints = new List<Vector2>();
+	//     for (int i = 0; i < baseCurve.PointCount; i++) baseCurvePoints.Add(baseCurve.GetPointPosition(i));
+
+	//     var newPoints = baseCurvePoints
+	//         .Select(p => new Vector2(p.X / width, float.Sqrt(p.Y / baseCurve.MaxValue))).ToList();
+
+	//     var pF = newPoints[0];
+	//     var pL = newPoints[^1];
+
+	//     var midValue = float.Sqrt(0.35f);
+
+	//     // conditional tapering on edges of curve 
+	//     var startValue = pF.Y > midValue ? float.Max(midValue, pF.Y * 0.5f) : pF.Y;
+	//     var endValue = pL.Y > midValue ? float.Max(midValue, pL.Y * 0.5f) : pL.Y;
+
+	//     newPoints.Insert(0, new Vector2(0, startValue));
+	//     newPoints.Add(new Vector2(c.MaxDomain, endValue));
+
+	//     foreach (var p in newPoints) c.AddPoint(p);
+	//     c.BakeResolution = 500;
+	//     polyMesh.DomainDepthCurve = c;
+	// }
+
+
+	
+
+	public void ExplodeTerrain(Vector3 vector, float radius)
+	{
+		var explosion = new Vector4(vector.X, vector.Y, 0, radius);
+		if (ExplodeList.Count > MAX_EXPLOSIONS) return;
+
+		var index = ExplosionInsertPosition(vector, radius);
+
+		ExplodeList.Insert(index, explosion);
+
+		var explodeArray = ExplodeList.ToArray();
+		var shader = (ShaderMaterial)polyMesh.MaterialOverride;
+		shader.SetShaderParameter("explosion_array", explodeArray);
+		explosionCount++;
+	}
+
+	public int ExplosionInsertPosition(Vector3 center, float radius)
+	{
+
+		
+		var rightEdge = center.X + radius;
+
+		var length = ExplodeList.Count;
+		var left = 0;
+		var right = length;
+
+		while (left < right)
+		{
+			var mid = left + (right - left) / 2;
+			if (ExplosionRightEdge(ExplodeList[mid]) > rightEdge)
+			{
+				right = mid;
+			}
+			else left = mid + 1;
+		}
+
+		return left;
+	}
+
+	public float ExplosionRightEdge(Vector4 explosion)
+	{
+		// returns center X value + radius
+		return explosion.X + explosion.W; 
+	}
+
+	internal void OnAreaExploded(Vector3 pos, float radius)
+	{
+		ExplodeTerrain(pos, radius);
+	}
 
 }

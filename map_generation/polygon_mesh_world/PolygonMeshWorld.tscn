@@ -1,304 +1,24 @@
-[gd_scene load_steps=24 format=4 uid="uid://csi7biqltvfvg"]
+[gd_scene load_steps=11 format=3 uid="uid://csi7biqltvfvg"]
 
 [ext_resource type="Script" uid="uid://bwtet8wyavbbt" path="res://map_generation/polygon_mesh_world/PolygonMeshWorld.cs" id="1_uddy7"]
-[ext_resource type="PackedScene" uid="uid://ejp4yvckt2mv" path="res://fx/explosion/explosion_particle_system.tscn" id="2_1w2pk"]
 [ext_resource type="PackedScene" uid="uid://d3teamfq15lcl" path="res://map_generation/terrain_mesh/terrain_mesh.tscn" id="2_5iuj0"]
 [ext_resource type="PackedScene" uid="uid://brk0cbda83ld1" path="res://interface/camera/wasd_camera.tscn" id="3_1w2pk"]
 [ext_resource type="PackedScene" uid="uid://bjjceeyq3csc3" path="res://addons/sky shader/skyshader.tscn" id="4_86mi5"]
 [ext_resource type="PackedScene" uid="uid://4mworqcudaam" path="res://common/water/scenes/WaterPlane.tscn" id="5_asr1l"]
-[ext_resource type="Shader" uid="uid://cnnmjm6ycldt7" path="res://common/polygon_mesh_generation/Shader based/PolygonMeshShader.gdshader" id="6_08rp7"]
-[ext_resource type="PackedScene" uid="uid://i888mvag6wjg" path="res://common/input_capture/PlaneMouseCapture.tscn" id="7_pxxo4"]
 [ext_resource type="PackedScene" uid="uid://cggqb75a8w8r" path="res://addons/debug_menu/debug_menu.tscn" id="8_03vkt"]
 [ext_resource type="Texture2D" uid="uid://ch5r8fna4n5xl" path="res://icon.svg" id="9_f3i6n"]
 [ext_resource type="PackedScene" uid="uid://wqniop2cupas" path="res://map_generation/map_generator/MapGenerator.tscn" id="11_1w2pk"]
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_6mu2c"]
-noise_type = 2
-seed = 140
-frequency = 0.069
-fractal_type = 0
-cellular_return_type = 6
-domain_warp_amplitude = 25.725
-domain_warp_fractal_octaves = 10
-
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_2hbq0"]
-invert = true
-noise = SubResource("FastNoiseLite_6mu2c")
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_vlyff"]
-noise_type = 3
-frequency = 0.2342
-fractal_type = 0
-
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_6mu2c"]
-noise = SubResource("FastNoiseLite_vlyff")
-
-[sub_resource type="Gradient" id="Gradient_vlyff"]
-offsets = PackedFloat32Array(0.997859, 1)
-
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_6mu2c"]
-gradient = SubResource("Gradient_vlyff")
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_p7cl5"]
-resource_local_to_scene = true
-render_priority = 0
-shader = ExtResource("6_08rp7")
-shader_parameter/dirt_color = Color(0, 0, 0, 1)
-shader_parameter/dirt_color_alt = Color(0, 0, 0, 1)
-shader_parameter/stone_color = Color(0.273501, 0.208601, 0.15561, 1)
-shader_parameter/grass_color = Color(1, 0.541176, 0.137255, 1)
-shader_parameter/grass_texture = SubResource("GradientTexture1D_6mu2c")
-shader_parameter/grass_noise_texture = SubResource("NoiseTexture2D_6mu2c")
-shader_parameter/dirt_normal = SubResource("NoiseTexture2D_2hbq0")
-shader_parameter/albedo = Color(0, 0, 0, 1)
-shader_parameter/albedo_texture_size = Vector2i(0, 0)
-shader_parameter/point_size = 1.0
-shader_parameter/roughness = 0.0
-shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
-shader_parameter/specular = 0.0
-shader_parameter/metallic = 0.0
-shader_parameter/uv1_blend_sharpness = 1.0
-shader_parameter/uv1_scale = Vector3(1, 1, 1)
-shader_parameter/uv1_offset = Vector3(0, 0, 0)
-shader_parameter/uv2_scale = Vector3(1, 1, 1)
-shader_parameter/uv2_offset = Vector3(0, 0, 0)
-shader_parameter/explosion_array = PackedVector4Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-shader_parameter/edge_smooth = 0.0
-shader_parameter/depth_mulitplier = 1.0
-shader_parameter/rockiness = 1.0
-shader_parameter/rock_scale = 0.5
-shader_parameter/rock_start = 2.0
-shader_parameter/rock_smooth_depth = 4.0
-shader_parameter/rockiness_min = 0.15
-shader_parameter/rock_edge_smoothing = 1.0
-shader_parameter/center_mass_uv = Vector2(0.5, 0)
-
-[sub_resource type="Shader" id="Shader_q2583"]
-code = "// NOTE: Shader automatically converted from Godot Engine 4.4.stable.mono's StandardMaterial3D.
-
-shader_type spatial;
-render_mode world_vertex_coords, depth_draw_always, cull_back, diffuse_burley, specular_schlick_ggx;
-
-// terrain colors
-uniform vec4 stone_color : source_color;
-
-// grass updating viewport texture
-
-// dirt crack normal texture
-
-uniform vec4 albedo : source_color;
-uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
-uniform ivec2 albedo_texture_size;
-uniform float point_size : hint_range(0.1, 128.0, 0.1);
-
-uniform float roughness : hint_range(0.0, 1.0);
-uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
-uniform vec4 metallic_texture_channel;
-uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
-
-uniform float specular : hint_range(0.0, 1.0, 0.01);
-uniform float metallic : hint_range(0.0, 1.0, 0.01);
-varying vec3 uv1_triplanar_pos;
-
-uniform float uv1_blend_sharpness : hint_range(0.0, 150.0, 0.001);
-varying vec3 uv1_power_normal;
-
-uniform vec3 uv1_scale;
-uniform vec3 uv1_offset;
-uniform vec3 uv2_scale;
-uniform vec3 uv2_offset;
-
-uniform vec4 explosion;
-uniform float maxDepth;
-
-uniform float rock_intensity;
-uniform float voronoiCellScale;
-varying float distFromSite;
-varying vec3 worldPos;
-varying vec3 testColor;
-
-// pseudo random number
-const vec3 magic = vec3(0.06711056f, 0.00583715f, 52.9829189f);
-
-vec3 hash3(vec3 p) {
-    p = fract(p * 0.3183099 + 0.1);
-    p *= 17.0;
-    return fract(p * fract(p.x * p.y * p.z));
-}
-
-struct vorSite {
-	float d;
-	vec3 pos;
-};
-
-void voronoi_sites(in vec3 position, out vorSite s1, out vorSite s2)
-{
-	float local_cell_scale = voronoiCellScale;
-	vec3 cellCorner = floor(position * local_cell_scale);
-	vec3 s_base = cellCorner + hash3(cellCorner);
-	
-	s1 = vorSite(1e9, vec3(0));
-	s2 = vorSite(1e9, vec3(0));
-	
-	for(int x = -1; x <= 1; x++)
-	{
-	for (int y = -1; y <= 1; y++)
-	{
-	for (int z = 0; z <= 1; z++)
-	{
-		vec3 adjCorner = cellCorner + vec3(float(x),float(y),float(z));
-		vec3 adjSite = (hash3(adjCorner) + adjCorner) / local_cell_scale;
-		
-		// random skipping of some sites to generate bigger cells
-		//if (fract(adjSite.x) < 0.3) continue;
-		
-		float dist = distance(adjSite, position);
-		if (dist < s1.d) 
-		{
-			//s3 = s2;
-			s2 = s1;
-			s1 = vorSite(dist, adjSite); 
-      } else if (dist < s2.d) {
-         //s3 = s2;
-			s2 = vorSite(dist, adjSite);	
-		} 
-		//else if (dist < s3.d)
-		//{
-			////s3 = vorSite(dist, adjSite);
-		//}
-	}}}
-}
-
-void voronoi_projection(in vec3 position, in vorSite site1, in vorSite site2, 
-								out vec3 proj_position, out vec3 proj_normal) {
-	
-	proj_normal = normalize(site2.pos - site1.pos); 
-	float d = 0.5 * dot(proj_normal, site1.pos + site2.pos);
-	float planeDist1 = dot(proj_normal, position) - d;
-	proj_position = position - planeDist1 * proj_normal;
-	
-}
-
-void vertex() {
-	float rand = fract(magic.z * fract(dot(VERTEX.xy, magic.xy)));
-	vec3 pos = explosion.xyz;
-	float radius = explosion.w;
-	
-	vec2 dist_vec = VERTEX.xy - pos.xy;
-	
-	float dist = length(dist_vec);
-	
-	if (dist < radius)
-	{
-		float depth_change = sqrt( (radius * radius) - (dist * dist) );
-		float new_depth = VERTEX.z - depth_change;
-		vec3 new_normal = normalize(vec3(pos.xy, 0) - VERTEX);
-		VERTEX.z = new_depth;
-		NORMAL = new_normal;
-	}
-	
-	vorSite s1;
-	vorSite s2;
-	vec3 voronoi_proj_pos;
-	vec3 voronoi_proj_norm;
-	
-	voronoi_sites(VERTEX, s1, s2);
-	voronoi_projection(VERTEX, s1, s2, voronoi_proj_pos, voronoi_proj_norm);
-	
-	VERTEX = mix(VERTEX, voronoi_proj_pos, rock_intensity);
-	NORMAL = mix(NORMAL, voronoi_proj_norm, rock_intensity);
-	
-	worldPos = VERTEX;
-	
-	// Triplanar UV
-	vec3 normal = NORMAL;
-	TANGENT = vec3(0.0, 0.0, -1.0) * abs(normal.x);
-	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.y);
-	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.z);
-	TANGENT = normalize(TANGENT);
-
-	BINORMAL = vec3(0.0, 1.0, 0.0) * abs(normal.x);
-	BINORMAL += vec3(0.0, 0.0, -1.0) * abs(normal.y);
-	BINORMAL += vec3(0.0, 1.0, 0.0) * abs(normal.z);
-	BINORMAL = normalize(BINORMAL);
-
-	// UV1 Triplanar: Enabled
-	uv1_power_normal = pow(abs(NORMAL), vec3(uv1_blend_sharpness));
-	uv1_triplanar_pos = VERTEX * uv1_scale + uv1_offset;
-	uv1_power_normal /= dot(uv1_power_normal, vec3(1.0));
-	uv1_triplanar_pos *= vec3(1.0, -1.0, 1.0);
-}
-
-vec4 triplanar_texture(sampler2D p_sampler, vec3 p_weights, vec3 p_triplanar_pos) {
-	vec4 samp = vec4(0.0);
-	samp += texture(p_sampler, p_triplanar_pos.xy) * p_weights.z;
-	samp += texture(p_sampler, p_triplanar_pos.xz) * p_weights.y;
-	samp += texture(p_sampler, p_triplanar_pos.zy * vec2(-1.0, 1.0)) * p_weights.x;
-	return samp;
-}
-
-vec3 get_flat_normal(vec3 position)
-{
-	vec3 dpdx = dFdx(position);
-   vec3 dpdy = dFdy(position);
-   return normalize(cross(dpdx, dpdy)) * -1.;
-}
-
-
-void fragment() {
-	
-	NORMAL = get_flat_normal(worldPos);
-	
-	ALBEDO = albedo.rgb + testColor;
-	
-	float depth_fade = smoothstep(-0.15 + maxDepth, -0.01 + maxDepth, worldPos.z);
-	if (depth_fade < 0.001 || depth_fade < fract(magic.z * fract(dot(FRAGCOORD.xy, magic.xy)))) {
-		discard;
-	}
-	
-	METALLIC = metallic;
-	SPECULAR = specular;
-	ROUGHNESS = roughness;
-}
-"
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_ewfcb"]
-render_priority = 0
-shader = SubResource("Shader_q2583")
-shader_parameter/stone_color = Color(0.651855, 0.355896, 0.0884458, 1)
-shader_parameter/albedo = Color(0.803175, 0.473957, 0.11222, 1)
-shader_parameter/albedo_texture_size = Vector2i(0, 0)
-shader_parameter/point_size = 0.0
-shader_parameter/roughness = 0.5
-shader_parameter/metallic_texture_channel = Vector4(0.155, 0, 0, 0)
-shader_parameter/specular = 0.0
-shader_parameter/metallic = 1.0
-shader_parameter/uv1_blend_sharpness = 0.0
-shader_parameter/uv1_scale = Vector3(0, 0, 0)
-shader_parameter/uv1_offset = Vector3(0, 0, 0)
-shader_parameter/uv2_scale = Vector3(0, 0, 0)
-shader_parameter/uv2_offset = Vector3(0, 0, 0)
-shader_parameter/explosion = Vector4(208.835, 56.585, 0, 8.555)
-shader_parameter/maxDepth = -2.365
-shader_parameter/rock_intensity = 1.0
-shader_parameter/voronoiCellScale = 0.515
-
-[sub_resource type="QuadMesh" id="QuadMesh_q5us4"]
-size = Vector2(100, 100)
-subdivide_width = 200
-subdivide_depth = 200
+[ext_resource type="PackedScene" uid="uid://cw6kl3osnv5ru" path="res://common/debug/debug_explosion_generator/debug_explosion_generator.tscn" id="11_86mi5"]
 
 [sub_resource type="SphereMesh" id="SphereMesh_q5us4"]
 radius = 1.0
 height = 6.556
 
-[sub_resource type="QuadMesh" id="QuadMesh_ewfcb"]
-size = Vector2(1000, 120)
-
-[node name="PolygonMeshWorld" type="Node3D"]
+[node name="PolygonMeshWorld" type="Node3D" node_paths=PackedStringArray("mapGenerator", "debugExplosionScene")]
 script = ExtResource("1_uddy7")
-explodeScene = ExtResource("2_1w2pk")
 terrainMeshScene = ExtResource("2_5iuj0")
+mapGenerator = NodePath("MapGenerator")
+debugExplosionScene = NodePath("DebugExplosionGenerator")
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 85.086, 93.106, 215.78)
@@ -317,7 +37,7 @@ shadow_reverse_cull_face = true
 directional_shadow_max_distance = 193.2
 
 [node name="Moon" parent="enviroment" index="2"]
-transform = Transform3D(0.00938707, 0.839157, 0.543808, -0.999848, -3.66807e-08, 0.0172593, 0.0144832, -0.543889, 0.839032, 0, 0, 0)
+transform = Transform3D(0.00938706, 0.839157, 0.543808, -0.999848, -3.66807e-08, 0.0172593, 0.0144832, -0.543889, 0.839032, 0, 0, 0)
 light_energy = 0.0422868
 
 [node name="Camera3D" parent="enviroment" index="3"]
@@ -331,17 +51,6 @@ light_energy = 0.36
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 12.995, 78.554)
 pos_source = NodePath("../WasdCamera")
 
-[node name="TerrainMesh" parent="." instance=ExtResource("2_5iuj0")]
-
-[node name="PolygonMesh" parent="TerrainMesh" index="0"]
-material_override = SubResource("ShaderMaterial_p7cl5")
-
-[node name="MeshDistortTexture" parent="TerrainMesh" index="6"]
-DebugExplosionsInQueue = false
-
-[node name="PlaneMouseCapture" parent="." node_paths=PackedStringArray("camera") instance=ExtResource("7_pxxo4")]
-camera = NodePath("../WasdCamera")
-
 [node name="CanvasLayer" parent="." instance=ExtResource("8_03vkt")]
 
 [node name="OmniLight3D" type="OmniLight3D" parent="."]
@@ -353,33 +62,16 @@ omni_attenuation = 0.13
 [node name="Sprite3D" type="Sprite3D" parent="OmniLight3D"]
 texture = ExtResource("9_f3i6n")
 
-[node name="RockWallMesh" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 213.829, 49.827, 2.0762)
-visible = false
-material_override = SubResource("ShaderMaterial_ewfcb")
-mesh = SubResource("QuadMesh_q5us4")
-
-[node name="SpotLight3D" type="SpotLight3D" parent="."]
-transform = Transform3D(0.97437, 0.0754602, -0.211917, 0, 0.942057, 0.335452, 0.224951, -0.326854, 0.917913, -0.106228, 9.30579, 6.44174)
-visible = false
-light_color = Color(0.807843, 1, 1, 1)
-light_energy = 15.712
-spot_range = 19.7526
-spot_angle = 38.7093
-
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 164.181, 16.878, -6.16925)
 mesh = SubResource("SphereMesh_q5us4")
-
-[node name="HeightCompareMesh" type="MeshInstance3D" parent="."]
-visible = false
-mesh = SubResource("QuadMesh_ewfcb")
 
 [node name="MapGenerator" parent="." instance=ExtResource("11_1w2pk")]
 
 [node name="WasdCamera" parent="." instance=ExtResource("3_1w2pk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 59.562, 98.1768, 131.385)
 
+[node name="DebugExplosionGenerator" parent="." instance=ExtResource("11_86mi5")]
+radiusRange = Vector2(5, 8)
+
 [editable path="enviroment"]
-[editable path="TerrainMesh"]
-[editable path="TerrainMesh/grass2"]
