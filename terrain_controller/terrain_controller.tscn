@@ -1,0 +1,18 @@
+[gd_scene load_steps=6 format=3 uid="uid://dnf7hch63qhgr"]
+
+[ext_resource type="Script" uid="uid://c7cg4xtsiclq2" path="res://terrain_controller/TerrainController.cs" id="1_si466"]
+[ext_resource type="PackedScene" uid="uid://wqniop2cupas" path="res://map_generation/map_generator/MapGenerator.tscn" id="2_ii348"]
+[ext_resource type="PackedScene" uid="uid://bq2rrgyc4fy1" path="res://destructible_collision_polygon/destructible_collision_polygon.tscn" id="2_ojds7"]
+[ext_resource type="Resource" uid="uid://dl52v7hksam15" path="res://map_generation/setting resources/DefaultMapSettings.tres" id="3_duhxo"]
+[ext_resource type="PackedScene" uid="uid://lysn8p0u6ixd" path="res://terrain_visualization_controller/terrain_visualization_controller.tscn" id="4_duhxo"]
+
+[node name="TerrainController" type="Node" node_paths=PackedStringArray("mapGenerator", "terrainVisualizer")]
+script = ExtResource("1_si466")
+mapGenerator = NodePath("MapGenerator")
+terrainVisualizer = NodePath("TerrainVisualizationController")
+destructibleCollisionPolyScene = ExtResource("2_ojds7")
+
+[node name="MapGenerator" parent="." instance=ExtResource("2_ii348")]
+MapSettings = ExtResource("3_duhxo")
+
+[node name="TerrainVisualizationController" parent="." instance=ExtResource("4_duhxo")]

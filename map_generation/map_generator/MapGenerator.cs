@@ -10,7 +10,7 @@ public partial class MapGenerator : Node2D
 {
 
     // will need to again split up these settings files, since height map rects and edge noising will be separate now
-    [Export] public MapSettings MapSettings = new();
+    [Export] public MapSettings MapSettings;
     [Export] public TerrainPolygonMapSettings IslandPolySettings = new();
     [Export] public TerrainPolygonMapSettings TerrainPolySettings = new();
     
@@ -28,16 +28,19 @@ public partial class MapGenerator : Node2D
     List<(Rect2, Godot.Color)> DebugRectDrawList = new();
     List<Vector2[]> DebugPolyList = new();
 
-    List<Vector2[]> SimpleLandmasses = new();
+    // List<Vector2[]> SimpleLandmasses = new();
 
-    List<NormalPoly> NoisyLandmasses = new();
+    List<NormalPoly> NormalPolys = new();
+    List<NormalPoly> NoisyNormalPolys = new();
     Dictionary<Vector2[], Rect2> LandmassRectMap = new();
 
 
     const float targetTotalIslandWidth = 120;
     float maxIslandWidth = 35;
     float minIslandWidth = 10;    
+    float waterGap = 30;
 
+    private List<Rid> PhysicsRids = new();
     public PhysicsDirectSpaceState2D Space { get; private set; }
 
     private void SetHeightMap(TerrainPolygonMapSettings settings)
@@ -49,6 +52,11 @@ public partial class MapGenerator : Node2D
         heightMap.Jaggedness = settings.Jaggedness;
     }
 
+    private void CleanupPhysicsObjects()
+    {
+        foreach (Rid rid in PhysicsRids) PhysicsServer2D.FreeRid(rid);
+    }
+
     public override void _Ready()
     {
         Space = PhysicsServer2D.SpaceGetDirectState(GetWorld2D().Space);
@@ -57,40 +65,14 @@ public partial class MapGenerator : Node2D
         terrainPolygonMap.Settings = TerrainPolySettings;
         islandPolygonMap.Settings = IslandPolySettings;
         GenerateTerrainMap();
-
-        QueueRedraw();
+        CleanupPhysicsObjects();
     }
 
     public List<NormalPoly> GetPolygons()
     {
-        return new(NoisyLandmasses){};
+        return new(NoisyNormalPolys){};
     }
     
-    // public override void _Input(InputEvent @event)
-    // {
-    //     if (@event is InputEventMouseButton eventMouseButton)
-    //     {
-    //         if (eventMouseButton.ButtonIndex != MouseButton.Left) return;
-
-    //         var camNode = GetNode<DebugCamera2d>("DebugCamera2d");
-            
-    //         var pos = ToLocal(camNode.ToGlobal(camNode.GetLocalMousePosition()));
-    //         var query = new PhysicsPointQueryParameters2D()
-    //         {
-    //             Position = pos,
-    //             CollideWithAreas = true,
-    //         };
-    //         var drawRect = gu.RectFromCenterPoint(pos, new Vector2(4,4));
-    //         if (Space.IntersectPoint(query).Count > 0)
-    //         {
-    //             AddRectToDrawList(drawRect, Colors.Red);
-    //         }
-    //         else AddRectToDrawList(drawRect, Colors.Green);
-    
-    //         QueueRedraw();
-
-    //     }
-    // }
     
     public override void _Draw()
     {
@@ -122,11 +104,11 @@ public partial class MapGenerator : Node2D
         DebugPolyList.Add(polygon);
     }
 
-    public Rect2 GetSpawnZoneFromTerrainRect(Rect2 terrain)
+    public Rect2 GetSpawnZoneFromTerrainPoly(NormalPoly poly)
     {
-        var spawnRect = new Rect2(terrain.Position + new Vector2(0, terrain.Size.Y), new Vector2(terrain.Size.X, 0));
+
+        var spawnRect = new Rect2(poly.Position + new Vector2(0, poly.Rect.Size.Y), new Vector2(poly.Rect.Size.X, 0));
         spawnRect = spawnRect.GrowIndividual(15, 15, 15, 15);
-       // eventually add clamping to a min and max range to top and side spawn distaces
         return spawnRect;
 
     }
@@ -144,46 +126,45 @@ public partial class MapGenerator : Node2D
     {
         
         SetHeightMap(TerrainPolySettings);
-        
+        GD.Print(heightMap.Height);
         var mapRange = new Vector2(0, MapSettings.Width);
         var rects = heightMap.GetRects(mapRange);
-        var landGroups = GroupHeightMapRects(rects);        
-        var landPolygons = landGroups.Select(l => terrainPolygonMap.GetSimpleTerrainPoly(l).ToArray()).ToList();
-        var landPolyRects = new List<Rect2>();
+        var landGroups = GroupHeightMapRects(rects);  
+
+        var landNormalPolygons = landGroups.Select(
+            rectGroup => terrainPolygonMap.GetNormalPolyFromPlatformList(rectGroup)).ToList();
+        
+
+
+        // var landPolygons = landGroups.Select(l => terrainPolygonMap.GetSimpleTerrainPoly(l)).ToList();
+        // var landPolyRects = new List<Rect2>();
         float time = Time.GetTicksMsec();
         
         // translate polygons and create water gaps
         var lastEndPos = Vector2.Zero;
         var accumLandWidth = 0f;
-        for (int i = 0; i < landPolygons.Count; i++)
+        for (int i = 0; i < landNormalPolygons.Count; i++)
         {
-            var land = landPolygons[i];
-            if (!Geometry2D.IsPolygonClockwise(land)) GD.Print("not clockwise");
-            var rect = gu.RectFromPolygon(land);
-            var translation = lastEndPos - rect.Position;
-            landPolygons[i] = gu.TranslatePolygon(land, translation);
-            rect.Position = lastEndPos;
+            
+            var land = landNormalPolygons[i];
+            land.Position = lastEndPos;
 
-            SimpleLandmasses.Add(landPolygons[i]);            
-            LandmassRectMap[landPolygons[i]] = rect;
+            NormalPolys.Add(land);
+            accumLandWidth += land.Rect.Size.X;
 
-            accumLandWidth += rect.Size.X;
-
+            GD.PrintT(lastEndPos, land.Rect.Size.X);
             // add polygon to collision
             
-            var colShapes = PhysicsShapesFromConcave(landPolygons[i]); 
+            foreach (var shape in PhysicsShapesFromNormalPoly(land))
+            {
+                AddAreaToSpace(shape, land.Position);
+            }
             
-            AddAreaToSpace(colShapes, new());
-            // var colShape = PhysicsShapeFromPolygon(reversed);
             
-           
-
-            var waterGap = 30f;
-            lastEndPos = rect.Position + new Vector2(rect.Size.X + waterGap, 0);
-
-            // AddRectToDrawList(rect);
+            lastEndPos += new Vector2(land.Rect.Size.X + waterGap, 0);
         }
-        var spawnRects = landPolyRects.Select(GetSpawnZoneFromTerrainRect).ToList();
+
+        var spawnRects = landNormalPolygons.Select(GetSpawnZoneFromTerrainPoly).ToList();
 
         
 
@@ -193,12 +174,13 @@ public partial class MapGenerator : Node2D
         var noisePolyApplier = new NoiseEdgePolygon();
         noisePolyApplier.Settings = TerrainPolySettings;
         
-        foreach (var landPoly in SimpleLandmasses)
+        foreach (var poly in NormalPolys)
         {
             
-            var noisePoly = noisePolyApplier.ApplyNoiseEdge(landPoly);
+            var noisePoly = noisePolyApplier.ApplyNoiseEdge(poly.Polygon);
             var normalPoly = new NormalPoly(noisePoly);
-            NoisyLandmasses.Add(normalPoly);
+            normalPoly.Position = poly.Position;
+            NoisyNormalPolys.Add(normalPoly);
             AddPolyToDrawList(noisePoly);
 
 
@@ -215,14 +197,13 @@ public partial class MapGenerator : Node2D
         var spawnWidthTarget = rng.Randf() * accumLandWidth;
         Rect2 spawnRect = new();
         var w = 0f;
-        for (int i = 0; i < SimpleLandmasses.Count; i++)
+        for (int i = 0; i < NormalPolys.Count; i++)
         {
-            var land = SimpleLandmasses[i];
-            var rect = LandmassRectMap[land];
-            w += rect.Size.X; 
+            var land = NormalPolys[i];
+            w += land.Rect.Size.X; 
             if (w > spawnWidthTarget)
             {
-                spawnRect = GetSpawnZoneFromTerrainRect(rect);
+                spawnRect = GetSpawnZoneFromTerrainPoly(land);
                 break;
             }
         }
@@ -248,6 +229,7 @@ public partial class MapGenerator : Node2D
             
             Rid rectShape;
             var steps = 0; var stepLimit = 6; 
+           
             while(steps++ < stepLimit)
             {
                 var midSize = minSize + (maxSize - minSize) / 2;
@@ -280,8 +262,7 @@ public partial class MapGenerator : Node2D
         // recurse with updated list if not enough width accumlated
         var islandPoly = IslandLandmassFromRect(islandRect);
         
-        SimpleLandmasses.Add(islandPoly);
-        LandmassRectMap[islandPoly] = islandRect;
+        NormalPolys.Add(islandPoly);
         
         // dont allow overly small islands to be sources of new island spawns
         
@@ -300,7 +281,7 @@ public partial class MapGenerator : Node2D
         SpawnIslands(accumLandWidth, targetLandWidth);
     }
 
-    private Vector2[] IslandLandmassFromRect(Rect2 rect)
+    private NormalPoly IslandLandmassFromRect(Rect2 rect)
     {
 
         // shrink rect to add buffer between landmasses
@@ -316,16 +297,13 @@ public partial class MapGenerator : Node2D
 
         SetHeightMap(IslandPolySettings);
         var heightRects = heightMap.GetRects(new Vector2(rect.Position.X, rect.End.X));
-        var simplePoly = islandPolygonMap.GetSimpleTerrainPoly(heightRects);
-        var simpleRect = gu.RectFromPolygon(simplePoly);
+        var islandNormalPoly = islandPolygonMap.GetNormalPolyFromPlatformList(heightRects);
 
-        var scale = rect.Size / simpleRect.Size; 
-        simplePoly = gu.TranslatePolygon(simplePoly, -simpleRect.Position);
-        simplePoly = gu.ScalePolygon(simplePoly, scale);
-        var translation = rect.Position;
-        var translatedPoly = gu.TranslatePolygon(simplePoly, translation);
-
-        return translatedPoly;
+        var scale = rect.Size / islandNormalPoly.Rect.Size; 
+        var scaleNormalPoly = new NormalPoly( gu.ScalePolygon(islandNormalPoly.Polygon, scale) );
+        
+        scaleNormalPoly.Position = rect.Position;
+        return scaleNormalPoly;
     }
 
 
@@ -361,9 +339,10 @@ public partial class MapGenerator : Node2D
 
     
  
-    private List<Rid> PhysicsShapesFromConcave(Vector2[] poly)
+    private List<Rid> PhysicsShapesFromNormalPoly(NormalPoly poly)
     {
-        var convexPolys = Geometry2D.DecomposePolygonInConvex(poly.ToArray());
+        var translation = poly.Position;
+        var convexPolys = Geometry2D.DecomposePolygonInConvex(poly.Polygon);
         var shapes = new List<Rid>();
         foreach(var conPol in convexPolys)
         { 
@@ -392,6 +371,7 @@ public partial class MapGenerator : Node2D
 
 		PhysicsServer2D.AreaSetSpace(area, GetWorld2D().Space);
         
+        PhysicsRids.Add(shape); PhysicsRids.Add(area);
     }
     public void AddAreaToSpace(List<Rid> shapes, List<Vector2> shapeOrigins)
     {

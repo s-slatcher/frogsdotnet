@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3 uid="uid://lysn8p0u6ixd"]
+
+[ext_resource type="Script" uid="uid://dajyw8txfdals" path="res://terrain_visualization_controller/TerrainVisualizationController.cs" id="1_qvheg"]
+[ext_resource type="PackedScene" uid="uid://d3teamfq15lcl" path="res://map_generation/terrain_mesh/terrain_mesh.tscn" id="2_cmeo4"]
+
+[node name="TerrainVisualizationController" type="Node3D"]
+script = ExtResource("1_qvheg")
+terrainMeshScene = ExtResource("2_cmeo4")

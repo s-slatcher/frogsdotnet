@@ -14,14 +14,17 @@ using Vector2 = Godot.Vector2;
 public partial class TerrainPolygonMap : GodotObject
 {
     [Export] public TerrainPolygonMapSettings Settings = new();
-    HeightmapRects heightMap = new();
     RandomNumberGenerator rng = new();
 
     float NoiseStart = 0;  // tallys up over lifetime of terrain map to avoid repeat noise on same seed
 
 
     
-
+    public NormalPoly GetNormalPolyFromPlatformList(List<Rect2> platformList)
+    {
+        var poly = GetSimpleTerrainPoly(platformList);
+        return new NormalPoly(poly);
+    }
     public Vector2[] GetSimpleTerrainPoly(List<Rect2> platformList)
     {
 
@@ -102,6 +105,9 @@ public partial class TerrainPolygonMap : GodotObject
 
         var landPolyArr = landPoly.ToArray();
         if (Geometry2D.TriangulatePolygon(landPolyArr).Length == 0) GD.Print("terrain polygon: failed to triangulate simple poly");
+        
+        
+        
         return landPolyArr;
     }
 

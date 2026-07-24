@@ -20,7 +20,6 @@ noise = SubResource("FastNoiseLite_6mu2c")
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_vlyff"]
 noise_type = 3
-frequency = 0.0145
 fractal_type = 0
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_6mu2c"]

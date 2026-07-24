@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://cgdf0bvm2dxpw"]
+
+[ext_resource type="Script" uid="uid://bn8m3xwuietac" path="res://camera_displayer_2d/CameraDisplayer2d.cs" id="1_p45co"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_p45co"]
+
+[node name="CameraDisplayer2D" type="Node3D" node_paths=PackedStringArray("displayMesh")]
+script = ExtResource("1_p45co")
+displayMesh = NodePath("DisplayMesh")
+
+[node name="DisplayMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -1, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("QuadMesh_p45co")

@@ -6,6 +6,7 @@ public partial class WasdCamera : Camera3D
 {
 
     [Export] public float HeightLimit = 36;
+    
 
     Vector3 targetPosition = Vector3.Zero;
 
@@ -25,6 +26,8 @@ public partial class WasdCamera : Camera3D
         startPosition = GlobalPosition;
         targetPosition = startPosition;
         currentSpeed = speeds[currentZoom];
+        MakeCurrent();
+
     }
 
 
@@ -45,7 +48,6 @@ public partial class WasdCamera : Camera3D
 
         targetPosition.Y = float.Clamp(targetPosition.Y, HeightLimit, 999);
 
-        MakeCurrent();
 
     }
 

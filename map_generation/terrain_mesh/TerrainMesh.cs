@@ -22,7 +22,7 @@ public partial class TerrainMesh : Node3D
 
 	public float MaxDepth = 5;
 	public float MinDepth = 5;
-	public float QuadDensity = 0.5f;
+	public float QuadDensity = 0.25f;
 	public float GrassLength = 2f;
 
 	public Rect2 BoundingRect2d = new();

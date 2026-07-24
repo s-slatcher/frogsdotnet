@@ -1,0 +1,12 @@
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://dl52v7hksam15"]
+
+[ext_resource type="Script" uid="uid://bnoutn72bmmjv" path="res://map_generation/setting resources/MapSettings.cs" id="1_kqbdi"]
+
+[resource]
+script = ExtResource("1_kqbdi")
+Width = 100.0
+MaxHeight = 500.0
+MajorDivisions = 3.0
+MeanMajorDivideWidth = 50.0
+BaseMinorDivideChance = 0.1
+MeanMinorDivideWidth = 10.0

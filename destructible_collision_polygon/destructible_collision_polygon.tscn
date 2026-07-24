@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://bq2rrgyc4fy1"]
+
+[ext_resource type="Script" uid="uid://cq20to2xs6gku" path="res://destructible_collision_polygon/DestructibleCollisionPolygon.cs" id="1_ljmtm"]
+
+[node name="DestructibleCollisionPolygon" type="Node2D"]
+script = ExtResource("1_ljmtm")
+
+[node name="Container" type="StaticBody2D" parent="."]
+unique_name_in_owner = true

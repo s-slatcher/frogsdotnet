@@ -6,11 +6,11 @@
 
 [resource]
 script = ExtResource("3_p53pm")
-Seed = 10
+Seed = 45
 HeightMapNoise = ExtResource("2_gohjv")
-MaxHeight = 60.0
-Jaggedness = 1.0
-SmoothingEpsilon = 0.025
+MaxHeight = 90.0
+Jaggedness = 2.0
+SmoothingEpsilon = 0.015
 EdgeNoise = ExtResource("1_0hyis")
 NoiseHeightCutoff = -12.805
 MaxYComponentForNoise = 0.75
@@ -23,7 +23,7 @@ TargetNoiseHeight = 3.0
 MinCaveHeight = 12.0
 MaxCaveHeight = 20.0
 MinHeightAllowance = 30.0
-BaseCaveChance = 0.5
+BaseCaveChance = 0.0
 MinCaveDepth = 5.0
 MaxCaveDepth = 10.0
 CaveInsetPercentage = 0.75

@@ -86,7 +86,6 @@ public partial class HeightmapRects : GodotObject
 
         }
 
-        if (skippedPoints > 0) GD.Print("rects that failed min width check: ", skippedPoints);
 
         landmassRects = rectList;
     }
