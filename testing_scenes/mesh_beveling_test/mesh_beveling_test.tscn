@@ -1,0 +1,33 @@
+[gd_scene load_steps=5 format=3 uid="uid://n6tninbiu6ht"]
+
+[ext_resource type="Script" uid="uid://7watl8i5qus6" path="res://testing_scenes/mesh_beveling_test/MeshBevelingTest.cs" id="1_8xsog"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_8xsog"]
+sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+ground_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+
+[sub_resource type="Sky" id="Sky_tgkj4"]
+sky_material = SubResource("ProceduralSkyMaterial_8xsog")
+
+[sub_resource type="Environment" id="Environment_4u5mh"]
+background_mode = 2
+sky = SubResource("Sky_tgkj4")
+tonemap_mode = 2
+glow_enabled = true
+
+[node name="MeshBevelingTest" type="Node3D"]
+script = ExtResource("1_8xsog")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_4u5mh")
+
+[node name="PolygonMesh" type="CSGPolygon3D" parent="."]
+unique_name_in_owner = true
+polygon = PackedVector2Array(0, 0, 0.837003, 1.06212, 1.93223, 1.29059, 2.57836, 0.0307118, 0, 0, 0, 0)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.0245)

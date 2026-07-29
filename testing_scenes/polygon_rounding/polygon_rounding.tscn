@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://kfa2770eyqq4"]
+
+[ext_resource type="Script" uid="uid://m825ercqfusj" path="res://testing_scenes/polygon_rounding/PolygonRounding.cs" id="1_lat44"]
+[ext_resource type="PackedScene" uid="uid://b8osbgmfbof24" path="res://testing_scenes/debug_camera_2d/debug_camera_2d.tscn" id="2_vq2en"]
+
+[node name="PolygonRounding" type="Node2D"]
+script = ExtResource("1_lat44")
+EdgeRounding = 1.0
+
+[node name="DebugCamera2d" parent="." instance=ExtResource("2_vq2en")]
+position = Vector2(645, 464)
+
+[node name="ArrowPoly" type="Polygon2D" parent="."]
+unique_name_in_owner = true
+polygon = PackedVector2Array(15, 0, 41.6151, -3.18131, 41, -9, 49, -2, 42, 7, 41.9621, 0.803604)

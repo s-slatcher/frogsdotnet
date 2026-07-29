@@ -1,0 +1,451 @@
+[gd_scene load_steps=28 format=3 uid="uid://b3m6wd16cenkg"]
+
+[ext_resource type="Texture2D" uid="uid://dbulimqrfd1pm" path="res://test_voronoi_noise/vor_test.tres" id="1_w2t5u"]
+[ext_resource type="Gradient" uid="uid://cvpnbxsh1ncqh" path="res://test_voronoi_noise/color_ramp_test.tres" id="2_kcbdh"]
+[ext_resource type="FastNoiseLite" uid="uid://cjorlfw1y3ce6" path="res://test_voronoi_noise/noise_as_normal_test.tres" id="2_rx363"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rx363"]
+sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+ground_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+
+[sub_resource type="Sky" id="Sky_kcbdh"]
+sky_material = SubResource("ProceduralSkyMaterial_rx363")
+
+[sub_resource type="Environment" id="Environment_rva3w"]
+background_mode = 2
+sky = SubResource("Sky_kcbdh")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="Shader" id="Shader_d218e"]
+code = "// NOTE: Shader automatically converted from Godot Engine 4.4.1.stable.mono's StandardMaterial3D.
+
+shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+
+uniform sampler2D vor_noise : hint_normal;
+uniform vec4 albedo : source_color;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+uniform ivec2 albedo_texture_size;
+uniform float point_size : hint_range(0.1, 128.0, 0.1);
+
+uniform float roughness : hint_range(0.0, 1.0);
+uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec4 metallic_texture_channel;
+uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
+
+uniform float specular : hint_range(0.0, 1.0, 0.01);
+uniform float metallic : hint_range(0.0, 1.0, 0.01);
+
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+// voronoi props
+uniform float displace_level = 0.2;
+uniform float vertical_noise_stretch = 1.5;
+uniform int noise_power = 3;
+
+uniform sampler2D vor_noise_2;
+uniform float displace_level_2;
+
+uniform sampler2D noise3;
+
+uniform sampler2D edge_noise;
+
+varying vec3 pos;
+
+vec3 get_flat_normal(vec3 position)
+{
+	vec3 dpdx = dFdx(position);
+   vec3 dpdy = dFdy(position);
+   return normalize(cross(dpdx, dpdy)) * -1.;
+}
+
+void vertex() {
+	UV = UV * uv1_scale.xy + uv1_offset.xy;
+	float vor_val = texture(vor_noise, UV * vec2(1, 1./vertical_noise_stretch)).r;
+	//vor_val = pow(vor_val, float(noise_power));
+	//vor_val = smoothstep(1,0,vor_val);
+	VERTEX += NORMAL * vor_val* displace_level;
+	
+	// second displac slayer 
+	float vor_val_2 = texture(vor_noise_2, UV).r;
+	//vor_val_2 = pow(vor_val_2, float(4));
+	vor_val_2 = smoothstep(1,0, vor_val_2);
+	
+	
+	VERTEX -= NORMAL * vor_val_2 * displace_level_2; 
+	
+	//handle vertical ridges
+	float edge_noise_val = texture(edge_noise, vec2(VERTEX.x/30., 0)).r;
+	VERTEX.z += edge_noise_val * 2.;
+	
+	//float q = 0.3; // controls facet size — smaller = more facets
+	//vec3 q_normal = normalize(floor(NORMAL / q + 0.5) * q);
+	//float angle = acos(dot(q_normal, NORMAL));
+	//NORMAL = q_normal;
+	pos = VERTEX;
+	
+	//NORMAL = get_flat_normal(VERTEX);
+	
+}
+
+
+void fragment() {
+	vec2 base_uv = UV;
+
+	vec4 albedo_tex = texture(texture_albedo, base_uv);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+
+	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
+	METALLIC = metallic_tex * metallic;
+	SPECULAR = specular;
+	
+	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
+	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
+	ROUGHNESS = roughness_tex * roughness;
+	
+	NORMAL = get_flat_normal(pos);
+}
+"
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_dtgno"]
+fractal_type = 0
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_jots8"]
+noise = SubResource("FastNoiseLite_dtgno")
+
+[sub_resource type="Gradient" id="Gradient_56vsc"]
+offsets = PackedFloat32Array(0, 0.124224)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_f3gvs"]
+noise_type = 2
+frequency = 0.0133
+fractal_type = 0
+cellular_return_type = 4
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_k254k"]
+color_ramp = SubResource("Gradient_56vsc")
+noise = SubResource("FastNoiseLite_f3gvs")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mn6lk"]
+render_priority = 0
+shader = SubResource("Shader_d218e")
+shader_parameter/vor_noise = ExtResource("1_w2t5u")
+shader_parameter/albedo = Color(0.517184, 0.517184, 0.517184, 1)
+shader_parameter/albedo_texture_size = Vector2i(0, 0)
+shader_parameter/point_size = 1.0
+shader_parameter/roughness = 1.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/specular = 0.0
+shader_parameter/metallic = 0.0
+shader_parameter/uv1_scale = Vector3(2, 2, 2)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
+shader_parameter/displace_level = 0.665
+shader_parameter/vertical_noise_stretch = 2.54
+shader_parameter/noise_power = 3
+shader_parameter/vor_noise_2 = SubResource("NoiseTexture2D_k254k")
+shader_parameter/displace_level_2 = 0.37
+shader_parameter/edge_noise = SubResource("NoiseTexture2D_jots8")
+
+[sub_resource type="BoxMesh" id="BoxMesh_sscvq"]
+size = Vector3(15, 15, 1)
+subdivide_width = 300
+subdivide_height = 300
+subdivide_depth = 285
+
+[sub_resource type="Shader" id="Shader_xdfk6"]
+code = "// NOTE: Shader automatically converted from Godot Engine 4.4.1.stable.mono's StandardMaterial3D.
+
+shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_disabled, specular_schlick_ggx;
+
+uniform sampler2D noise;
+uniform sampler2D noise_as_normal;
+
+uniform vec4 albedo : source_color;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+uniform ivec2 albedo_texture_size;
+uniform float point_size : hint_range(0.1, 128.0, 0.1);
+
+uniform float roughness : hint_range(0.0, 1.0);
+uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec4 metallic_texture_channel;
+uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
+
+uniform float specular : hint_range(0.0, 1.0, 0.01);
+uniform float metallic : hint_range(0.0, 1.0, 0.01);
+
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+varying vec3 pos;
+
+
+// Assumes input vectors are normalized and in Object or World space
+vec3 applyCylinderNormalMap(vec3 surfaceNormal, vec2 uv, vec3 normalMapColor) {
+    // 1. Unpack the normal map from [0, 1] to [-1, 1] range
+    vec3 tangentNormal = normalMapColor * 2.0 - 1.0;
+
+    // 2. Derive the Tangent for a cylinder aligned to the Y-axis.
+    // The tangent circles around the cylinder horizontally.
+    vec3 tangent = normalize(vec3(-surfaceNormal.z, 0.0, surfaceNormal.x));
+
+    // 3. Derive the Bitangent (pointing straight up along the Y-axis)
+    vec3 bitangent = cross(surfaceNormal, tangent);
+
+    // 4. Construct the TBN matrix and transform the tangent normal
+    mat3 TBN = mat3(tangent, bitangent, surfaceNormal);
+    
+    // 5. Multiply matrix by the vector to get the final relative normal
+    return normalize(TBN * tangentNormal);
+}
+
+
+void vertex() {
+	UV = UV * uv1_scale.xy + uv1_offset.xy;
+	
+	VERTEX += NORMAL * texture(noise, UV).r * 1.;
+	
+	NORMAL = applyCylinderNormalMap(NORMAL, UV, texture(noise_as_normal, UV).rgb);
+	
+	
+	vec3 norm_map_normal = (texture(noise_as_normal, UV).rgb - vec3(0.5)) * 2.;
+	
+	
+	pos = VERTEX;
+}
+
+vec3 get_flat_normal(vec3 position)
+{
+	vec3 dpdx = dFdx(position);
+	vec3 dpdy = dFdy(position);
+	return normalize(cross(dpdx, dpdy)) * -1.;
+}
+
+void fragment() {
+	vec2 base_uv = UV;
+		
+		
+	//NORMAL = get_flat_normal(pos);
+	
+	vec4 albedo_tex = texture(texture_albedo, base_uv);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+
+	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
+	METALLIC = metallic_tex * metallic;
+	SPECULAR = specular;
+
+	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
+	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
+	ROUGHNESS = roughness_tex * roughness;
+}
+"
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_rx363"]
+invert = true
+seamless = true
+color_ramp = ExtResource("2_kcbdh")
+noise = ExtResource("2_rx363")
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_rva3w"]
+seamless = true
+as_normal_map = true
+bump_strength = 15.7
+color_ramp = ExtResource("2_kcbdh")
+noise = ExtResource("2_rx363")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_wht1b"]
+render_priority = 0
+shader = SubResource("Shader_xdfk6")
+shader_parameter/noise = SubResource("NoiseTexture2D_rx363")
+shader_parameter/noise_as_normal = SubResource("NoiseTexture2D_rva3w")
+shader_parameter/albedo = Color(0.720467, 0.720468, 0.720467, 1)
+shader_parameter/albedo_texture_size = Vector2i(0, 0)
+shader_parameter/point_size = 1.0
+shader_parameter/roughness = 1.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/specular = 0.5
+shader_parameter/metallic = 0.0
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_kcbdh"]
+top_radius = 5.0
+bottom_radius = 5.0
+height = 15.97
+radial_segments = 349
+rings = 379
+cap_top = false
+cap_bottom = false
+
+[sub_resource type="Shader" id="Shader_kcbdh"]
+code = "// NOTE: Shader automatically converted from Godot Engine 4.4.1.stable.mono's StandardMaterial3D.
+
+shader_type spatial;
+render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+
+uniform sampler2D edge_noise;
+uniform float world_uv_scale = 1;
+uniform float noise_distort_scale = 1;
+uniform sampler2D horz_noise;
+
+uniform vec4 albedo : source_color;
+uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
+uniform ivec2 albedo_texture_size;
+uniform float point_size : hint_range(0.1, 128.0, 0.1);
+
+uniform float roughness : hint_range(0.0, 1.0);
+uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
+uniform vec4 metallic_texture_channel;
+uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
+
+uniform float specular : hint_range(0.0, 1.0, 0.01);
+uniform float metallic : hint_range(0.0, 1.0, 0.01);
+
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+varying vec3 pos;
+
+
+float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+void vertex() {
+	UV = UV * uv1_scale.xy + uv1_offset.xy;
+	
+	vec2 uv_1d = vec2(VERTEX.x, VERTEX.y * 0.3) * world_uv_scale;
+	float noise_val = texture(edge_noise,uv_1d).r;
+	VERTEX.z += noise_val * noise_distort_scale;
+	
+	// matches frag shader read of cell noise
+	//vec2 world_uv = VERTEX.xy * 0.02;
+	//float noise_samp = texture(horz_noise, vec2(world_uv.x * 0.05, world_uv.y)).r;
+	//float floored_noise = floor(noise_samp*20.);
+	//float random = hash(vec2(floored_noise));
+	//if (random > 0.9) VERTEX.z += 1.;
+	
+	pos = VERTEX;
+}
+
+vec3 get_flat_normal(vec3 position)
+{
+	vec3 dpdx = dFdx(position);
+	vec3 dpdy = dFdy(position);
+	return normalize(cross(dpdx, dpdy)) * -1.;
+}
+
+
+void fragment() {
+	vec2 base_uv = UV;
+	NORMAL = get_flat_normal(pos);
+	vec4 albedo_tex = texture(texture_albedo, base_uv);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+	
+	vec2 world_uv = pos.xy * 0.02;
+	float noise_samp = texture(horz_noise, vec2(world_uv.x * 0.05, world_uv.y)).r;
+	ALBEDO = mix(ALBEDO, ALBEDO*0.3, noise_samp);
+	
+	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
+	METALLIC = metallic_tex * metallic;
+	SPECULAR = specular;
+
+	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
+	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
+	ROUGHNESS = roughness_tex * roughness;
+}
+"
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_rva3w"]
+noise_type = 0
+seed = 18
+frequency = 0.0025
+fractal_type = 0
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_d218e"]
+width = 2000
+height = 1000
+seamless = true
+normalize = false
+noise = SubResource("FastNoiseLite_rva3w")
+
+[sub_resource type="Gradient" id="Gradient_dtgno"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_jots8"]
+noise_type = 2
+seed = 12
+frequency = 0.0281
+fractal_type = 0
+cellular_return_type = 0
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_56vsc"]
+width = 1000
+height = 1000
+invert = true
+seamless = true
+color_ramp = SubResource("Gradient_dtgno")
+noise = SubResource("FastNoiseLite_jots8")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_f3gvs"]
+render_priority = 0
+shader = SubResource("Shader_kcbdh")
+shader_parameter/edge_noise = SubResource("NoiseTexture2D_d218e")
+shader_parameter/world_uv_scale = 0.02
+shader_parameter/noise_distort_scale = 2.565
+shader_parameter/horz_noise = SubResource("NoiseTexture2D_56vsc")
+shader_parameter/albedo = Color(0.634622, 0.416843, 0.256909, 1)
+shader_parameter/albedo_texture_size = Vector2i(0, 0)
+shader_parameter/point_size = 1.0
+shader_parameter/roughness = 1.0
+shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
+shader_parameter/specular = 0.5
+shader_parameter/metallic = 0.0
+shader_parameter/uv1_scale = Vector3(1, 1, 1)
+shader_parameter/uv1_offset = Vector3(0, 0, 0)
+shader_parameter/uv2_scale = Vector3(1, 1, 1)
+shader_parameter/uv2_offset = Vector3(0, 0, 0)
+
+[sub_resource type="QuadMesh" id="QuadMesh_k254k"]
+size = Vector2(120, 40)
+subdivide_width = 500
+subdivide_depth = 500
+
+[node name="Node3D" type="Node3D"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_rva3w")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00388455, 8.39725, 0.0112448)
+material_override = SubResource("ShaderMaterial_mn6lk")
+mesh = SubResource("BoxMesh_sscvq")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.33204, 13.1038, 30.5447)
+omni_range = 33.3327
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.8003, 5.5327, -0.00569344)
+material_override = SubResource("ShaderMaterial_wht1b")
+mesh = SubResource("CylinderMesh_kcbdh")
+
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -82.3288, 16.8635, 9.77041)
+material_override = SubResource("ShaderMaterial_f3gvs")
+mesh = SubResource("QuadMesh_k254k")
