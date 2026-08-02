@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://kbbx8sy4na4y"]
+
+[ext_resource type="Script" uid="uid://cdpw56b7h8j7j" path="res://testing_scenes/geometry_utils_testing/RectSubdivide.cs" id="1_heei4"]
+
+[node name="RectSubdivide" type="Node2D"]
+script = ExtResource("1_heei4")

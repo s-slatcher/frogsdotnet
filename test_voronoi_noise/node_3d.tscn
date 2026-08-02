@@ -326,7 +326,7 @@ float hash(vec2 p) {
 void vertex() {
 	UV = UV * uv1_scale.xy + uv1_offset.xy;
 	
-	vec2 uv_1d = vec2(VERTEX.x, VERTEX.y * 0.3) * world_uv_scale;
+	vec2 uv_1d = vec2(VERTEX.x, VERTEX.y * 0.23) * world_uv_scale;
 	float noise_val = texture(edge_noise,uv_1d).r;
 	VERTEX.z += noise_val * noise_distort_scale;
 	
@@ -446,6 +446,6 @@ material_override = SubResource("ShaderMaterial_wht1b")
 mesh = SubResource("CylinderMesh_kcbdh")
 
 [node name="MeshInstance3D3" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -82.3288, 16.8635, 9.77041)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -120.146, 16.8635, 9.77041)
 material_override = SubResource("ShaderMaterial_f3gvs")
 mesh = SubResource("QuadMesh_k254k")

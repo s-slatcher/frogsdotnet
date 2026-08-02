@@ -55,6 +55,43 @@ public partial class GeometryUtils : GodotObject
 
         return rect;
     }
+
+    public static List<Rect2> SubdivideRect(Rect2 rect)
+    {
+        var list = new List<Rect2>();
+        var subSize = rect.Size/2;
+        var relativePositions = new List<Vector2>()
+        {
+           new(),
+           new(0, subSize.Y),
+           subSize,
+           new(subSize.X, 0)
+        };
+        foreach(var pos in relativePositions)
+        {
+            list.Add(new Rect2(pos + rect.Position, subSize));
+        }
+
+        return list;
+    }
+
+    public static IEnumerable<LinkedPoint> GetPolygonIterator(Vector2[] polygon)
+    {
+        int len = polygon.Length;
+        for (int i = 0; i < len; i++)
+        {
+            yield return (
+                new LinkedPoint()
+                {
+                    current = polygon[i],
+                    prev = i == 0 ? polygon[len - 1] : polygon[i - 1],
+                    next = i == len - 1 ? polygon[0] : polygon[i + 1]
+                }
+            );
+
+        }
+    }
+
     public Rect2 RectFromPolygon(Vector2[] polygon)  // WHAT IS THIS EXACTLY?
     {
         Rect2 rect = new();
