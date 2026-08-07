@@ -53,7 +53,6 @@ public partial class PolygonToolTest : Node3D
 
         // meshNode.Mesh = mesh;
 
-
     }
 
     private void OnNextCutButton()
@@ -64,6 +63,8 @@ public partial class PolygonToolTest : Node3D
             if (cutsCount == 0)
             {
                 GD.Print("end of cuts reached");
+                ReconstructOriginalEdge();
+
                 PolyEdgeVisualized edgeVisualizer = new();
                 edgeVisualizer.SetEdges(faceVisualizerMap.Keys.AsEnumerable().ElementAt(0));
                 return;
@@ -145,5 +146,51 @@ public partial class PolygonToolTest : Node3D
         // cutVisualizer.Curve.RemovePoint(0);
         // cutVisualizer.Curve.AddPoint()
     }
+
+    public List<HalfEdge> ReconstructOriginalEdge()
+    {
+        var edge = polyMeshTool.OriginalEdgeSample;
+
+        var outerEdgeList = new List<HalfEdge>();
+
+        // loop edge until edge with children found
+        var cur = edge;
+        var isDescending = true;
+        do
+        {
+            if (cur.TwinEdge != null)
+            {
+                cur = cur.TwinEdge.NextEdge;
+                continue;
+            }
+
+            if (cur.childEdge1 != null)
+            {
+                cur = cur.childEdge1;
+                continue;
+            }
+            
+            outerEdgeList.Add(cur);
+            cur = cur.NextEdge;
+            
+                
+        } while (outerEdgeList.Count == 0 || outerEdgeList[0] != cur);
+
+        return outerEdgeList;
+        // var poly = new List<Vector2>();
+        // foreach(var _edge in outerEdgeList) 
+        // {
+        //     var vert = _edge.EndVert.Position;
+        //     poly.Add(new Vector2(vert.X, vert.Y) * 10);
+
+
+        // }    
+        // var staticBody = new StaticBody2D();
+        // AddChild(staticBody);
+        // staticBody.AddChild(
+        //     new CollisionPolygon2D(){Polygon = poly.ToArray()}
+        // );
+    }
+
 
 }

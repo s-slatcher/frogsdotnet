@@ -13,6 +13,8 @@ public partial class PolygonMeshTool : GodotObject
     List<Face> faces = new();
     Dictionary<Vector2, PolyVertex> vertexMap = new();
 
+    public HalfEdge OriginalEdgeSample;
+
     static Vector2 RoundVector2(Vector2 vec)
     {
         return new Vector2(float.Floor(vec.X * 1000), float.Floor(vec.Y * 1000)) / 1000;
@@ -51,6 +53,7 @@ public partial class PolygonMeshTool : GodotObject
 
                 // generate edge, looking for twin edge matches
                 var hEdge = new HalfEdge(curVert, nextVert);
+                
                 edgeMap[(curVert, nextVert)] = hEdge;
 
                 if ( edgeMap.TryGetValue((nextVert,curVert), out HalfEdge twinEdge) )
@@ -61,7 +64,8 @@ public partial class PolygonMeshTool : GodotObject
                 face.AddEdge(hEdge);    
             }
             faces.Add(face);
-        }    
+        } 
+        OriginalEdgeSample = edgeMap.Values.ToList()[0];
         
     }
 
@@ -83,7 +87,7 @@ public partial class PolygonMeshTool : GodotObject
             
             var hEdge = f.EdgeList[i];
             LineSegment edge2D = HalfEdgeAs2DLine(hEdge); 
-            GD.PrintS("next Edge: ",edge2D.Start, "->",edge2D.End);
+            // GD.PrintS("next Edge: ",edge2D.Start, "->",edge2D.End);
             var snapEpsilon = 0.01f;       
             
             Vector2? maybeIntersect = GetLineIntersectOrNull(c_p, c_dir, edge2D.Start, edge2D.DirectionVector().Normalized());
@@ -99,13 +103,11 @@ public partial class PolygonMeshTool : GodotObject
             var dist1 = intersect.DistanceTo(edge2D.Start);
             var dist2 = intersect.DistanceTo(edge2D.End);
             var edgeDist = edge2D.Length();
-          
-            // shorten edge by snap distance to prevent edges splitting at distances close enough to snap
             
             if (dist2 < snapEpsilon) 
             {
                 ui_list.Add(new UnhandledIntersection(hEdge.EndVert, hEdge, false));
-                GD.Print("  snap intersect at: ",intersect);
+                // GD.Print("  snap intersect at: ",intersect);
             }
             else if ( dist1 > snapEpsilon && dist2 > snapEpsilon)
             {
@@ -113,13 +115,13 @@ public partial class PolygonMeshTool : GodotObject
                 {
                     var newVert = new PolyVertex(){Position = f.PointToMeshSpace(intersect)};
                     ui_list.Add(new UnhandledIntersection(newVert, hEdge, true));
-                    GD.Print("  middle intersect at: ",intersect," ");
+                    // GD.Print("  middle intersect at: ",intersect," ");
                 }
                 
             }
             else
             {
-                GD.Print("intersect discarded at: ", intersect);
+                // GD.Print("intersect discarded at: ", intersect);
                 continue;
             }
 
