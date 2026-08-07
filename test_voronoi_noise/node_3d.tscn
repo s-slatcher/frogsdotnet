@@ -69,27 +69,27 @@ void vertex() {
 	//vor_val = pow(vor_val, float(noise_power));
 	//vor_val = smoothstep(1,0,vor_val);
 	VERTEX += NORMAL * vor_val* displace_level;
-	
-	// second displac slayer 
+
+	// second displac slayer
 	float vor_val_2 = texture(vor_noise_2, UV).r;
 	//vor_val_2 = pow(vor_val_2, float(4));
 	vor_val_2 = smoothstep(1,0, vor_val_2);
-	
-	
-	VERTEX -= NORMAL * vor_val_2 * displace_level_2; 
-	
+
+
+	VERTEX -= NORMAL * vor_val_2 * displace_level_2;
+
 	//handle vertical ridges
 	float edge_noise_val = texture(edge_noise, vec2(VERTEX.x/30., 0)).r;
 	VERTEX.z += edge_noise_val * 2.;
-	
+
 	//float q = 0.3; // controls facet size — smaller = more facets
 	//vec3 q_normal = normalize(floor(NORMAL / q + 0.5) * q);
 	//float angle = acos(dot(q_normal, NORMAL));
 	//NORMAL = q_normal;
 	pos = VERTEX;
-	
+
 	//NORMAL = get_flat_normal(VERTEX);
-	
+
 }
 
 
@@ -102,11 +102,11 @@ void fragment() {
 	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
 	METALLIC = metallic_tex * metallic;
 	SPECULAR = specular;
-	
+
 	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
 	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
 	ROUGHNESS = roughness_tex * roughness;
-	
+
 	NORMAL = get_flat_normal(pos);
 }
 "
@@ -325,18 +325,18 @@ float hash(vec2 p) {
 
 void vertex() {
 	UV = UV * uv1_scale.xy + uv1_offset.xy;
-	
-	vec2 uv_1d = vec2(VERTEX.x, VERTEX.y * 0.23) * world_uv_scale;
+
+	vec2 uv_1d = vec2(VERTEX.x, VERTEX.y * 0.1) * world_uv_scale;
 	float noise_val = texture(edge_noise,uv_1d).r;
 	VERTEX.z += noise_val * noise_distort_scale;
-	
+
 	// matches frag shader read of cell noise
 	//vec2 world_uv = VERTEX.xy * 0.02;
 	//float noise_samp = texture(horz_noise, vec2(world_uv.x * 0.05, world_uv.y)).r;
 	//float floored_noise = floor(noise_samp*20.);
 	//float random = hash(vec2(floored_noise));
 	//if (random > 0.9) VERTEX.z += 1.;
-	
+
 	pos = VERTEX;
 }
 
@@ -353,11 +353,11 @@ void fragment() {
 	NORMAL = get_flat_normal(pos);
 	vec4 albedo_tex = texture(texture_albedo, base_uv);
 	ALBEDO = albedo.rgb * albedo_tex.rgb;
-	
+
 	vec2 world_uv = pos.xy * 0.02;
 	float noise_samp = texture(horz_noise, vec2(world_uv.x * 0.05, world_uv.y)).r;
-	ALBEDO = mix(ALBEDO, ALBEDO*0.3, noise_samp);
-	
+	ALBEDO = mix(ALBEDO, ALBEDO*0.5, noise_samp);
+
 	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
 	METALLIC = metallic_tex * metallic;
 	SPECULAR = specular;
@@ -405,7 +405,7 @@ shader_parameter/edge_noise = SubResource("NoiseTexture2D_d218e")
 shader_parameter/world_uv_scale = 0.02
 shader_parameter/noise_distort_scale = 2.565
 shader_parameter/horz_noise = SubResource("NoiseTexture2D_56vsc")
-shader_parameter/albedo = Color(0.634622, 0.416843, 0.256909, 1)
+shader_parameter/albedo = Color(0.53779, 0.495609, 0.432248, 1)
 shader_parameter/albedo_texture_size = Vector2i(0, 0)
 shader_parameter/point_size = 1.0
 shader_parameter/roughness = 1.0

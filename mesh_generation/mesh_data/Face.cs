@@ -10,12 +10,13 @@ using System.Runtime.CompilerServices;
 
 public partial class Face : GodotObject 
 {
-  
+    
+    
     // subdivided faces are passed this hashset to properly map faces together by edge connection
     public List<HalfEdge> EdgeList = new();
     public bool IsValid = false;
 
-    public Basis Basis = Basis.Identity;
+    public Transform3D Transform = Transform3D.Identity;
 
     public Rect2 BoundingRect; 
 
@@ -34,8 +35,7 @@ public partial class Face : GodotObject
         {
             var last = EdgeList[^1];
             var first = EdgeList[0];
-
-            if (hEdge.StartVert != last.EndVert)
+            if (hEdge.StartVert != last.EndVert)    
             {
                 GD.Print("tried adding unlinked edge to poly");
                 return;
@@ -53,8 +53,9 @@ public partial class Face : GodotObject
                 first.PrevEdge = hEdge;
                 hEdge.NextEdge = first;
             }
-            hEdge.Face = this;
         }
+        hEdge.Face = this;
+
 
         
         
@@ -66,86 +67,140 @@ public partial class Face : GodotObject
         foreach (var hEdge in EdgeList)
         {
             var vert = hEdge.StartVert;
-            list2D.Add((vert, ConvertPointToLocal2D(vert)));
+            list2D.Add((vert, VertToLocalSpace(vert)));
         }
         return list2D;
     }
 
-    public Vector2 ConvertPointToLocal2D(PolyVertex vert)
+    public Vector2 VertToLocalSpace(PolyVertex vert)
     {
-        var rotatedVert = vert.Position * Basis.Inverse();
+        var rotatedVert = vert.Position * Transform.Inverse();
         return new Vector2(rotatedVert.X, rotatedVert.Y);
     }
-    public Vector3 ConvertToEdgeSpace(Vector2 point)
+    public Vector3 PointToMeshSpace(Vector2 point)
     {
         var vert3D = new Vector3(point.X, point.Y, 0);
-        return vert3D * Basis;
+        return vert3D * Transform;
     }
 
-    public void DivideFace(Vector2 clipPoint, Vector2 clipDir)
+
+    public List<Face> DivideFace(Vector2 clipPoint, Vector2 clipDir)
     {
-        // collect intersections
-        var hits = new List<(HalfEdge, Vector2)>();
+
+        // collect intersections in dictionary mapping vert to edge it is the END vert
+        // prevent corner intersections from double hitting
+        var hitsMap = new Dictionary<PolyVertex, HalfEdge>();
+
+        var Epsilon = 0.0001;
         for (int i = 0; i < EdgeList.Count; i++)
         {
             var hEdge = EdgeList[i];
-            var p1 = ConvertPointToLocal2D(hEdge.StartVert);
-            var p2 = ConvertPointToLocal2D(hEdge.EndVert);
-            var edgeRect = new Rect2(){Position = p1, End = p2}.Abs();
-
-            var intersect = (Vector2)Geometry2D.LineIntersectsLine(clipPoint, clipDir, p1, p2-p1.Normalized());
+            var p1 = VertToLocalSpace(hEdge.StartVert);
+            var p2 = VertToLocalSpace(hEdge.EndVert);
+            var edgeDist = p1.DistanceSquaredTo(p2);
             
-            if (edgeRect.HasPoint(intersect)) hits.Add((hEdge, intersect));
-        }
+            float dotProd = (p2-p1).Normalized().Dot(clipDir.Normalized());
+            bool isParallel = Math.Abs(dotProd) > 0.99f;
+            if (isParallel)
+            {
+                GD.Print("skipping parallel line");
+                continue;
+            }
+            
+            var inter = (Vector2)Geometry2D.LineIntersectsLine(clipPoint, clipDir, p1, p2-p1);
 
-        // sort hits by x or y axis to find new clip edges
-        if (hits.Count < 2) return;
+            var dist1 = inter.DistanceSquaredTo(p1);
+            var dist2 = inter.DistanceSquaredTo(p2);
+            
+            if (dist1 > edgeDist || dist2 > edgeDist ) continue;
+            
+            if (dist1 < Epsilon) 
+            {
+                if (hitsMap.ContainsKey(hEdge.StartVert)) continue;
+                GD.Print("snapped point");
+                hitsMap.Add(hEdge.StartVert, hEdge.PrevEdge);
+            }
+            else if (dist2 < Epsilon)
+            {
+                if (hitsMap.ContainsKey(hEdge.EndVert)) continue;
+                GD.Print("snapped point");
+               hitsMap.Add(hEdge.EndVert, hEdge); 
+            } 
+            else
+            {
+                var vert = new PolyVertex(){Position = PointToMeshSpace(inter)};
+                hEdge.SplitEdge(vert, true);
+                hitsMap.Add(vert, hEdge.childEdge1);
+                
+            }
+
+            
+            
+        }
+             if (hitsMap.Count % 2 != 0) GD.Print("odd numbered interescts");
+
         
-        if (Math.Abs(clipDir.X) > 0.01) 
+
+        if (hitsMap.Count < 2) return [this];
+        // sort intersect vertices by projected x or y axis to find new clip edges
+
+
+        bool isXSortAble = Math.Abs(clipDir.X) > 0.01;
+        var orderedIntersects = hitsMap.Keys.OrderBy(VertOrderBy);
+        float VertOrderBy(PolyVertex vert)
         {
-            hits = hits.OrderBy(hit => hit.Item2.X).ToList();
+            var pos2D = VertToLocalSpace(vert);
+            return isXSortAble ? pos2D.X : pos2D.Y;
         }
-        else hits = hits.OrderBy(hit => hit.Item2.Y).ToList();
-
-        // split into groups of two edges and repsective intersect points
-        // foreach(var hitChunk in hits.Chunk(2))
-        // {
-        //     HandleIntersect
-        //     (
-        //         hitChunk[0].Item2, hitChunk[0].Item1, hitChunk[1].Item2, hitChunk[1].Item1
-        //     );
-        // }
-        // ;
-
-    }
-
-    private void HandleIntersect(Vector2 intersect1, HalfEdge edge1, Vector2 intersect2, HalfEdge edge2)
-    {
-        // produce vertices, and both half-edges for the clip boundary
-        var vert1 = new PolyVertex(){Position = ConvertToEdgeSpace(intersect1)};
-        var vert2 = new PolyVertex(){Position = ConvertToEdgeSpace(intersect2)};
-
-        var hEdge1 = new HalfEdge()
-        {
-            StartVert = vert1,
-            EndVert = vert2
-        };
-        var hEdge2 = new HalfEdge()
-        {
-            StartVert = vert2,
-            EndVert = vert1,
-        };
-        hEdge1.TwinEdge = hEdge2;
-        hEdge2.TwinEdge = hEdge1;
-
-        // use same vertices to split edges of existing lines
-        (HalfEdge, HalfEdge) splitEdges1 = edge1.SplitEdge(vert1);
-
-
-
-    }
-
+       
     
+        // split into groups of two edges and reroute respective edges to new clipped edges
+        HashSet<HalfEdge> unhandledEdges = new();
+        foreach(var vertSet in orderedIntersects.Chunk(2))
+        {
+        
+            
+            var vert1 = vertSet[0];
+            var vert2 = vertSet[1];
+            
+            var hEdge = new HalfEdge(vert1, vert2);
+            hEdge.SetTwinEdge();
+
+            unhandledEdges.Add(hEdge);
+            unhandledEdges.Add(hEdge.TwinEdge);
+
+            // for edge to intersect its END vert (2nd arg) is on that other edge
+            
+            hitsMap[vert1].ReRoute(hEdge);
+            hitsMap[vert2].ReRoute(hEdge.TwinEdge);
+
+        }
+
+        // generate new faces by looping each new clip edge
+        List<Face> newFaces = new();
+
+        foreach(var clipEdge in unhandledEdges.ToList()) 
+        {
+              
+            if (clipEdge.Face != null) continue;
+            
+            var face = new Face(){Transform = Transform};
+            var curEdge = clipEdge;
+            do
+            {
+                face.AddEdge(curEdge);
+                curEdge.Face = face;
+                curEdge = curEdge.NextEdge;
+            } while (curEdge != clipEdge);
+        
+            newFaces.Add(face);
+        }
+ 
+        return newFaces;
+
+    }
+
+
 
 
     public IEnumerable<PolyVertex[]> TriangulateEdge()
@@ -163,7 +218,7 @@ public partial class Face : GodotObject
             vertList.Add(vert);
             
             // TODO: correct with full transform and origin later
-            var rotatedVert = vert.Position * Basis.Inverse();
+            var rotatedVert = vert.Position * Transform.Inverse();
             
             // rotated vert should have zeroed Z by default
 
@@ -179,11 +234,12 @@ public partial class Face : GodotObject
 
     public Vector3 GetNormal()
     {
-        return Basis.Z;
+        return Transform.Basis.Z;
     }
 
 
 }
+
 
 
 

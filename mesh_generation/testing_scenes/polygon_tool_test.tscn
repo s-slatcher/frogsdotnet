@@ -1,6 +1,7 @@
-[gd_scene load_steps=9 format=4 uid="uid://dfdcpvt7x3wan"]
+[gd_scene load_steps=8 format=3 uid="uid://dfdcpvt7x3wan"]
 
 [ext_resource type="Script" uid="uid://dphnp4ncp3k8i" path="res://mesh_generation/testing_scenes/PolygonToolTest.cs" id="1_cn803"]
+[ext_resource type="PackedScene" uid="uid://ctjevf1n4dep6" path="res://mesh_generation/visualizers/PolyFaceVisualized.tscn" id="2_cn803"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_obh5o"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -15,82 +16,21 @@ sky = SubResource("Sky_u488a")
 tonemap_mode = 2
 glow_enabled = true
 
-[sub_resource type="Shader" id="Shader_0ef3l"]
-code = "// NOTE: Shader automatically converted from Godot Engine 4.4.1.stable.mono's StandardMaterial3D.
-
-shader_type spatial;
-render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx, wireframe;
-
-uniform vec4 albedo : source_color;
-uniform sampler2D texture_albedo : source_color, filter_linear_mipmap, repeat_enable;
-uniform ivec2 albedo_texture_size;
-uniform float point_size : hint_range(0.1, 128.0, 0.1);
-
-uniform float roughness : hint_range(0.0, 1.0);
-uniform sampler2D texture_metallic : hint_default_white, filter_linear_mipmap, repeat_enable;
-uniform vec4 metallic_texture_channel;
-uniform sampler2D texture_roughness : hint_roughness_r, filter_linear_mipmap, repeat_enable;
-
-uniform float specular : hint_range(0.0, 1.0, 0.01);
-uniform float metallic : hint_range(0.0, 1.0, 0.01);
-
-uniform vec3 uv1_scale;
-uniform vec3 uv1_offset;
-uniform vec3 uv2_scale;
-uniform vec3 uv2_offset;
-
-void vertex() {
-	UV = UV * uv1_scale.xy + uv1_offset.xy;
-}
-
-void fragment() {
-	vec2 base_uv = UV;
-
-	vec4 albedo_tex = texture(texture_albedo, base_uv);
-	ALBEDO = albedo.rgb * albedo_tex.rgb;
-
-	float metallic_tex = dot(texture(texture_metallic, base_uv), metallic_texture_channel);
-	METALLIC = metallic_tex * metallic;
-	SPECULAR = specular;
-
-	vec4 roughness_texture_channel = vec4(1.0, 0.0, 0.0, 0.0);
-	float roughness_tex = dot(texture(texture_roughness, base_uv), roughness_texture_channel);
-	ROUGHNESS = roughness_tex * roughness;
-}
-"
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_cn803"]
-render_priority = 0
-shader = SubResource("Shader_0ef3l")
-shader_parameter/albedo = Color(0, 1, 0, 1)
-shader_parameter/albedo_texture_size = Vector2i(0, 0)
-shader_parameter/point_size = 1.0
-shader_parameter/roughness = 1.0
-shader_parameter/metallic_texture_channel = Vector4(1, 0, 0, 0)
-shader_parameter/specular = 0.5
-shader_parameter/metallic = 0.0
-shader_parameter/uv1_scale = Vector3(1, 1, 1)
-shader_parameter/uv1_offset = Vector3(0, 0, 0)
-shader_parameter/uv2_scale = Vector3(1, 1, 1)
-shader_parameter/uv2_offset = Vector3(0, 0, 0)
-
-[sub_resource type="ArrayMesh" id="ArrayMesh_0ef3l"]
-_surfaces = [{
-"aabb": AABB(0, 0, 0, 27.512, 21.794, 1e-05),
-"format": 34359738375,
-"primitive": 3,
-"uv_scale": Vector4(0, 0, 0, 0),
-"vertex_count": 21,
-"vertex_data": PackedByteArray("AFSCQSBarkEAAAAAAK7LQLjznUEAAAAAAAAAAEDhUEEAAAAAAAAAAEDhUEEAAAAAgG66QIBBSEAAAAAAQApZQaAan0AAAAAAQApZQaAan0AAAAAA8NKLQQAAAAAAAAAAQImgQUAM1kAAAAAAQImgQUAM1kAAAAAAkBjcQYA/NUEAAAAAENe3QdBNqEEAAAAAENe3QdBNqEEAAAAAAFSCQSBarkEAAAAAAAAAAEDhUEEAAAAAAAAAAEDhUEEAAAAAQApZQaAan0AAAAAAQImgQUAM1kAAAAAAQImgQUAM1kAAAAAAENe3QdBNqEEAAAAAAAAAAEDhUEEAAAAA/3//f/9/AID/f/9//38AgP9//3//fwCA/3//f/9/AID/f/9//38AgP9//3//fwCA/3//f/9/AID/f/9//38AgP9//3//fwCA/3//f/9/AID/f/9//38AgP9//3//fwCA/3//f/9/AID/f/9//38AgP9//3//fwCA/3//f/9/AID/f/9//38AgP9//3//fwCA/3//f/9/AID/f/9//38AgP9//3//fwCA")
-}]
-
 [sub_resource type="QuadMesh" id="QuadMesh_cn803"]
 size = Vector2(100, 20)
 
-[node name="PolygonToolTest" type="Node3D" node_paths=PackedStringArray("meshNode", "polyNode")]
+[sub_resource type="Curve3D" id="Curve3D_cn803"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[node name="PolygonToolTest" type="Node3D" node_paths=PackedStringArray("polyNode", "cutButton")]
 script = ExtResource("1_cn803")
-meshNode = NodePath("MeshInstance3D")
 polyNode = NodePath("Polygon2D")
+polyVisualizer = ExtResource("2_cn803")
+cutButton = NodePath("Control/Button")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
@@ -99,15 +39,33 @@ shadow_enabled = true
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_2m78g")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 1.09727, 0.640982, 2.12083)
-material_override = SubResource("ShaderMaterial_cn803")
-mesh = SubResource("ArrayMesh_0ef3l")
-
 [node name="Polygon2D" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(300.8, 174.772, 294.435, 168.083, 300.261, 158.157, 308, 160, 311.913, 155.028, 314.502, 161.717, 321.947, 166.356, 317.415, 176.066, 310.726, 176.822)
+polygon = PackedVector2Array(0, 0, 3, 22, 16, 26, 20, 19, 8, 16, 14, 14, 15, 9, 28, 25, 25, 0)
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.00777, -1.031)
 layers = 32769
 mesh = SubResource("QuadMesh_cn803")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.999872, 0.016004, 0, -0.016004, 0.999872, 11.4361, 9.86717, 29.367)
+current = true
+
+[node name="MeshContainer" type="Node3D" parent="."]
+
+[node name="Control" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Button" type="Button" parent="Control"]
+layout_mode = 0
+offset_left = 726.0
+offset_top = 571.0
+offset_right = 1026.0
+offset_bottom = 679.0
+text = "NEXT CUT STEP"
+
+[node name="Path3D" type="Path3D" parent="."]
+curve = SubResource("Curve3D_cn803")

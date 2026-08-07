@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://cbovm07unrjpn"]
+
+[ext_resource type="Script" uid="uid://6igtrfp25igt" path="res://mesh_generation/testing_scenes/ConvexDecomposeTest/ConvexDecomposeTest.cs" id="1_yus4t"]
+
+[node name="ConvexDecomposeTest" type="Node2D" node_paths=PackedStringArray("polyNode")]
+script = ExtResource("1_yus4t")
+polyNode = NodePath("Polygon2D")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+visible = false
+polygon = PackedVector2Array(291, 515, 355, 331, 135, 412, 190, 254, 255, 264, 255, 230, 265, 95, 428, 177, 483, 117, 491, 379, 527, 231, 530, 349, 625, 187, 750, 121, 750, 393, 587, 365, 602, 595, 372, 468)

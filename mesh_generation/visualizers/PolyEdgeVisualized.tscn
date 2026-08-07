@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cbi2kh2gxh7nv"]
+
+[ext_resource type="Script" uid="uid://yq36i2l3gsx5" path="res://mesh_generation/visualizers/PolyEdgeVisualized.cs" id="1_owdx3"]
+
+[node name="PolyEdgeVisualized" type="Node2D"]
+script = ExtResource("1_owdx3")

@@ -26,6 +26,12 @@ public partial class GeometryUtils : GodotObject
     {
         return new Vector3(vec2.X, vec2.Y, 0);
     }
+
+    public static Godot.Color RandomColor()
+    {
+        var randColor = new Godot.Color (GD.Randf(),GD.Randf(),GD.Randf());
+        return randColor; 
+    }
     
     public static float Remap(float value, float fromMin, float fromMax, float toMin, float toMax, bool doClamp)
     {
