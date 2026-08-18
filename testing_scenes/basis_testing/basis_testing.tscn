@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3 uid="uid://ds3ysg3v66a08"]
+
+[ext_resource type="Script" uid="uid://b4g2ef7jk6gpa" path="res://testing_scenes/basis_testing/BasisTesting.cs" id="1_0bgbc"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_0bgbc"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_pcvsi"]
+
+[node name="BasisTesting" type="Node3D" node_paths=PackedStringArray("meshNode", "meshNode2")]
+script = ExtResource("1_0bgbc")
+meshNode = NodePath("MeshInstance3D")
+meshNode2 = NodePath("MeshInstance3D2")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.256984, 0)
+mesh = SubResource("QuadMesh_0bgbc")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, -0.00397021, 0.230273, -0.524143)
+mesh = SubResource("QuadMesh_pcvsi")

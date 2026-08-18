@@ -24,10 +24,15 @@ public partial class HalfEdge : GodotObject
         EndVert = end;
     }
 
-    public void SetTwinEdge()
+    public HalfEdge SetTwinEdge()
     {
         TwinEdge = new HalfEdge(EndVert, StartVert){TwinEdge = this};
+        return TwinEdge;    
     }
+
+    public bool HasChildren() => childEdge1 != null;
+    public bool HasTwin() => TwinEdge != null;
+    
 
     public void GenerateTwinEdge()
     {

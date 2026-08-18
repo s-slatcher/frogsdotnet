@@ -1,7 +1,8 @@
-[gd_scene load_steps=8 format=3 uid="uid://dfdcpvt7x3wan"]
+[gd_scene load_steps=9 format=3 uid="uid://dfdcpvt7x3wan"]
 
 [ext_resource type="Script" uid="uid://dphnp4ncp3k8i" path="res://mesh_generation/testing_scenes/PolygonToolTest.cs" id="1_cn803"]
 [ext_resource type="PackedScene" uid="uid://ctjevf1n4dep6" path="res://mesh_generation/visualizers/PolyFaceVisualized.tscn" id="2_cn803"]
+[ext_resource type="Script" uid="uid://8vyuhyx0xogt" path="res://addons/freecam_3D/freecam.gd" id="3_u60yv"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_obh5o"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -40,16 +41,17 @@ shadow_enabled = true
 environment = SubResource("Environment_2m78g")
 
 [node name="Polygon2D" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, 0, 3, 22, 16, 26, 20, 19, 8, 16, 14, 14, 15, 9, 28, 25, 25, 0)
+polygon = PackedVector2Array(14, 8, 20, 9, 25, 15, 27, 30, 19, 35, 11, 33, 6, 27, 5, 16)
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.00777, -1.031)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.00777, -10.3789)
 layers = 32769
 mesh = SubResource("QuadMesh_cn803")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.999872, 0.016004, 0, -0.016004, 0.999872, 11.4361, 9.86717, 29.367)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.358532, 32.9647, 40.2919)
 current = true
+script = ExtResource("3_u60yv")
 
 [node name="MeshContainer" type="Node3D" parent="."]
 

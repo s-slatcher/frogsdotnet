@@ -4,16 +4,15 @@
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_npqfw"]
 resource_local_to_scene = true
-cull_mode = 2
 shading_mode = 0
 vertex_color_use_as_albedo = true
 
 [sub_resource type="BoxMesh" id="BoxMesh_npqfw"]
 
-[node name="PolyFaceVisualized" type="Node3D" node_paths=PackedStringArray("meshInst", "colPoly")]
+[node name="PolyFaceVisualized" type="Node3D" node_paths=PackedStringArray("meshInst", "colShape")]
 script = ExtResource("1_npqfw")
 meshInst = NodePath("MeshInstance3D")
-colPoly = NodePath("Area3D/CollisionPolygon3D")
+colShape = NodePath("Area3D/CollisionShape3D")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 material_override = SubResource("StandardMaterial3D_npqfw")
@@ -21,6 +20,4 @@ mesh = SubResource("BoxMesh_npqfw")
 
 [node name="Area3D" type="Area3D" parent="."]
 
-[node name="CollisionPolygon3D" type="CollisionPolygon3D" parent="Area3D"]
-unique_name_in_owner = true
-polygon = PackedVector2Array(0, 0, 10, 0, 10, 10)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]

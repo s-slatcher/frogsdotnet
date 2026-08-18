@@ -1,7 +1,9 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Net.WebSockets;
 
 public partial class PolygonToolTest : Node3D
 {
@@ -36,22 +38,22 @@ public partial class PolygonToolTest : Node3D
         
         var polygon = new NormalPoly(polyNode.Polygon, 0);
 
-        polyMeshTool.SetPolygon(polygon);
+        polyMeshTool.SetPolygon(polygon, 5);
 
-        faces = polyMeshTool.GetFaces();
 
         // VisualizeMesh();
+
+        polyMeshTool.SubdivideAll(2);
+
         InitializeMeshVisual();
 
-        cuts.Add((new Vector2(0,25), new Vector2(0.5f,-1f)));
 
-        cuts.Add( (new Vector2(0,20), Vector2.Right) );
-        cuts.Add((new Vector2(0,0), new Vector2(1,1)));
+        // cuts.Add((new Vector2(0,25), new Vector2(0.5f,-1f)));
 
-        
-        // var mesh = polyMeshTool.GetMesh();
-
-        // meshNode.Mesh = mesh;
+        // cuts.Add( (new Vector2(0,20), Vector2.Right) );
+        // cuts.Add((new Vector2(0,0), new Vector2(1,1)));
+        // cuts.Add((new Vector2(15,0), new Vector2(-0.2f,1)));
+        // cuts.Add((new Vector2(15,0), new Vector2(+0.2f,1)));
 
     }
 
@@ -85,7 +87,6 @@ public partial class PolygonToolTest : Node3D
         var cut = queuedCutsList[queuePos];
         queuePos++;
         DivideFaceAndUpdateVisuals(cut.face, cut.cutDirection, cut.cutPoint);
-        
     }
 
 
@@ -109,9 +110,10 @@ public partial class PolygonToolTest : Node3D
 
     public void InitializeMeshVisual()
     {
-        foreach (var face in faces)
+        foreach (var face in polyMeshTool.GetFaces())
         {
             VisualizeFace(face);
+            
         }
     
     }
@@ -125,6 +127,13 @@ public partial class PolygonToolTest : Node3D
         faceVisualizerMap[face] = vis;
 
     }
+    private void UpdateVisualization(List<Face> newFaces)
+    {
+        var container = GetNode<Node3D>("MeshContainer");
+        foreach (var child in container.GetChildren()) child.QueueFree();
+        foreach (var face in newFaces) faceVisualizerMap.Add(face, null);
+        foreach (var face in faceVisualizerMap.Keys) VisualizeFace(face);
+    }
 
 
     public void DivideFaceAndUpdateVisuals(Face face, Vector2 clipDir, Vector2 clipPoint)
@@ -132,20 +141,24 @@ public partial class PolygonToolTest : Node3D
         var newFaces = polyMeshTool.DivideFace(face, clipDir, clipPoint);
         if (newFaces.Count == 1)
         {
-            OnNextCutButton();
+            OnNextCutButton(); 
             return;
         }
         var oldVis = faceVisualizerMap[face];
-        
         faceVisualizerMap.Remove(face);
         oldVis.QueueFree();
 
-        foreach (var newFace in newFaces) VisualizeFace(newFace);
+        UpdateVisualization( newFaces);
+
+        // foreach (var newFace in newFaces) VisualizeFace(newFace);
 
         // cutVisualizer.Curve.RemovePoint(1);
         // cutVisualizer.Curve.RemovePoint(0);
         // cutVisualizer.Curve.AddPoint()
     }
+
+    
+
 
     public List<HalfEdge> ReconstructOriginalEdge()
     {
@@ -177,19 +190,7 @@ public partial class PolygonToolTest : Node3D
         } while (outerEdgeList.Count == 0 || outerEdgeList[0] != cur);
 
         return outerEdgeList;
-        // var poly = new List<Vector2>();
-        // foreach(var _edge in outerEdgeList) 
-        // {
-        //     var vert = _edge.EndVert.Position;
-        //     poly.Add(new Vector2(vert.X, vert.Y) * 10);
-
-
-        // }    
-        // var staticBody = new StaticBody2D();
-        // AddChild(staticBody);
-        // staticBody.AddChild(
-        //     new CollisionPolygon2D(){Polygon = poly.ToArray()}
-        // );
+       
     }
 
 

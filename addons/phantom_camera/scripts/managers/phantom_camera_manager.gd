@@ -74,6 +74,7 @@ var screen_size: Vector2i = Vector2i.ONE
 #region Private Functions
 
 func _enter_tree() -> void:
+	scene_file_path = " "
 	if not Engine.has_singleton(_CONSTANTS.PCAM_MANAGER_NODE_NAME):
 		Engine.register_singleton(_CONSTANTS.PCAM_MANAGER_NODE_NAME, self)
 	Engine.physics_jitter_fix = 0

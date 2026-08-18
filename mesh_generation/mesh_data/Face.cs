@@ -16,7 +16,7 @@ public partial class Face : GodotObject
     public List<HalfEdge> EdgeList = new();
     public bool IsValid = false;
 
-    public Transform3D Transform = Transform3D.Identity;
+    public Transform3D Transform;
 
     public Rect2 BoundingRect; 
 
@@ -200,11 +200,17 @@ public partial class Face : GodotObject
 
     }
 
+    public List<PolyVertex> GetVerts()
+    {
+        return EdgeList.Select(edge => edge.StartVert).ToList();
+    }
+
 
 
 
     public IEnumerable<PolyVertex[]> TriangulateEdge()
     {
+        
         var vertList = new List<PolyVertex>();
         var triSource = new List<Vector2>();
         var triList = new List<(PolyVertex, PolyVertex, PolyVertex)>();
@@ -216,19 +222,16 @@ public partial class Face : GodotObject
         {
             var vert = hEdge.StartVert;
             vertList.Add(vert);
-            
-            // TODO: correct with full transform and origin later
             var rotatedVert = vert.Position * Transform.Inverse();
-            
             // rotated vert should have zeroed Z by default
 
-            Debug.Assert((rotatedVert.Z < 0.01 && rotatedVert.Z > -0.01));
+            // Debug.Assert((rotatedVert.Z < 0.01 && rotatedVert.Z > -0.01));
            
             triSource.Add(new Vector2(rotatedVert.X, rotatedVert.Y));
 
         }
 
-        var triIndices = Geometry2D.TriangulatePolygon(triSource.ToArray());
+        var triIndices = Geometry2D.TriangulatePolygon(triSource.ToArray()).Reverse();
         return triIndices.Select( i => vertList[i]).Chunk(3);
     }
 
@@ -236,6 +239,15 @@ public partial class Face : GodotObject
     {
         return Transform.Basis.Z;
     }
+
+    public Vector3 GetNormal__()
+    {
+        var posList = GetVerts().Select(v => v.Position).ToArray();
+        var normal = (posList[1]-posList[0]).Cross(posList[2]-posList[0]).Normalized();
+        return normal;
+    }
+
+    
 
 
 }

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://d00n17wmdrrwl"]
+
+[ext_resource type="Script" uid="uid://cxq3xa0lxn0xk" path="res://mesh_generation/terrain_mesh/TerrainChunk.cs" id="1_r2l22"]
+
+[node name="TerrainChunk" type="Node3D"]
+script = ExtResource("1_r2l22")

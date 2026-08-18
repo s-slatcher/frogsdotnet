@@ -16,7 +16,7 @@ public partial class PolyFaceVisualized : Node3D
     }
 
     [Export] MeshInstance3D meshInst;
-    [Export] CollisionPolygon3D colPoly;
+    [Export] CollisionShape3D colShape;
 
     public void SetFace(Face face)
     {
@@ -40,13 +40,8 @@ public partial class PolyFaceVisualized : Node3D
         var mesh = st.Commit();
         meshInst.Mesh = mesh;
 
-        var poly = new List<Vector2>();
-        foreach (var pointPair in face.GetPoint2DPair())
-        {
-            poly.Add(pointPair.Item2);
-        }
-        colPoly.Polygon = poly.ToArray();
-        colPoly.Transform = face.Transform.Inverse();
+        colShape.Shape = mesh.CreateTrimeshShape();
+        
     }
 
     public override void _Ready()

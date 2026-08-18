@@ -88,6 +88,7 @@ radiusRange = Vector2(5, 8)
 [node name="TerrainController" parent="." instance=ExtResource("12_86mi5")]
 
 [node name="CameraDisplayer2D" parent="." node_paths=PackedStringArray("camera2d") instance=ExtResource("13_asr1l")]
+visible = false
 camera2d = NodePath("../DimensionBridgeCamera")
 
 [editable path="enviroment"]

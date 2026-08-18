@@ -17,7 +17,9 @@ public partial class PolyEdgeVisualized : Node2D
         int queuePos = 0;
         while (queuePos < faceQueue.Count)
         {
+            
             var face = faceQueue[queuePos];
+            if (face == null) GD.Print("null face at queue: ",queuePos);    
             queuePos++;
             foreach (var edge in face.EdgeList)
             {   
