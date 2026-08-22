@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Linq;
 
 
-public partial class NormalPoly : RefCounted
+public partial class NormalPoly : Object
 {
     private Vector2[] SourcePoints;
     public Vector2[] Polygon = [];

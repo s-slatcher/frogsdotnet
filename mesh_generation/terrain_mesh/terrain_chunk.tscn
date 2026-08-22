@@ -1,6 +1,13 @@
-[gd_scene load_steps=2 format=3 uid="uid://d00n17wmdrrwl"]
+[gd_scene load_steps=3 format=3 uid="uid://d00n17wmdrrwl"]
 
 [ext_resource type="Script" uid="uid://cxq3xa0lxn0xk" path="res://mesh_generation/terrain_mesh/TerrainChunk.cs" id="1_r2l22"]
+[ext_resource type="Material" uid="uid://cbxwu4aghr558" path="res://mesh_generation/materials/terrain_chunk_material.tres" id="2_uwh0t"]
 
-[node name="TerrainChunk" type="Node3D"]
+[node name="TerrainChunk" type="Node3D" node_paths=PackedStringArray("meshInst")]
 script = ExtResource("1_r2l22")
+material = ExtResource("2_uwh0t")
+meshInst = NodePath("MeshInstance3D")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+
+[node name="Node2D" type="Node2D" parent="."]
