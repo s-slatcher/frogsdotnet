@@ -16,7 +16,7 @@ public partial class TerrainChunk : Node3D
     public float MaxHeight = 60;
     public bool DoStretchMesh = true;
     public int SubdivideLevels = 1;
-    public float depthAtMaxHeight = 2;
+    public float depthAtMaxHeight = 1;
     public float depthAtBase = 3;
    
 

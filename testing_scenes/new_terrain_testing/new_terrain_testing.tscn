@@ -19,11 +19,10 @@ material = ExtResource("4_y6l8p")
 terrainScene = ExtResource("2_l6dgw")
 MaxTerrainHeight = 10.0
 TotalLandmasses = 4
-SubdivideLevels = 6
+SubdivideLevels = 5
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.882947, 0.40029, -0.245298, 0, 0.522498, 0.85264, 0.469471, -0.752836, 0.461339, 0, 0, 0)
-visible = false
 light_angular_distance = 0.5
 light_bake_mode = 0
 directional_shadow_mode = 0
