@@ -67,7 +67,7 @@ public partial class NewTerrainTesting : Node3D
         terrainChunk.DoStretchMesh = true;
         terrainChunk.MaxHeight = MaxTerrainHeight;
         terrainChunk.SubdivideLevels = SubdivideLevels;
-        terrainChunk.depthAtBase = GD.RandRange(1,3);
+        terrainChunk.depthAtBase = GD.RandRange(3,4);
         AddChild(terrainChunk);
 
         terrainChunk.SetPolygon(norm);

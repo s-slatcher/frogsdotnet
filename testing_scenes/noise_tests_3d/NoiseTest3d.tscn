@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://dxld1y5380r2o"]
+
+[ext_resource type="Script" uid="uid://cmgqpgfyshesm" path="res://testing_scenes/noise_tests_3d/NoiseTest3d.cs" id="1_bi3te"]
+[ext_resource type="FastNoiseLite" uid="uid://01hee4ls40t" path="res://testing_scenes/noise_tests_3d/simplex3D.tres" id="2_aww6k"]
+
+[node name="NoiseTest3d" type="Node3D"]
+script = ExtResource("1_bi3te")
+fastNoise = ExtResource("2_aww6k")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.952709, 0.303883, 0, -0.303883, 0.952709, 0, 4.63104, 6.21465)

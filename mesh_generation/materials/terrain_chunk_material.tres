@@ -50,6 +50,7 @@ uniform vec3 uv2_scale;
 uniform vec3 uv2_offset;
 
 varying vec3 vertex_pos;
+varying vec3 vertex_normal;
 
 vec4 color_from_normal(vec3 normal)
 {
@@ -79,6 +80,7 @@ vec4 triplanar_texture_b(sampler2D p_sampler, vec3 p_weights, vec3 p_triplanar_p
 
 void vertex() {
 	vec3 normal = MODEL_NORMAL_MATRIX * NORMAL;
+	vertex_normal = normal;
 	COLOR = color_from_normal(NORMAL);
 	
 	TANGENT = vec3(0.0, 0.0, -1.0) * abs(normal.x);
@@ -116,7 +118,9 @@ vec3 get_flat_normal(vec3 position)
 {
 	vec3 dpdx = dFdx(position);
 	vec3 dpdy = dFdy(position);
-	return normalize(cross(dpdx, dpdy)) * -1.;
+	vec3 world_normal = normalize(cross(dpdx, dpdy)) * -1.;
+	return world_normal;
+	
 }
 
 void fragment() {
@@ -127,10 +131,14 @@ void fragment() {
 	vec4 large_cell_tex = triplanar_texture_b(large_cell_noise, uv1_power_normal, uv1_triplanar_pos);
 	ALBEDO = mix(ALBEDO, large_cell_color.rgb, large_cell_tex.r);
 	
+	
+	
 	// using flat normals for debug
-	NORMAL = get_flat_normal(vertex_pos);
+	NORMAL = (VIEW_MATRIX * vec4(get_flat_normal(vertex_pos), 0.0)).xyz;
+	float grass_lvl = smoothstep(0, 0.3, vertex_normal.y);
+	
 	// apply grass texture
-	float grass_lvl = smoothstep(0, 0.5, NORMAL.y);
+	//float grass_lvl = smoothstep(0, 0.5, NORMAL.y);
 	ALBEDO = mix(ALBEDO, grass_color.rgb, grass_lvl);
 	
 	
@@ -179,10 +187,10 @@ shader = SubResource("Shader_3hu5b")
 shader_parameter/large_cell_noise = SubResource("NoiseTexture2D_rylqs")
 shader_parameter/large_cell_color = Color(0.4454, 0.343349, 0.0760418, 1)
 shader_parameter/wavey_distort_noise = SubResource("NoiseTexture2D_aargb")
-shader_parameter/wave_scale = 0.5
-shader_parameter/wave_height_ratio = 0.05
+shader_parameter/wave_scale = 0.885
+shader_parameter/wave_height_ratio = -0.125
 shader_parameter/wave_quantize_step = 0.5
-shader_parameter/side_wave_factor = 0.4
+shader_parameter/side_wave_factor = 0.11
 shader_parameter/allow_wave_subtract = false
 shader_parameter/grass_color = Color(7.46027e-07, 0.340827, 0.0871826, 1)
 shader_parameter/albedo = Color(0.5, 0.377, 0.09, 1)

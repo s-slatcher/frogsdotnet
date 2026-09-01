@@ -17,8 +17,8 @@ size = Vector2(100, 100)
 script = ExtResource("1_3hu5b")
 material = ExtResource("4_y6l8p")
 terrainScene = ExtResource("2_l6dgw")
-MaxTerrainHeight = 10.0
-TotalLandmasses = 4
+MaxTerrainHeight = 20.0
+TotalLandmasses = 5
 SubdivideLevels = 5
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]

@@ -5,7 +5,7 @@
       "name": "Launch",
       "type": "coreclr",
       "request": "launch",
-      "program": "${config:godot-dotnet-tools.executablePath}",
+      "program": "c:\\Users\\selki\\Downloads\\Godot_v4.4.1-stable_mono_win64\\Godot_v4.4.1-stable_mono_win64\\Godot_v4.4.1-stable_mono_win64.exe",
       "preLaunchTask": "build",
       "args": [
         "--path",
@@ -19,7 +19,7 @@
       "name": "Launch Editor",
       "type": "coreclr",
       "request": "launch",
-      "program": "${config:godot-dotnet-tools.executablePath}",
+      "program":  "c:\\Users\\selki\\Downloads\\Godot_v4.4.1-stable_mono_win64\\Godot_v4.4.1-stable_mono_win64\\Godot_v4.4.1-stable_mono_win64.exe",
       "preLaunchTask": "build",
       "args": [
         "--path",

@@ -8,11 +8,18 @@ using Vector2 = Godot.Vector2;
 using Microsoft.VisualBasic;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Linq.Expressions;
+using System.Collections.Immutable;
 
 public partial class PolygonMeshTool : GodotObject
 {
     HashSet<Face> faces = new();
-    Dictionary<Vector2, PolyVertex> vertexMap = new();
+
+    List<Face> initFrontFaces = new();
+    List<Face> initBackFaces = new();
+
+    List<HalfEdge> frontOutline = new();
+    List<HalfEdge> backOutline = new();
 
     public HalfEdge OriginalEdgeSample;
     
@@ -41,17 +48,53 @@ public partial class PolygonMeshTool : GodotObject
     {
         this.normPoly = normPoly; 
         
+        // generate two identical, but reverse wind order, faces
         var concavePolygon = normPoly.Polygon;
-        var convexPolys = Geometry2D.DecomposePolygonInConvex(concavePolygon);
+        initFrontFaces = GenerateFacesFromPoly(concavePolygon, true);
+        initBackFaces = GenerateFacesFromPoly(concavePolygon, false);
+
+        backOutline = SetOutsideEdge(initBackFaces[0].EdgeList[0]);
+        frontOutline = SetOutsideEdge(initFrontFaces[0].EdgeList[0]);
+
+        // foreach(var face in initBackFaces)
+        
+        List<Face> faces = [..initFrontFaces];
+        faces.AddRange(initBackFaces);
+        this.faces = [..faces];
+
+
+
+    }
+
+    private List<Face> GenerateFacesFromPoly(Vector2[] concavePoly, bool Clockwise)
+    {
+        var faces = new List<Face>();
+        var convexPolys = Geometry2D.DecomposePolygonInConvex(concavePoly);
 
         Dictionary<(PolyVertex, PolyVertex), HalfEdge> edgeMap = new();
-
+        Dictionary<Vector2, PolyVertex> vertexMap = new();
         
-
-        foreach (var poly in convexPolys)
+        PolyVertex GetPointVertex(Vector2 point)
         {
-            var face = new Face();
+            var roundVec = RoundVector2(point);
 
+            if (vertexMap.TryGetValue(roundVec, out PolyVertex vert)) return vert;
+            else
+            {
+                Vector3 pos = new(point.X, point.Y, 0);
+                
+                vert = new PolyVertex(){Position = pos};
+                vertexMap.Add(roundVec, vert);
+                return vert;
+            }
+        }
+
+        for (int p = 0; p < convexPolys.Count; p++)
+        {
+            var poly = convexPolys[p];
+            if (!Clockwise) poly = poly.Reverse().ToArray();
+            var face = new Face();
+            
             for (int i = 0; i < poly.Length; i++)
             {
                 var curP = poly[i];
@@ -59,7 +102,7 @@ public partial class PolygonMeshTool : GodotObject
 
                 PolyVertex curVert = GetPointVertex(curP);
                 PolyVertex nextVert = GetPointVertex(nextP);
-
+                
                 // generate edge, looking for twin edge matches
                 var hEdge = new HalfEdge(curVert, nextVert);
                 
@@ -74,30 +117,113 @@ public partial class PolygonMeshTool : GodotObject
             }
             faces.Add(face);
         } 
-        OriginalEdgeSample = edgeMap.Values.ToList()[0];
-        
-        // Set AABB after extrude but before subdivide (less vertices to count)
-        
-        
-        
-        
+        return faces;
+    }
 
+
+    // public void ExtrudeMesh(int length)
+    // {
+    //     if (hasExtruded)
+    //     {
+    //         GD.Print(this.GetType().Name, " mesh already extruded");
+    //         return;
+    //     }
+
+    //     // ExtrudeEdges(length);
+    //     SetAabb(length);
+    //     hasExtruded = true;
+    // }
+
+    public void Extrude(int depth)
+    {
+        // move backface verts
+        foreach (var face in initBackFaces)
+        {
+            foreach(var vert in face.GetVerts()) vert.Position.Z = -depth;
+        }
+
+        var reverseOutline = backOutline.ToList();
+        reverseOutline.Reverse();
+
+        foreach(var face in StitchEdges(frontOutline, reverseOutline))
+        {
+           faces.Add(face); 
+        }
+        
+        SetAabb(depth);
 
 
     }
 
-    public void ExtrudeMesh(int length)
+    public List<Face> StitchEdges(List<HalfEdge> edgesA, List<HalfEdge> edgesB)
     {
-        if (hasExtruded)
+        if (edgesA.Count != edgesB.Count)
         {
-            GD.Print(this.GetType().Name, " mesh already extruded");
+            GD.Print("StitchEdge: edge list counts not same");
+            return new();
+        }
+
+        var newFaces = new List<Face>();
+        var newEdges = new List<HalfEdge>();
+        // use a dictionary to match twins to more simply handle if faces loop around or not
+
+        for (int i = 0; i < edgesA.Count; i++)
+        {
+            var edgeA = edgesA[i];
+            var edgeB = edgesB[i];
+
+            // verify
+            if (i != edgesA.Count - 1)
+            {
+                if (edgeA.NextEdge != edgesA[i+1] || edgeB.PrevEdge != edgesB[i+1])
+                {
+                    GD.Print("StitchEdges: edge list(s) aren't ordered properly");
+                    return new();
+                } 
+            }
+
+            var startVert = edgeA.EndVert;
+            var endVert = edgeB.EndVert;
+            var intersect = new HalfEdge(startVert, endVert);
+            intersect.SetTwinEdge();
+            RerouteEdge(edgeA, intersect);
+            RerouteEdge(edgeB, intersect);
+            newEdges.Add(intersect);
+
+        }
+        foreach (var hEdge in newEdges) newFaces.Add(GenerateFace(hEdge));
+
+        return newFaces;
+        
+    }
+
+    public void RerouteEdge(HalfEdge edge, HalfEdge intersectingEdge)
+    {
+        if (intersectingEdge.TwinEdge == null)
+        {
+            GD.Print("RerouteEdge: intersect has no twin edge");
+            return;
+        }
+        
+        if (intersectingEdge.StartVert != edge.EndVert) intersectingEdge = intersectingEdge.TwinEdge;
+        if (intersectingEdge.StartVert != edge.EndVert)
+        {
+            GD.Print("RerouteEdge: secon edge not intersection at edges end");
             return;
         }
 
-        ExtrudeEdges(length);
-        SetAabb(length);
-        hasExtruded = true;
+        intersectingEdge.TwinEdge.SetNextEdge(edge.NextEdge);
+
+        edge.SetNextEdge(intersectingEdge);
+
+
     }
+
+
+    
+
+
+
 
     private void SetAabb(float extrudeLength)
     {
@@ -113,7 +239,6 @@ public partial class PolygonMeshTool : GodotObject
         {
             List<Face> newFaces = new();
             foreach (var face in faces) newFaces.AddRange(Subdivide(face));
-            // GD.Print("subdivided from ", faces.Count, " to ", newFaces.Count);
             faces = [.. newFaces]; 
         }
         
@@ -147,7 +272,6 @@ public partial class PolygonMeshTool : GodotObject
 
         private Face GenerateFace(HalfEdge EdgeOnFace)
     {
-            if (EdgeOnFace == null) GD.Print("null face passed to generate");
             var face = new Face();
             var curEdge = EdgeOnFace;
             do
@@ -223,6 +347,37 @@ public partial class PolygonMeshTool : GodotObject
 
 
         return newFaces;        
+    }
+
+    public void BevelEdge(HalfEdge edge, float bevelDist, int faceCount)
+    {
+        // for now, ignore the back edges with no extra face to bevel with
+        var twinEdge = edge.TwinEdge;
+
+
+        // collect relevant faces, edges.
+        // for now, assume the edge passed is the one pointing up
+        var edgeOut = edge.NextEdge;
+        var edgeIn = edge.PrevEdge;
+        var twinOut = twinEdge.NextEdge;
+        var twinIn = twinEdge.PrevEdge;
+
+        GD.Print(edgeOut.TwinEdge, "edge out twin");
+        GD.Print(edgeIn.TwinEdge, "edge in twin");
+        // debug prints
+
+        // var topFace = edgeOut.TwinEdge.Face;
+        // var botFace = edgeIn.TwinEdge.Face;
+        // if (topFace == null || botFace == null) GD.Print("null top or bottom face");
+
+        
+        // if (twinIn.TwinEdge.Face != topFace || twinOut.TwinEdge.Face != botFace)
+        // {
+        //     GD.Print("opposite incident edge faces don't match");
+        //     return;
+        // }
+
+
     }
     
 
@@ -362,22 +517,6 @@ public partial class PolygonMeshTool : GodotObject
     }
 
 
-    private PolyVertex GetPointVertex(Vector2 point)
-    {
-        var roundVec = RoundVector2(point);
-
-        if (vertexMap.TryGetValue(roundVec, out PolyVertex vert)) return vert;
-        else
-        {
-            Vector3 pos = new(point.X, point.Y, 0);
-            vert = new PolyVertex(){Position = pos};
-            vertexMap.Add(roundVec, vert);
-            return vert;
-        }
-        
-    }
-
-
     /// <summary>
     /// new mesh-making method, ASSUMES ALL FACES ARE QUADS (i.e., subdivide-all run at least once)
     /// </summary>
@@ -473,54 +612,56 @@ public partial class PolygonMeshTool : GodotObject
     }
 
   
+    // private void ExtrudeEdges(float extrudeLength)
+    // {
+    //     if (OriginalEdgeSample == null) return;
+    //     var frontEdgeList = ReconstructOriginalEdge();
+        
+    //     var back
 
-    private void ExtrudeEdges(float extrudeLength)
-    {
-        if (OriginalEdgeSample == null) return;
-        var originalEdges = ReconstructOriginalEdge();
 
-        Vector3 ExtrudeVec = new Vector3(0,0,-extrudeLength);
-        // loop and extrude each edge into new face
-        for (int i = 0; i < originalEdges.Count; i++)
-        {
+    //     Vector3 ExtrudeVec = new Vector3(0,0,-extrudeLength);
+    //     // loop and extrude each edge into new face
+    //     for (int i = 0; i < originalEdges.Count; i++)
+    //     {
             
-            // generate next faces edge as twin of original
-            var originalEdge = originalEdges[i];
-            var edge_0 = originalEdge.SetTwinEdge();
+    //         // generate next faces edge as twin of original
+    //         var originalEdge = originalEdges[i];
+    //         var edge_0 = originalEdge.SetTwinEdge();
 
-            // generate next 3 edges completing face
-            var vert_0 = edge_0.EndVert;
-            var vert_1 = GetExtrudedVertex(vert_0, ExtrudeVec);
-            var vert_2 = GetExtrudedVertex(edge_0.StartVert, ExtrudeVec);
-            var vert_3 = edge_0.StartVert;
+    //         // generate next 3 edges completing face
+    //         var vert_0 = edge_0.EndVert;
+    //         var vert_1 = GetExtrudedVertex(vert_0, ExtrudeVec); 
+    //         var vert_2 = GetExtrudedVertex(edge_0.StartVert, ExtrudeVec);
+    //         var vert_3 = edge_0.StartVert;
 
-            var edge_1 = ContinueEdgeToVertex(edge_0, vert_1);
-            var edge_2 = ContinueEdgeToVertex(edge_1, vert_2);
-            var edge_3 = ContinueEdgeToVertex(edge_2, vert_3);
-            edge_3.NextEdge = edge_0;
-            edge_0.PrevEdge = edge_3;
+    //         var edge_1 = ContinueEdgeToVertex(edge_0, vert_1);
+    //         var edge_2 = ContinueEdgeToVertex(edge_1, vert_2);
+    //         var edge_3 = ContinueEdgeToVertex(edge_2, vert_3);
+    //         edge_3.NextEdge = edge_0;
+    //         edge_0.PrevEdge = edge_3;
 
-            if (i != 0)
-            {
-                var edge_1_twin = originalEdges[i-1].TwinEdge.PrevEdge;
-                edge_1.TwinEdge = edge_1_twin;
-                edge_1_twin.TwinEdge = edge_1;
-            }
-
-            
-            var face = new Face();
+    //         if (i != 0)
+    //         {
+    //             var edge_1_twin = originalEdges[i-1].TwinEdge.PrevEdge;
+    //             edge_1.TwinEdge = edge_1_twin;
+    //             edge_1_twin.TwinEdge = edge_1;
+    //         }
 
             
-            face.AddEdge(edge_0); 
-            face.AddEdge(edge_1); 
-            face.AddEdge(edge_2); 
-            face.AddEdge(edge_3);
-            faces.Add(face);
+    //         var face = new Face();
+
             
-        }
+    //         face.AddEdge(edge_0); 
+    //         face.AddEdge(edge_1); 
+    //         face.AddEdge(edge_2); 
+    //         face.AddEdge(edge_3);
+    //         faces.Add(face);
+            
+    //     }
 
     
-    }
+    // }
 
     private HalfEdge ContinueEdgeToVertex(HalfEdge edge, PolyVertex newVert)
     {
@@ -535,10 +676,10 @@ public partial class PolygonMeshTool : GodotObject
     }
 
 
-    private List<HalfEdge> ReconstructOriginalEdge()
+    private List<HalfEdge> SetOutsideEdge(HalfEdge initEdge)
     {
         var outerEdgeList = new List<HalfEdge>();
-        var cur = OriginalEdgeSample;
+        var cur = initEdge;
         do
         {
             if (cur.TwinEdge != null)
@@ -546,22 +687,24 @@ public partial class PolygonMeshTool : GodotObject
                 cur = cur.TwinEdge.NextEdge;
                 continue;
             }
-
-            if (cur.childEdge1 != null)
-            {
-                cur = cur.childEdge1;
-                continue;
-            }
             
             outerEdgeList.Add(cur);
             cur = cur.NextEdge;
-            
                 
         } while (outerEdgeList.Count == 0 || outerEdgeList[0] != cur);
 
-        return outerEdgeList;
+        var tempFace = new Face(); 
+        for (int i = outerEdgeList.Count-1; i >= 0; i--)
+        {
+            var twin = outerEdgeList[i].SetTwinEdge();
+            tempFace.AddEdge(twin); // 'AddFace' validates and sets edge connections
+        }
+
+        return tempFace.EdgeList.ToList();
+
        
     }
+
 
 
 

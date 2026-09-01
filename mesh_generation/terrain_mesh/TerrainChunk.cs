@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 [Tool]
@@ -36,7 +37,7 @@ public partial class TerrainChunk : Node3D
         meshTool.SetPolygon(normPoly);
 
         if (DoStretchMesh) SetMeshDepth();
-
+        // BevelEdges();
         meshTool.SubdivideAll(SubdivideLevels);
         var mesh = meshTool.GetMesh();
         meshInst.Mesh = mesh;
@@ -50,6 +51,33 @@ public partial class TerrainChunk : Node3D
         return (1-rat) * (maxD - minD) + minD;
 
     }
+
+    public void BevelEdges()
+    {
+        // find max bevel dist (min extrude depth / 2)
+        float bevelDist = 0.5f;
+        int bevelFaces = 3;
+
+        // get set of viable edges for beveling
+        HashSet<HalfEdge> bevelEdges = new();
+        foreach (var face in meshTool.GetFaces())
+        {   
+            foreach (var hEdge in face.EdgeList)
+            {
+                var edgeVec = (hEdge.EndVert.Position - hEdge.StartVert.Position).Normalized();
+                if (edgeVec.Y > 0.5 && hEdge.TwinEdge != null)
+                {
+                    bevelEdges.Add(hEdge);
+                }
+
+            }
+        }
+
+        GD.Print(bevelEdges.Count," edges found to bevel");
+        foreach(var hEdge in bevelEdges) meshTool.BevelEdge(hEdge, bevelDist, bevelFaces);
+    }
+
+    
     public void SetShaderParameters()
     {
         
@@ -57,7 +85,7 @@ public partial class TerrainChunk : Node3D
 
     public void SetMeshDepth()
     {
-        meshTool.ExtrudeMesh(1);
+        meshTool.Extrude(1);
 
         var aabb = meshTool.GetAabb();
         var cen = aabb.GetCenter();

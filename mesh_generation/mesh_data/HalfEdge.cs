@@ -30,6 +30,12 @@ public partial class HalfEdge : GodotObject
         return TwinEdge;    
     }
 
+    public void Print(bool expanded = false)
+    {
+        GD.PrintS("Half-Edge: from",StartVert.Position, "to",EndVert.Position);
+        if (expanded) GD.Print("  ---> hasTwin: ", TwinEdge != null); 
+    }
+
     public bool HasChildren() => childEdge1 != null;
     public bool HasTwin() => TwinEdge != null;
     
