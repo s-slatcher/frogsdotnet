@@ -1,6 +1,7 @@
 [gd_resource type="FastNoiseLite" format=3 uid="uid://01hee4ls40t"]
 
 [resource]
-frequency = 0.0137
+frequency = 0.0246
+offset = Vector3(0, 0, 20)
 fractal_type = 0
 metadata/_preview_in_3d_space_ = true

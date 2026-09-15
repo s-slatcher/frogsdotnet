@@ -12,6 +12,7 @@ public partial class NewTerrainTesting : Node3D
     [Export] public float MaxTerrainHeight = 30;
     [Export] public int TotalLandmasses = 1;
     [Export] public int SubdivideLevels = 3; 
+    [Export] public float RoundingDiameter = 0.5f;
 
      [ExportToolButton("Generate Terrain")]
      public Callable GenerateTerrainButton => Callable.From(OnGenerateTerrain);
@@ -20,7 +21,7 @@ public partial class NewTerrainTesting : Node3D
 
     public override void _Ready()
     {
-        OnGenerateTerrain();  
+        // OnGenerateTerrain();  
     }
 
     public void OnGenerateTerrain()
@@ -68,9 +69,12 @@ public partial class NewTerrainTesting : Node3D
         terrainChunk.MaxHeight = MaxTerrainHeight;
         terrainChunk.SubdivideLevels = SubdivideLevels;
         terrainChunk.depthAtBase = GD.RandRange(3,4);
+        terrainChunk.BevelDistance = RoundingDiameter;
         AddChild(terrainChunk);
 
-        terrainChunk.SetPolygon(norm);
+        // terrainChunk.SetPolygon(norm);
+        terrainChunk.SetPolygon_TEST(norm);
+        
         terrainChunk.Position = new Vector3(norm.Position.X, norm.Position.Y, 0);
 
     }

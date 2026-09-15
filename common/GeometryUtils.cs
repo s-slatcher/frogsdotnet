@@ -98,6 +98,19 @@ public partial class GeometryUtils : GodotObject
         }
     }
 
+    
+    
+
+  
+
+    public static float GetCornerAngle(Vector2 a, Vector2 b, Vector2 c)
+    {
+        var dirA = a-b;
+        var dirB = c-b;
+        return dirA.AngleTo(dirB);
+
+    }
+
     public Rect2 RectFromPolygon(Vector2[] polygon)  // WHAT IS THIS EXACTLY?
     {
         Rect2 rect = new();
@@ -119,8 +132,9 @@ public partial class GeometryUtils : GodotObject
         return rect;
     }
 
-    public Line2D Line2DFromPolygon(Vector2[] polygon, float width = 2, Godot.Color color = new Godot.Color())
+    public static Line2D Line2DFromPolygon(Vector2[] polygon, float width = 2, Godot.Color color = new Godot.Color())
     {
+        if (color.IsEqualApprox(new Godot.Color())) color = Godot.Colors.White ;
         var line = new Line2D(){Width = width, SelfModulate = color};
         foreach(Vector2 p in polygon) line.AddPoint(p);
         return line;
@@ -341,11 +355,8 @@ public partial class GeometryUtils : GodotObject
             var p1 = polygon[start];
             var p2 = polygon[end];
 
-
-
             float maxDistSquare = 0;
             int maxDistIndex = -1;
-
            
             for (int i = start + 1; i < end; i++)
             {
@@ -544,6 +555,62 @@ public partial class GeometryUtils : GodotObject
     // Curve2D transformations and conversion from polygon
     //-----------------------------------------------------------------
 
+    public static Vector2[] RoundPolygon(Vector2[] poly, float targetCurveDist, float angleThreshold)
+    {
+        List<Vector2> newPoly = new();
+        foreach(LinkedPoint p in GetPolygonIterator(poly))
+        {
+            var cornerAng = GetCornerAngle(p.prev, p.current, p.next);
+            var minHalfDist = float.Min( p.prev.DistanceTo(p.current) , p.current.DistanceTo(p.next) ) / 2f;
+
+            var curveDist = float.Min(targetCurveDist, minHalfDist);
+
+            if (cornerAng > angleThreshold)
+            {
+                newPoly.Add(p.current);
+            }
+            else
+            {
+                newPoly.AddRange(RoundCorner(p.prev, p.current, p.next, curveDist));
+            }
+
+        }
+        return newPoly.ToArray();
+        
+    }
+
+    public static List<Vector2> RoundCorner(Vector2 a, Vector2 b, Vector2 c, float dist)
+    {
+        var distIn = a.DistanceTo(b);
+        var distOut = b.DistanceTo(c);
+
+        if (dist > distIn || dist > distOut)
+        {
+            GD.Print("RoundCorner: rounding distance longer than one of edges");
+            return [a,b,c];
+        }
+        var newCorner = new List<Vector2>();
+        
+         // short intersecting edges with two new points
+        var dirAB = (b-a)/distIn;
+        var dirCB = (b-c)/distOut;
+        var cornerA = dirAB * (distIn - dist) + a;
+        var cornerB = dirCB * (distOut - dist) + c;
+
+        var handleLenFactor = 0.75f;
+        var handleLen = dist * handleLenFactor;
+
+        var handleAB = dirAB * handleLen;
+        var handleCB = dirCB * handleLen;
+
+        var curve = new Curve2D();
+        curve.AddPoint(cornerA, null, handleAB);
+        curve.AddPoint(cornerB, handleCB, null);
+
+        var curvePoly = curve.Tessellate(4, 16).ToList();
+
+        return curvePoly;
+    }
     public Curve2D PointsToCurve(Vector2[] points, float smoothingFactor = 0, bool curveIsClosed = true)
     {
 
@@ -579,8 +646,7 @@ public partial class GeometryUtils : GodotObject
             // float angle = 0;
             // if (nextIsShorter) angle = handleDir.AngleTo(vecNext);
             // else angle = (handleDir).AngleTo(vecLast);
-            var shortLength = Math.Min(vecNext.Length(), vecLast.Length());
-            
+            // var shortLength = Math.Min(vecNext.Length(), vecLast.Length());
             
 
             // var handleNextLength = shortLength * 0.5 / Math.Cos(angle) * smoothingFactor ;

@@ -2,6 +2,8 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 [Tool]
 public partial class TerrainChunk : Node3D
@@ -10,6 +12,7 @@ public partial class TerrainChunk : Node3D
     NormalPoly normPoly;
     [Export] ShaderMaterial material;
     [Export] MeshInstance3D meshInst;
+    
 
     // rules for defining stretch
     // init width and change over height defined by polygon coming in 
@@ -19,7 +22,8 @@ public partial class TerrainChunk : Node3D
     public int SubdivideLevels = 1;
     public float depthAtMaxHeight = 1;
     public float depthAtBase = 3;
-   
+    
+    public float BevelDistance = 0.5f;
 
     public int terrainDepth = 5;
     
@@ -37,11 +41,98 @@ public partial class TerrainChunk : Node3D
         meshTool.SetPolygon(normPoly);
 
         if (DoStretchMesh) SetMeshDepth();
-        // BevelEdges();
+        BevelEdges();
         meshTool.SubdivideAll(SubdivideLevels);
         var mesh = meshTool.GetMesh();
         meshInst.Mesh = mesh;
         meshInst.MaterialOverride = material;
+    }
+
+    public void SetPolygon_TEST(NormalPoly poly)
+    {
+        var floorFace = new Face();
+
+        var width = poly.Rect.Size.X;
+        var depth = 5;
+        var height = poly.Rect.Size.Y;  
+
+        var points2d = new List<Vector2>()
+        {
+            new(0,0),
+            new(width,0),
+            new(width,depth),
+            new(0,depth)
+        };
+
+        var rounded = GeometryUtils.RoundPolygon(points2d.ToArray(), 1, 3);
+        var points3d_bottom = rounded.Select(p => new Vector3(p.X, 0, p.Y));
+        var points3d_top = rounded.Select(p => new Vector3(p.X, height, p.Y));
+
+        var botFaces = FacesFromPointList(points3d_bottom.ToList());
+        var topFaces = FacesFromPointList(points3d_top.ToList());
+
+        // first face in both lists should point upwards
+        // GD.Print(PolygonMeshTool.GetNormal(topFaces[0].EdgeList[0]));
+        // GD.Print(PolygonMeshTool.GetNormal(topFaces[1].EdgeList[0]));
+        
+        // combine edges from the tops-downward face, and the bottoms upward face
+        var topEdges = topFaces[0].EdgeList.ToList();
+        var botEdges = botFaces[1].EdgeList.ToList();
+       
+        // reverse and shift edge lists to connect faces starts-to-ends
+        var firstTop = topEdges[0];
+        topEdges.RemoveAt(0);
+        topEdges.Add(firstTop);
+        
+
+        botEdges.Reverse();
+
+
+
+        
+        for (int i = 0; i < botEdges.Count; i++)
+        {
+            var botEdge = botEdges[i];
+
+            var topEdge = topEdges[i];
+
+            // GD.Print(botEdge.Face, topEdge.Face);
+            
+            meshTool.ConnectEdges(botEdge, topEdge, false);
+            
+        }
+
+        // meshTool.unfacedEdges.AddRange(topEdges);
+        meshTool.ResolveFaces();
+        
+
+        // should produce two faces -- the front and back of the mesh
+        meshTool.SubdivideAll(SubdivideLevels);
+        var mesh = meshTool.GetMesh();
+        meshInst.Mesh = mesh;
+        meshInst.MaterialOverride = material;
+
+     
+    }
+
+    List<Face> FacesFromPointList(List<Vector3> points)
+    {
+
+        var initEdge = meshTool.GetStandaloneEdge(points[0], points[1]);
+        var lastEdge = initEdge;
+        
+        for (int i = 2; i < points.Count; i++)
+        {
+            var nextP = points[i];
+            lastEdge = meshTool.CreateNextEdge(lastEdge, nextP);
+        }
+
+        meshTool.ConnectEdges(lastEdge, initEdge);
+
+        Debug.Assert(lastEdge.NextEdge == initEdge.PrevEdge);
+        Debug.Assert(initEdge.TwinEdge.NextEdge == lastEdge.TwinEdge.PrevEdge);
+        
+        return [initEdge.Face, initEdge.TwinEdge.Face];
     }
 
 
@@ -55,7 +146,7 @@ public partial class TerrainChunk : Node3D
     public void BevelEdges()
     {
         // find max bevel dist (min extrude depth / 2)
-        float bevelDist = 0.5f;
+        float bevelDist = BevelDistance;
         int bevelFaces = 3;
 
         // get set of viable edges for beveling
@@ -65,7 +156,7 @@ public partial class TerrainChunk : Node3D
             foreach (var hEdge in face.EdgeList)
             {
                 var edgeVec = (hEdge.EndVert.Position - hEdge.StartVert.Position).Normalized();
-                if (edgeVec.Y > 0.5 && hEdge.TwinEdge != null)
+                if (edgeVec.Y > 0.5 && hEdge.HasTwin())
                 {
                     bevelEdges.Add(hEdge);
                 }
@@ -74,7 +165,8 @@ public partial class TerrainChunk : Node3D
         }
 
         GD.Print(bevelEdges.Count," edges found to bevel");
-        foreach(var hEdge in bevelEdges) meshTool.BevelEdge(hEdge, bevelDist, bevelFaces);
+        meshTool.BevelEdge_new(bevelEdges.ToList()[0], bevelDist, bevelFaces);
+        // foreach(var hEdge in bevelEdges) meshTool.BevelEdge_new(hEdge, bevelDist, bevelFaces);
     }
 
     
@@ -85,7 +177,9 @@ public partial class TerrainChunk : Node3D
 
     public void SetMeshDepth()
     {
-        meshTool.Extrude(1);
+        meshTool.Extrude(3);
+
+        return; 
 
         var aabb = meshTool.GetAabb();
         var cen = aabb.GetCenter();

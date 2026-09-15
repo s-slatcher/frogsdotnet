@@ -14,23 +14,35 @@ public partial class NoiseTest3d : Node3D
     public override void _Ready()
     {
 
-        
+        var numOfRings = 3;
+        var heightBetween = 10;
+        for (int i = 0; i < numOfRings; i++)
+        {
+            CreateRing(heightBetween * i);
+        }
+    }
+
+    
+    void CreateRing(float noiseHeight)
+    {
         var anglerPerSample = 2*float.Pi / totalSamples;
         List<Vector3> pointList = new();
         
+        var time = Time.GetTicksMsec();
         for (int i = 0; i < totalSamples; i++)
         {
             var ang = i * anglerPerSample;
             var pos = (circleRad*Vector2.Right).Rotated(ang);
-            var offset = offsetHeight * fastNoise.GetNoise3D(pos.X, 0, pos.Y);
+            var offset = offsetHeight * fastNoise.GetNoise3D(pos.X, noiseHeight, pos.Y);
 
             // map 2d circle to xz, with height from noise
-            var pos3d = new Vector3(pos.X, offset, pos.Y); 
+            var pos3d = new Vector3(pos.X, offset + noiseHeight, pos.Y); 
+            
             pointList.Add(pos3d);
         }
+        GD.Print("time for 500 3d samples: ", Time.GetTicksMsec() - time);
 
         foreach(var point in pointList) AddPointToScene(point);
-
     }
 
     void AddPointToScene(Vector3 point)

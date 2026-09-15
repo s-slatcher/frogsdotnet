@@ -6,6 +6,11 @@ code = "// NOTE: Shader automatically converted from Goddot Engine 4.4.1.stable.
 shader_type spatial;
 render_mode depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
 
+group_uniforms debug;
+uniform bool UseFragNormals = false;
+uniform bool ColorWithNormals = false;
+group_uniforms;
+
 group_uniforms large_cell_noise;
 uniform sampler2D large_cell_noise;
 uniform vec4 large_cell_color : source_color;
@@ -21,7 +26,10 @@ uniform bool allow_wave_subtract = true;
 group_uniforms;
 
 group_uniforms grass;
+uniform bool grass_enabled = true;
 uniform vec4 grass_color: source_color;
+uniform float grass_start_y : hint_range(0.0, 0.5, 0.1) = 0.1; 
+uniform float grass_full_y_min : hint_range(0.5, 1.0, 0.1) = 0.5;
 group_uniforms;
 
 
@@ -55,7 +63,7 @@ varying vec3 vertex_normal;
 vec4 color_from_normal(vec3 normal)
 {
 	return vec4 ( ( normal + vec3(1.)) / 2., 1);
-	
+
 }
 
 vec3 quantize_pos(vec3 pos, float quantize_step)
@@ -82,7 +90,7 @@ void vertex() {
 	vec3 normal = MODEL_NORMAL_MATRIX * NORMAL;
 	vertex_normal = normal;
 	COLOR = color_from_normal(NORMAL);
-	
+
 	TANGENT = vec3(0.0, 0.0, -1.0) * abs(normal.x);
 	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.y);
 	TANGENT += vec3(1.0, 0.0, 0.0) * abs(normal.z);
@@ -98,19 +106,19 @@ void vertex() {
 	uv1_triplanar_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz * uv1_scale + uv1_offset;
 	uv1_power_normal /= dot(uv1_power_normal, vec3(1.0));
 	uv1_triplanar_pos *= vec3(1.0, -1.0, 1.0);
-	
+
 	if ( abs(NORMAL.y) < 0.9)
 	{
 		vec3 stretch_pos = uv1_triplanar_pos;
 		stretch_pos.y *= wave_height_ratio;
-		
+
 		float squished_wave_scale = wave_scale - (wave_scale * side_wave_factor * abs(1. - NORMAL.z) );
 		float wave_tex = triplanar_texture_b(wavey_distort_noise, uv1_power_normal, stretch_pos).r;
 		if (allow_wave_subtract) wave_tex = (wave_tex - 0.5) * 2.;
 		vec3 y_flat_normal = NORMAL * vec3(1,0,1);
 		VERTEX += y_flat_normal * wave_tex * squished_wave_scale;
 	}
-	
+
 	vertex_pos = VERTEX;
 }
 
@@ -120,29 +128,35 @@ vec3 get_flat_normal(vec3 position)
 	vec3 dpdy = dFdy(position);
 	vec3 world_normal = normalize(cross(dpdx, dpdy)) * -1.;
 	return world_normal;
-	
+
 }
 
 void fragment() {
 	vec4 albedo_tex = triplanar_texture(texture_albedo, uv1_power_normal, uv1_triplanar_pos);
 	ALBEDO = albedo.rgb * albedo_tex.rgb;
-	
+
 	// apply largest layer of rocky cell texture
 	vec4 large_cell_tex = triplanar_texture_b(large_cell_noise, uv1_power_normal, uv1_triplanar_pos);
 	ALBEDO = mix(ALBEDO, large_cell_color.rgb, large_cell_tex.r);
-	
-	
-	
+
+
+
 	// using flat normals for debug
-	NORMAL = (VIEW_MATRIX * vec4(get_flat_normal(vertex_pos), 0.0)).xyz;
-	float grass_lvl = smoothstep(0, 0.3, vertex_normal.y);
+	if (UseFragNormals)
+	{
+		NORMAL = (VIEW_MATRIX * vec4(get_flat_normal(vertex_pos), 0.0)).xyz;
+	}
 	
-	// apply grass texture
-	//float grass_lvl = smoothstep(0, 0.5, NORMAL.y);
+	
+	float grass_lvl = smoothstep(grass_start_y, grass_full_y_min, vertex_normal.y);
+	if (!grass_enabled) grass_lvl = 0.;
 	ALBEDO = mix(ALBEDO, grass_color.rgb, grass_lvl);
-	
-	
-	
+
+	if (ColorWithNormals)
+	{
+		ALBEDO = color_from_normal(NORMAL).rgb;
+	}
+
 	float metallic_tex = dot(triplanar_texture(texture_metallic, uv1_power_normal, uv1_triplanar_pos), metallic_texture_channel);
 	METALLIC = metallic_tex * metallic;
 	SPECULAR = specular;
@@ -151,7 +165,7 @@ void fragment() {
 	float roughness_tex = dot(triplanar_texture(texture_roughness, uv1_power_normal, uv1_triplanar_pos), roughness_texture_channel);
 	ROUGHNESS = roughness_tex * roughness;
 
-	
+
 }
 "
 
@@ -184,15 +198,20 @@ noise = SubResource("FastNoiseLite_rylqs")
 [resource]
 render_priority = 0
 shader = SubResource("Shader_3hu5b")
+shader_parameter/UseFragNormals = true
+shader_parameter/ColorWithNormals = false
 shader_parameter/large_cell_noise = SubResource("NoiseTexture2D_rylqs")
 shader_parameter/large_cell_color = Color(0.4454, 0.343349, 0.0760418, 1)
 shader_parameter/wavey_distort_noise = SubResource("NoiseTexture2D_aargb")
-shader_parameter/wave_scale = 0.885
-shader_parameter/wave_height_ratio = -0.125
+shader_parameter/wave_scale = 1.315
+shader_parameter/wave_height_ratio = 0.105
 shader_parameter/wave_quantize_step = 0.5
-shader_parameter/side_wave_factor = 0.11
+shader_parameter/side_wave_factor = 0.0
 shader_parameter/allow_wave_subtract = false
+shader_parameter/grass_enabled = true
 shader_parameter/grass_color = Color(7.46027e-07, 0.340827, 0.0871826, 1)
+shader_parameter/grass_start_y = 0.0
+shader_parameter/grass_full_y_min = 0.5
 shader_parameter/albedo = Color(0.5, 0.377, 0.09, 1)
 shader_parameter/albedo_texture_size = Vector2i(0, 0)
 shader_parameter/point_size = 0.0

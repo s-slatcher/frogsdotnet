@@ -1,7 +1,9 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
+using System.Security.Cryptography.X509Certificates;
 
 public partial class HalfEdge : GodotObject 
 {
@@ -30,11 +32,27 @@ public partial class HalfEdge : GodotObject
         return TwinEdge;    
     }
 
+    public void SetAsTwinEdge(HalfEdge edge)
+    {
+        Debug.Assert(StartVert == edge.EndVert && EndVert == edge.StartVert);
+
+        edge.TwinEdge = this;
+        TwinEdge = edge;
+
+    }
+
     public void Print(bool expanded = false)
     {
         GD.PrintS("Half-Edge: from",StartVert.Position, "to",EndVert.Position);
         if (expanded) GD.Print("  ---> hasTwin: ", TwinEdge != null); 
     }
+
+    public Vector3 GetDirection() => GetVector().Normalized();
+    public Vector3 GetVector() => EndVert.Position - StartVert.Position;
+    public float GetLen() => GetVector().Length();
+
+    public Vector3 GetCenter() => GetVector() / 2 + StartVert.Position;
+
 
     public bool HasChildren() => childEdge1 != null;
     public bool HasTwin() => TwinEdge != null;
