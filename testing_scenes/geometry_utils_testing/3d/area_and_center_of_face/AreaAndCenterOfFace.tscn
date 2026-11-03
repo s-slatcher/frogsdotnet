@@ -1,0 +1,15 @@
+[gd_scene load_steps=4 format=3 uid="uid://uob5623hms8s"]
+
+[ext_resource type="Script" uid="uid://bbyf5is6yfwda" path="res://testing_scenes/geometry_utils_testing/3d/area_and_center_of_face/AreaAndCenterOfFace.cs" id="1_s4npy"]
+[ext_resource type="PackedScene" uid="uid://dkvgp8fel4p1h" path="res://common/water/scenes/TestingEnviroment.tscn" id="2_g1thx"]
+[ext_resource type="Script" uid="uid://8vyuhyx0xogt" path="res://addons/freecam_3D/freecam.gd" id="3_c86hv"]
+
+[node name="AreaAndCenterOfFace" type="Node3D"]
+script = ExtResource("1_s4npy")
+
+[node name="TestingEnviroment" parent="." instance=ExtResource("2_g1thx")]
+
+[node name="Freecam3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.75167)
+script = ExtResource("3_c86hv")
+metadata/_custom_type_script = "uid://8vyuhyx0xogt"

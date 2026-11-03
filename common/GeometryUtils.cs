@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -97,9 +98,6 @@ public partial class GeometryUtils : GodotObject
 
         }
     }
-
-    
-    
 
   
 
@@ -740,5 +738,57 @@ public partial class GeometryUtils : GodotObject
         }
         return rotatedCurve;
     }
+
+    public static (float, Vector3) AreaAndCenterOf3DPolyFace(List<Vector3> points, Transform3D? ZFlattenTransform = null)
+    {
+       
+
+        var transform = ZFlattenTransform ?? GetFaceTransformToXY(points[0], points[1], points[2]);
+        
+
+        var points2 = points.Select( p =>
+            new Vector2(
+                (p - transform.Origin).Dot(transform.Basis.X),
+                (p - transform.Origin).Dot(transform.Basis.Y)   
+            )
+        ).ToList(); 
+
+        float area2 = 0;
+        Vector2 centroid = new(); 
+
+        for (int i = 0; i < points2.Count; i++)
+        {
+            Vector2 a = points2[i];
+            Vector2 b = points2[(i + 1) % points2.Count];
+
+            float cross = a.X * b.Y - b.X * a.Y;
+
+            area2 += cross;
+            centroid += (a + b) * cross;
+        }
+
+        float area = area2 * 0.5f;
+        centroid /= (3.0f * area2);
+        Vector3 center3D =
+            transform.Origin +
+            transform.Basis.X * centroid.X +
+            transform.Basis.Y * centroid.Y;
+
+        return (Math.Abs(area), center3D);
+
+    }
+
+    public static Transform3D GetFaceTransformToXY(Vector3 p0, Vector3 p1, Vector3 p2)
+    {
+        Vector3 xAxis = (p0 - p1).Normalized();
+        Vector3 normal = xAxis.Cross(p2 - p1).Normalized();
+        Vector3 yAxis = normal.Cross(xAxis).Normalized();
+        Vector3 origin = p1;
+        var transform = new Transform3D(xAxis, yAxis, normal, origin);
+        return transform;
+    }
+
+    
+    
 
 }

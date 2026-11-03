@@ -12,10 +12,12 @@ using System.Linq.Expressions;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.ComponentModel.DataAnnotations;
+using System.Runtime.InteropServices.Marshalling;
 
 public partial class PolygonMeshTool : GodotObject
 {
     HashSet<Face> faces = new();
+    Dictionary<Face, Basis> FaceBasisMap = new();
 
     List<Face> initFrontFaces = new();
     List<Face> initBackFaces = new();
@@ -32,10 +34,9 @@ public partial class PolygonMeshTool : GodotObject
     Aabb aabb;
 
     // new system for face validation
-    public List<HalfEdge> unfacedEdges = new();
+    public HashSet<HalfEdge> unfacedEdges = new();
+
     
-
-
     static Vector2 RoundVector2(Vector2 vec)
     {
         return new Vector2(float.Floor(vec.X * 1000), float.Floor(vec.Y * 1000)) / 1000;
@@ -52,6 +53,7 @@ public partial class PolygonMeshTool : GodotObject
             EndVert = new PolyVertex(posEnd)
         };
         newEdge.SetTwinEdge();
+
         return newEdge;
     }
 
@@ -85,6 +87,17 @@ public partial class PolygonMeshTool : GodotObject
 
         return connectEdge;
     } 
+
+    private void IndexFace(Face face)
+    {
+        faces.Add(face);
+        var verts = face.GetVertPositions();
+        var areaCenter = GeometryUtils.AreaAndCenterOf3DPolyFace(verts);
+
+
+
+    }
+    
     
     private void SetEdgeAsNext(HalfEdge prevEdge, HalfEdge nextEdge)
     {
@@ -102,30 +115,27 @@ public partial class PolygonMeshTool : GodotObject
         nextPrevOrTwin.SetNextEdge(prevNextOrTwin);
     }
 
-   
-    
-    public void RemoveEdge()
-    {
-        
-    }
-    
+
     public void RemoveFace(Face face)
     {
+        unfacedEdges.Add(face.EdgeList[0]);
         faces.Remove(face);
-        GD.Print("removed face");
         foreach (var edge in face.EdgeList) edge.Face = null;
-        GD.Print("face count: ", faces.Count);
+        
     }
 
     // todo: this must leave edges in the unresolved edge list if a valid face isnt found
     public void ResolveFaces()
     {
         var newUnfacedList = new List<HalfEdge>();
+
         HashSet<HalfEdge> seenEdges = new();
+        
+        var unfacedList = unfacedEdges.ToList();
         int newFaceCount = 0;
-        for (int i = 0; i < unfacedEdges.Count; i++)
+        for (int i = 0; i < unfacedList.Count; i++)
         {
-            var edge = unfacedEdges[i];
+            var edge = unfacedList[i];
 
             // follow the next-edge chain until a loop is formed
             // on dead end, or when hitting an edge with a face already seen, break;
@@ -134,8 +144,8 @@ public partial class PolygonMeshTool : GodotObject
             do
             {
                 if (!seenEdges.Add(curEdge)) break;
-                face.AddEdge(curEdge);
-                
+                face.AddEdgeToEnd(curEdge);
+                unfacedEdges.Remove(curEdge);
                 curEdge.Face = face;
                 curEdge = curEdge.NextEdge;
                 if (curEdge == null )
@@ -153,22 +163,17 @@ public partial class PolygonMeshTool : GodotObject
                 faces.Add(face);
                 newFaceCount++;
             }
-            else
-            {
-                newUnfacedList.Add(edge); 
-            }
+            
         }
-        GD.Print("new faces: ",newFaceCount,", unfaced edge count b4: ", unfacedEdges.Count, " after: ", newUnfacedList.Count);
         
-        unfacedEdges = newUnfacedList;
+        
 
     }
 
-    
+   
 
 
-
-
+//  DELETE EVENTUALLY, MOVED TO TERRAINPOLY
     public void SetPolygon (NormalPoly normPoly)
     {
         this.normPoly = normPoly; 
@@ -189,7 +194,7 @@ public partial class PolygonMeshTool : GodotObject
 
     }  
 
-    private List<Face> GenerateFacesFromPoly(Vector2[] concavePoly, bool Clockwise)
+    private static List<Face> GenerateFacesFromPoly(Vector2[] concavePoly, bool Clockwise)
     {
         var faces = new List<Face>();
         var convexPolys = Geometry2D.DecomposePolygonInConvex(concavePoly);
@@ -460,15 +465,20 @@ public partial class PolygonMeshTool : GodotObject
         var longEdge = edges[0];
         float perim = 0;
         Vector3 totalPos = new();
+        var posList = new List<Vector3>();
         foreach (var edge in edges)
         {
             var len = edge.GetLen();
             perim += len;
+            posList.Add(edge.StartVert.Position);
             totalPos += edge.StartVert.Position;
             longEdge = longEdge.GetLen() < len ? edge : longEdge; 
-        } 
+        }
+
+        var areaAndCenter = GeometryUtils.AreaAndCenterOf3DPolyFace(posList);
+        
         var avgLen = perim / edgeCount;
-        var centroid = totalPos / edgeCount;
+        var centroid = areaAndCenter.Item2;
         var targetLen = avgLen * 0.65f; 
         
         var subdivideEdges = new List<HalfEdge>(){longEdge};
@@ -872,8 +882,8 @@ public partial class PolygonMeshTool : GodotObject
             var faceVerts = face.GetVerts();
             if (faceVerts.Count > 4)
             {
-                GD.Print("Skipped face that wasnt quad");
-                continue;
+                // project roughly into 2d 
+
             }
             IndexTriangle(faceVerts[0], faceVerts[3], faceVerts[1]);
             IndexTriangle(faceVerts[1], faceVerts[3], faceVerts[2]);
@@ -900,6 +910,15 @@ public partial class PolygonMeshTool : GodotObject
         var arrMesh = new ArrayMesh();
         arrMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, meshArray);
         return arrMesh;
+    }
+
+    private List<List<PolyVertex>> TriangulateNonQuadFace(Face face)
+    {
+        var triList = new List<List<PolyVertex>>();
+
+
+
+        return triList;
     }
 
     private static float GetEdgesNextAngle(HalfEdge edge)
@@ -938,12 +957,12 @@ public partial class PolygonMeshTool : GodotObject
 
     }
 
-    private void AddVertex(PolyVertex vert, Vector3 normal, Godot.Color vertexColor, SurfaceTool st,  bool PerFaceNormal = true)
-    {
-        st.SetNormal(normal);
-        st.SetColor(vertexColor);
-        st.AddVertex(vert.Position);
-    }
+    // private void AddVertex(PolyVertex vert, Vector3 normal, Godot.Color vertexColor, SurfaceTool st,  bool PerFaceNormal = true)
+    // {
+    //     st.SetNormal(normal);
+    //     st.SetColor(vertexColor);
+    //     st.AddVertex(vert.Position);
+    // }
 
   
     // private void ExtrudeEdges(float extrudeLength)

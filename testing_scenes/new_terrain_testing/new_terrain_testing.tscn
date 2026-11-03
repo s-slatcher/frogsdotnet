@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://d31it1h10quqf"]
+[gd_scene load_steps=11 format=3 uid="uid://d31it1h10quqf"]
 
 [ext_resource type="Script" uid="uid://dumkxuqi1hpwh" path="res://testing_scenes/new_terrain_testing/NewTerrainTesting.cs" id="1_3hu5b"]
 [ext_resource type="Script" uid="uid://8vyuhyx0xogt" path="res://addons/freecam_3D/freecam.gd" id="1_k5wsf"]
@@ -14,13 +14,23 @@ roughness = 0.25
 [sub_resource type="PlaneMesh" id="PlaneMesh_5hw7h"]
 size = Vector2(100, 100)
 
+[sub_resource type="Curve" id="Curve_3j1n6"]
+_data = [Vector2(0.172222, 0.775281), 0.0, -3.12564, 0, 0, Vector2(0.372222, 0.303371), 0.0, 0.0, 0, 0, Vector2(0.672222, 0.707865), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="TubeTrailMesh" id="TubeTrailMesh_jc3tr"]
+sections = 10
+section_length = 1.0
+cap_top = false
+cap_bottom = false
+curve = SubResource("Curve_3j1n6")
+
 [node name="NewTerrainTesting" type="Node3D"]
 script = ExtResource("1_3hu5b")
 material = ExtResource("4_y6l8p")
 terrainScene = ExtResource("2_l6dgw")
 MaxTerrainHeight = 20.0
-TotalLandmasses = 4
-SubdivideLevels = 5
+SubdivideLevels = 0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.882947, 0.40029, -0.245298, 0, 0.522498, 0.85264, 0.469471, -0.752836, 0.461339, 0, 0, 0)
@@ -63,5 +73,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.21, -0.723, -0.001)
 transform = Transform3D(1, 0, 0, 0, 0.788011, -0.615662, 0, 0.615662, 0.788011, 2.55699, 6.49327, -0.182714)
 size = Vector3(2, 2.04736, 2.50244)
 texture_albedo = ExtResource("6_3j1n6")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.1287, 7.95013, 0)
+mesh = SubResource("TubeTrailMesh_jc3tr")
 
 [editable path="TestingEnviroment"]
