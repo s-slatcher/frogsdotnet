@@ -1,7 +1,6 @@
-using Godot;
+    using Godot;
 using System;
 using System.ComponentModel;
-[Tool]
 public partial class NewTerrainTesting : Node3D
 {
     
@@ -14,8 +13,11 @@ public partial class NewTerrainTesting : Node3D
     [Export] public int SubdivideLevels = 3; 
     [Export] public float RoundingDiameter = 0.5f;
 
-     [ExportToolButton("Generate Terrain")]
-     public Callable GenerateTerrainButton => Callable.From(OnGenerateTerrain);
+    [Export] public bool GenerateTerrainButton
+    {
+        get {return false;}
+        set {OnGenerateTerrain();}
+    }
 
     GeometryUtils gu = new();
 
@@ -51,31 +53,23 @@ public partial class NewTerrainTesting : Node3D
                 Position = currentPos, 
                 Size = new Vector2(GD.RandRange(5,5), (float)GD.RandRange(5, MaxTerrainHeight) ) 
             };
-            
-            GeneratePolyTerrainChunk(rect);
+            var poly = gu.PolygonFromRect(rect);
+            var norm = new NormalPoly(poly, 0);
+            GeneratePolyTerrainChunk(norm);
             // meshInst.MaterialOverride = material;
             currentPos += new Vector2(rect.Size.X *  (1- GD.Randf() /3), 0);
         }
         
     }
 
-    public void GeneratePolyTerrainChunk(Rect2 rect)
+    public void GeneratePolyTerrainChunk(NormalPoly norm)
     {
         
-        var poly = gu.PolygonFromRect(rect);
-        var norm = new NormalPoly(poly, 0);
         var terrainChunk = (TerrainChunk)terrainScene.Instantiate();
-        terrainChunk.DoStretchMesh = true;
-        terrainChunk.MaxHeight = MaxTerrainHeight;
-        terrainChunk.SubdivideLevels = SubdivideLevels;
-        terrainChunk.depthAtBase = GD.RandRange(3,4);
-        terrainChunk.BevelDistance = RoundingDiameter;
         AddChild(terrainChunk);
-
-        // terrainChunk.SetPolygon(norm);
-        terrainChunk.SetPolygon_TEST(norm);
-        
+        terrainChunk.SubdivideLevels = SubdivideLevels;
         terrainChunk.Position = new Vector3(norm.Position.X, norm.Position.Y, 0);
+        terrainChunk.SetPolygon(norm);
 
     }
 

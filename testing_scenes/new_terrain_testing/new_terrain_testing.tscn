@@ -1,11 +1,10 @@
-[gd_scene load_steps=11 format=3 uid="uid://d31it1h10quqf"]
+[gd_scene load_steps=10 format=3 uid="uid://d31it1h10quqf"]
 
 [ext_resource type="Script" uid="uid://dumkxuqi1hpwh" path="res://testing_scenes/new_terrain_testing/NewTerrainTesting.cs" id="1_3hu5b"]
 [ext_resource type="Script" uid="uid://8vyuhyx0xogt" path="res://addons/freecam_3D/freecam.gd" id="1_k5wsf"]
-[ext_resource type="PackedScene" uid="uid://d00n17wmdrrwl" path="res://mesh_generation/terrain_mesh/terrain_chunk.tscn" id="2_l6dgw"]
+[ext_resource type="PackedScene" uid="uid://d00n17wmdrrwl" path="res://mesh_generation/terrain_mesh/terrain_chunk.tscn" id="3_pvmqo"]
 [ext_resource type="Material" uid="uid://cbxwu4aghr558" path="res://mesh_generation/materials/terrain_chunk_material.tres" id="4_y6l8p"]
 [ext_resource type="PackedScene" uid="uid://dkvgp8fel4p1h" path="res://common/water/scenes/TestingEnviroment.tscn" id="5_pvmqo"]
-[ext_resource type="Texture2D" uid="uid://ch5r8fna4n5xl" path="res://icon.svg" id="6_3j1n6"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ijqjl"]
 albedo_color = Color(0.411076, 0.323227, 0.212898, 1)
@@ -28,9 +27,8 @@ curve = SubResource("Curve_3j1n6")
 [node name="NewTerrainTesting" type="Node3D"]
 script = ExtResource("1_3hu5b")
 material = ExtResource("4_y6l8p")
-terrainScene = ExtResource("2_l6dgw")
-MaxTerrainHeight = 20.0
-SubdivideLevels = 0
+terrainScene = ExtResource("3_pvmqo")
+GenerateTerrainButton = true
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.882947, 0.40029, -0.245298, 0, 0.522498, 0.85264, 0.469471, -0.752836, 0.461339, 0, 0, 0)
@@ -44,7 +42,7 @@ material_override = SubResource("StandardMaterial3D_ijqjl")
 mesh = SubResource("PlaneMesh_5hw7h")
 
 [node name="Freecam3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.7696, 5.55635, 19.2637)
+transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 35, 35)
 script = ExtResource("1_k5wsf")
 metadata/_custom_type_script = "uid://8vyuhyx0xogt"
 
@@ -69,13 +67,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 100.723)
 [node name="WaterPlane" parent="TestingEnviroment" index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.21, -0.723, -0.001)
 
-[node name="Decal" type="Decal" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.788011, -0.615662, 0, 0.615662, 0.788011, 2.55699, 6.49327, -0.182714)
-size = Vector3(2, 2.04736, 2.50244)
-texture_albedo = ExtResource("6_3j1n6")
-
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.1287, 7.95013, 0)
+visible = false
 mesh = SubResource("TubeTrailMesh_jc3tr")
 
 [editable path="TestingEnviroment"]

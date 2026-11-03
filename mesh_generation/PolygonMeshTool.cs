@@ -35,7 +35,7 @@ public partial class PolygonMeshTool : GodotObject
 
     // new system for face validation
     public HashSet<HalfEdge> unfacedEdges = new();
-
+    private List<HalfEdge> unresolvedEdgeList = new();
     
     static Vector2 RoundVector2(Vector2 vec)
     {
@@ -77,9 +77,11 @@ public partial class PolygonMeshTool : GodotObject
         SetEdgeAsNext(edgeA, connectEdge);
         SetEdgeAsNext(connectEdge, edgeB);
 
-        unfacedEdges.Add(connectEdge);
-        unfacedEdges.Add(connectEdge.TwinEdge);
-        
+
+        // unfacedEdges.Add(connectEdge);
+        // unfacedEdges.Add(connectEdge.TwinEdge);
+        unresolvedEdgeList.Add(connectEdge); 
+        unresolvedEdgeList.Add(connectEdge.TwinEdge); 
 
         // call the face generator after each connection
         if (forceFaceResolve) ResolveFaces();
@@ -87,21 +89,92 @@ public partial class PolygonMeshTool : GodotObject
 
         return connectEdge;
     } 
-
-    private void IndexFace(Face face)
+    /// <summary>
+    /// new mesh-making method, ASSUMES ALL FACES ARE QUADS (i.e., subdivide-all run at least once)
+    /// </summary>
+    /// <returns></returns>
+    public ArrayMesh GetMesh()
     {
-        faces.Add(face);
-        var verts = face.GetVertPositions();
-        var areaCenter = GeometryUtils.AreaAndCenterOf3DPolyFace(verts);
+        // 0 = vertex
+        // 1 = normal
+        // 3 = color
+        // 12 = index
+        var meshArray = new Godot.Collections.Array();
+        meshArray.Resize((int)Mesh.ArrayType.Max);
 
+        List<PolyVertex> verts = new();
+        Dictionary<PolyVertex, int> vertIndexMap = new();
+        Dictionary<PolyVertex, List<Vector3>> normalsMap = new();
 
+        List<Vector3> mesh_verts = new();
+        List<int> mesh_indices = new();
+        List<Vector3> mesh_norms = new();
 
+        // for each face:
+        // tries to index each vert in master list
+        // adds the face normal to that verts list of normals (to avergage in next loop)
+        // add triangulation to index list using values of vertIndexMap (ASSUMES EACH FACE IS QUAD)
+        
+        // helper func for indexing verts and their positions
+        int GetVertIndex(PolyVertex vert)
+        {
+            if (vertIndexMap.TryGetValue(vert, out int value) ) return value;
+            verts.Add(vert);
+            mesh_verts.Add(vert.Position);
+            normalsMap[vert] = new();
+            vertIndexMap[vert] = verts.Count - 1;
+            return verts.Count - 1;
+        }
+        // index triangle and calculate normal (quad can have 2 normals after triangulating)
+        void IndexTriangle(PolyVertex a, PolyVertex b, PolyVertex c)
+        {
+            int[] indices = [GetVertIndex(a), GetVertIndex(b), GetVertIndex(c)];
+            mesh_indices.AddRange(indices);
+            var norm = GetNormal([.. indices.Select(i => mesh_verts[i])]);
+            normalsMap[a].Add(norm);
+            normalsMap[b].Add(norm);
+            normalsMap[c].Add(norm);
+        }
+
+        
+
+        // loop each face indexing verts, triangles positions, and normals
+        //SKIP FACES WITH 5+ POINTS UNTIL ITS SET TO HANDLE
+        foreach (var face in faces)
+        {
+            
+            var faceVerts = face.GetVerts();
+            if (faceVerts.Count > 4)
+            {
+                // project roughly into 2d 
+
+            }
+            IndexTriangle(faceVerts[0], faceVerts[3], faceVerts[1]);
+            IndexTriangle(faceVerts[1], faceVerts[3], faceVerts[2]);
+        }
+
+        foreach (var vert in verts)
+        {
+            var normals = normalsMap[vert];
+            var normTotal = normals.Aggregate(Vector3.Zero, (sum, v) => sum + v);
+            mesh_norms.Add( normTotal / normals.Count );
+        }
+
+        // set mesh arrays 
+        meshArray[(int)Mesh.ArrayType.Vertex] = mesh_verts.ToArray();
+        meshArray[(int)Mesh.ArrayType.Normal] = mesh_norms.ToArray();
+        meshArray[(int)Mesh.ArrayType.Index] = mesh_indices.ToArray();
+
+        var arrMesh = new ArrayMesh();
+        arrMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, meshArray);
+        return arrMesh;
     }
-    
     
     private void SetEdgeAsNext(HalfEdge prevEdge, HalfEdge nextEdge)
     {
-        Debug.Assert(prevEdge.EndVert == nextEdge.StartVert, "tried to connect discontinous edges");
+        
+        Debug.Assert(prevEdge.EndVert == nextEdge.StartVert,
+        "tried to connect discontinuous edges");
 
         var prevNextOrTwin = prevEdge.NextEdge ?? prevEdge.TwinEdge;
         var nextPrevOrTwin = nextEdge.PrevEdge ?? nextEdge.TwinEdge;
@@ -118,24 +191,21 @@ public partial class PolygonMeshTool : GodotObject
 
     public void RemoveFace(Face face)
     {
-        unfacedEdges.Add(face.EdgeList[0]);
+        // unfacedEdges.Add(face.EdgeList[0]);
         faces.Remove(face);
         foreach (var edge in face.EdgeList) edge.Face = null;
         
     }
 
-    // todo: this must leave edges in the unresolved edge list if a valid face isnt found
     public void ResolveFaces()
     {
-        var newUnfacedList = new List<HalfEdge>();
-
         HashSet<HalfEdge> seenEdges = new();
+        HashSet<HalfEdge> resolvedEdges = new();
         
-        var unfacedList = unfacedEdges.ToList();
         int newFaceCount = 0;
-        for (int i = 0; i < unfacedList.Count; i++)
+        for (int i = 0; i < unresolvedEdgeList.Count; i++)
         {
-            var edge = unfacedList[i];
+            var edge = unresolvedEdgeList[i];
 
             // follow the next-edge chain until a loop is formed
             // on dead end, or when hitting an edge with a face already seen, break;
@@ -145,7 +215,7 @@ public partial class PolygonMeshTool : GodotObject
             {
                 if (!seenEdges.Add(curEdge)) break;
                 face.AddEdgeToEnd(curEdge);
-                unfacedEdges.Remove(curEdge);
+                resolvedEdges.Add(curEdge);
                 curEdge.Face = face;
                 curEdge = curEdge.NextEdge;
                 if (curEdge == null )
@@ -155,44 +225,16 @@ public partial class PolygonMeshTool : GodotObject
                 }
 
             } while (curEdge != edge);
-
             
-            // check if valid face was formed, otherwise put edge back into pool of unresolved edges
-            if (face.IsValid) 
-            {
-                faces.Add(face);
-                newFaceCount++;
-            }
+            if (face.IsValid) faces.Add(face);
             
         }
         
-        
+        unresolvedEdgeList = unresolvedEdgeList.Where(e => !resolvedEdges.Contains(e)).ToList(); 
 
     }
 
-   
 
-
-//  DELETE EVENTUALLY, MOVED TO TERRAINPOLY
-    public void SetPolygon (NormalPoly normPoly)
-    {
-        this.normPoly = normPoly; 
-        
-        // generate two identical, but reverse wind order, faces
-        var concavePolygon = normPoly.Polygon;
-        initFrontFaces = GenerateFacesFromPoly(concavePolygon, true);
-        initBackFaces = GenerateFacesFromPoly(concavePolygon, false);
-
-        backOutline = SetOutsideEdge(initBackFaces[0].EdgeList[0]);
-        frontOutline = SetOutsideEdge(initFrontFaces[0].EdgeList[0]);
-
-        // foreach(var face in initBackFaces)
-        
-        List<Face> faces = [..initFrontFaces];
-        faces.AddRange(initBackFaces);
-        this.faces = [..faces];
-
-    }  
 
     private static List<Face> GenerateFacesFromPoly(Vector2[] concavePoly, bool Clockwise)
     {
@@ -248,34 +290,7 @@ public partial class PolygonMeshTool : GodotObject
         return faces;
     }
 
-    public void Extrude(int depth)
-    {
-        // move backface verts
-        foreach (var face in initBackFaces)
-        {
-            foreach(var vert in face.GetVerts()) vert.Position.Z = -depth;
-        }
-
-        var e = backOutline[0];
-        var reverseOutline = backOutline.ToList();
-        reverseOutline.RemoveAt(0);
-        reverseOutline.Reverse();
-        reverseOutline.Insert(0, e);
-        
-        reverseOutline[0].Print();
-        frontOutline[0].Print();
-        reverseOutline[1].Print();
-        frontOutline[1].Print();
-
-        foreach(var face in StitchEdges(frontOutline, reverseOutline))
-        {
-           faces.Add(face); 
-        }
-        
-        SetAabb(depth);
-
-
-    }
+    
 
     public List<Face> StitchEdges(List<HalfEdge> edgesA, List<HalfEdge> edgesB)
     {
@@ -594,175 +609,7 @@ public partial class PolygonMeshTool : GodotObject
 
 
 
-    // takes two edges on same face, shortens and rounds the corner with new edges
-    // maintains initial, but breaks those edges other face connects
-    // twin edges remain disconnected, are stitched later to reform face edges  
-    List<HalfEdge> RoundCorner(HalfEdge edgeA, HalfEdge edgeB, float bevelDist, int faceCount)
-    {
-        Debug.Assert(edgeA.Face == edgeB.Face, "RoundCorner: edges not same face");
-        Debug.Assert(edgeA.NextEdge == edgeA, "Edgess in order");
-        Debug.Assert(edgeB.TwinEdge.NextEdge == edgeA.TwinEdge);
-        
 
-        var maxBevelDist = float.Min(edgeA.GetLen(), edgeB.GetLen()) * 0.49f;
-        if (bevelDist > maxBevelDist) bevelDist = maxBevelDist;
-
-        // find angle where edges A and B meet
-        // internal angle returned by AngleTo because face is convex
-        var ang = GetEdgesNextAngle(edgeA);
-        var arcRadius = float.Tan(ang/2) * bevelDist;
-        var arcAngleTotal = float.Pi - ang; // internal angle of arc that faces will travel 
-        var angPerFace = arcAngleTotal / faceCount;
-        Vector3 outVector = GetOutwardVector(edgeA);
-        
-        // shorten both vectors away from meeting point
-        ShortenEdge(edgeA, true, bevelDist);
-        ShortenEdge(edgeB, false, bevelDist);
-
-        // find arc center for rounding and rotation vecs
-
-        var arcCenter = outVector * -1 * bevelDist + edgeA.EndVert.Position;
-        var arcStartVec = edgeA.EndVert.Position - arcCenter;
-        var rotateAxis = GetNormal(edgeA);
-
-        // generate new edges to connect
-        var prevEdge = edgeA;
-        var newEdges = new List<HalfEdge>();
-
-        for (int i = 0; i < faceCount; i++)
-        {
-            var newEdge = new HalfEdge();
-            prevEdge.SetNextEdge(newEdge);
-            newEdge.StartVert = prevEdge.EndVert;
-
-            if (i != faceCount - 1)
-            {
-                var angTotal = (i+1) * angPerFace;
-                var vertPos = arcStartVec.Rotated(rotateAxis, angTotal) + arcCenter;
-                newEdge.EndVert = new PolyVertex(vertPos);
-            }
-            else
-            {
-                newEdge.EndVert = edgeB.StartVert;
-                newEdge.SetNextEdge(edgeB);
-                
-            }
-            
-            newEdge.SetTwinEdge();
-            newEdge.TwinEdge.SetNextEdge(prevEdge.TwinEdge);
-            newEdges.Add(newEdge);
-            prevEdge = newEdge;
-        }
-
-        edgeB.TwinEdge.SetNextEdge(prevEdge.TwinEdge);
-
-
-        // fix face with new edge 
-        faces.Remove(edgeA.Face);
-        var face = GenerateFace(edgeA);
-        GD.Print("rounded face regen succeded: ", face.IsValid);
-        faces.Add(face);
-        
-        return newEdges;
-
-    }
-
-    public void BevelEdge_new (HalfEdge edge, float bevelDist, int faceCount)
-    {
-        // collect incident edges
-        var twinEdge = edge.TwinEdge;
-        var edgeOut = edge.NextEdge;
-        var edgeIn = edge.PrevEdge;
-        var twinOut = twinEdge.NextEdge;
-        var twinIn = twinEdge.PrevEdge;
-
-        // get the new rounded edges on top and bottom, in respective winding orders
-        // must pass the twins of incident as they share a face
-        // note they must also be passed in winding order
-        var topEdgeList = RoundCorner(edgeOut.TwinEdge,twinIn.TwinEdge, bevelDist, faceCount);
-        var botEdgeList = RoundCorner(twinOut.TwinEdge, edgeIn.TwinEdge, bevelDist, faceCount);
-        
-        // get the twin edge list instead, reversing the top list but not the bottom
-        // as bottom needs reverse winding order when passed to stitcher
-        var stitchTop = topEdgeList.Select( e => e.TwinEdge).Reverse().ToList();
-        var stitchBot = botEdgeList.Select(e => e.TwinEdge).ToList();
-
-        // stitch should now be ready to take in just the new edges
-        
-        var newFaces = StitchEdges(topEdgeList, botEdgeList);
-        faces.Remove(edge.Face);
-        faces.Remove(edge.TwinEdge.Face);
-
-        foreach(var face in newFaces) faces.Add(face);
-        
-
-    }
-
-    public void BevelEdge(HalfEdge edge, float bevelDist, int faceCount)
-    {
-        // for now, ignore the back edges with no extra face to bevel with
-        var twinEdge = edge.TwinEdge;
-
-        // collect relevant faces, edges.
-        var edgeOut = edge.NextEdge;
-        var edgeIn = edge.PrevEdge;
-        var twinOut = twinEdge.NextEdge;
-        var twinIn = twinEdge.PrevEdge;
-
-        var sideFaceA = edge.Face;
-        var sideFaceB = twinEdge.Face;
-
-        var topFace = edgeOut.TwinEdge.Face;
-        var botFace = edgeIn.TwinEdge.Face;
-
-        //find shortest incident edge to find a max bevel distance (<half that distance for now)
-        var shortest = new List<float>(){edgeOut.GetLen(), edgeIn.GetLen(), twinOut.GetLen(), twinIn.GetLen()}.Min();
-        var maxBevelDist = shortest * 0.45f; 
-        if (maxBevelDist < bevelDist) bevelDist = maxBevelDist;
-
-        // unit vectors that will used to find the center of the circle
-        // inscribed in the top and bottom face, which will form the arc of the bevel
-        Vector3 topPlanarVectorFromEdgeOut = GetOutwardVector(edgeOut);
-        Vector3 botPlanarVectorFromEdgeIn = GetOutwardVector(edgeIn);
-        
-        // find the radius of the arc circles defining both top and bottom bevels
-        var vecA = edgeOut.GetDirection();
-        var vecB = twinIn.GetDirection() * -1;
-        var ang = vecA.AngleTo(vecB);
-        var arcRadius = Math.Tan(ang/2) * bevelDist;
-        var arcAngleTotal = float.Pi - ang; // internal angle of arc that faces will travel 
-        var angPerFace = arcAngleTotal / faceCount;
-        
-        // generate the arc positions (start at 1 since new verts is 1 less than new faces total)
-        for (int i = 0; i < 2; i++)
-        {
-          
-        }
-        
-
-        // move incident edges for bevel
-        ShortenAndSeparateConnectedEdges(edge, bevelDist);
-        ShortenAndSeparateConnectedEdges(twinEdge, bevelDist);
-        
-        var bevTopEdge = GenerateConnectingEdge(twinIn, edgeOut);
-        var bevBotEdge = GenerateConnectingEdge(edgeIn, twinOut);
-
-        var topEdgeList = new List<HalfEdge>(){twinIn, bevTopEdge};
-        var botEdgeList = new List<HalfEdge>(){bevBotEdge, edgeIn};
-
-
-        //remove old faces, add in new side faces and generate new top and bottom faces
-        foreach (var face in new List<Face>(){topFace, botFace, sideFaceA, sideFaceB}) faces.Remove(face);
-
-        var newFaces = StitchEdges(topEdgeList, botEdgeList);
-        newFaces.Add(GenerateFace(bevTopEdge.TwinEdge));
-        newFaces.Add(GenerateFace(bevBotEdge.TwinEdge));
-        foreach(var face in newFaces) faces.Add(face);
-
-
-
-        
-    }
 
     // assumes edges are passed in winding order
     // connects edges through a new edge
@@ -825,92 +672,7 @@ public partial class PolygonMeshTool : GodotObject
     }
 
 
-    /// <summary>
-    /// new mesh-making method, ASSUMES ALL FACES ARE QUADS (i.e., subdivide-all run at least once)
-    /// </summary>
-    /// <returns></returns>
-    public ArrayMesh GetMesh()
-    {
-        // 0 = vertex
-        // 1 = normal
-        // 3 = color
-        // 12 = index
-        var meshArray = new Godot.Collections.Array();
-        meshArray.Resize((int)Mesh.ArrayType.Max);
-
-        List<PolyVertex> verts = new();
-        Dictionary<PolyVertex, int> vertIndexMap = new();
-        Dictionary<PolyVertex, List<Vector3>> normalsMap = new();
-
-        List<Vector3> mesh_verts = new();
-        List<int> mesh_indices = new();
-        List<Vector3> mesh_norms = new();
-
-        // for each face:
-        // tries to index each vert in master list
-        // adds the face normal to that verts list of normals (to avergage in next loop)
-        // add triangulation to index list using values of vertIndexMap (ASSUMES EACH FACE IS QUAD)
-        
-        // helper func for indexing verts and their positions
-        int GetVertIndex(PolyVertex vert)
-        {
-            if (vertIndexMap.TryGetValue(vert, out int value) ) return value;
-            verts.Add(vert);
-            mesh_verts.Add(vert.Position);
-            normalsMap[vert] = new();
-            vertIndexMap[vert] = verts.Count - 1;
-            return verts.Count - 1;
-        }
-        // index triangle and calculate normal (quad can have 2 normals after triangulating)
-        void IndexTriangle(PolyVertex a, PolyVertex b, PolyVertex c)
-        {
-            int[] indices = [GetVertIndex(a), GetVertIndex(b), GetVertIndex(c)];
-            mesh_indices.AddRange(indices);
-            var norm = GetNormal([.. indices.Select(i => mesh_verts[i])]);
-            normalsMap[a].Add(norm);
-            normalsMap[b].Add(norm);
-            normalsMap[c].Add(norm);
-        }
-
-        
-
-        // loop each face indexing verts, triangles positions, and normals
-        //SKIP FACES WITH 5+ POINTS UNTIL ITS SET TO HANDLE
-        foreach (var face in faces)
-        {
-            
-            var faceVerts = face.GetVerts();
-            if (faceVerts.Count > 4)
-            {
-                // project roughly into 2d 
-
-            }
-            IndexTriangle(faceVerts[0], faceVerts[3], faceVerts[1]);
-            IndexTriangle(faceVerts[1], faceVerts[3], faceVerts[2]);
-        }
-
-        foreach (var vert in verts)
-        {
-            var normals = normalsMap[vert];
-            var normTotal = normals.Aggregate(Vector3.Zero, (sum, v) => sum + v);
-            mesh_norms.Add( normTotal / normals.Count );
-        }
-
-        // for (int i = 0; i < mesh_verts.Count; i++)
-        // {
-        //     var randPos = new Vector3(GD.Randf()/20,GD.Randf()/20,GD.Randf()/20);
-        //     mesh_verts[i] += randPos;
-        // }
-
-        // set mesh
-        meshArray[(int)Mesh.ArrayType.Vertex] = mesh_verts.ToArray();
-        meshArray[(int)Mesh.ArrayType.Normal] = mesh_norms.ToArray();
-        meshArray[(int)Mesh.ArrayType.Index] = mesh_indices.ToArray();
-
-        var arrMesh = new ArrayMesh();
-        arrMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, meshArray);
-        return arrMesh;
-    }
+    
 
     private List<List<PolyVertex>> TriangulateNonQuadFace(Face face)
     {

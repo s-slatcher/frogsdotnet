@@ -26,22 +26,22 @@ float get_depth_at_frag(vec2 uv, vec2 center1, vec2 center2, float xy_rad, float
 	//vec2 relative_center = closestPointOnSegment(meter_pos, center1, center2);
 	vec2 relative_center = center1;
 	float dist_from_cent = distance(meter_pos, relative_center);
-	
+
 	if (dist_from_cent >= xy_rad) return 0.;
 	float depth_from_explosion = sqrt( (xy_rad * xy_rad) - (dist_from_cent * dist_from_cent ) );
 	return depth_from_explosion;
 }
 
 void vertex() {
-	
+
 }
 
 void fragment() {
 	vec2 meter_pos = UV * meter_size;
 	vec4 distort_color = texture(distort_texture, UV);
 	vec4 distort_data = decode_color(distort_color);
-	
-	
+
+
 	vec2 distort_center = distort_data.xy;
 	float distort_rad = distort_data.z;
 	float depth = get_depth_at_frag(UV, distort_center, distort_center, distort_rad, distort_rad);

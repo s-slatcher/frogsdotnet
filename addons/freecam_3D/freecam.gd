@@ -142,4 +142,3 @@ func _add_key_input_action(name: String, key: Key) -> void:
 	
 	InputMap.add_action(name)
 	InputMap.action_add_event(name, ev)
-
