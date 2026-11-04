@@ -12,7 +12,8 @@ public partial class NewTerrainTesting : Node3D
     [Export] public float MaxTerrainHeight = 30;
     [Export] public int TotalLandmasses = 1;
     [Export] public int SubdivideLevels = 3; 
-    [Export] public float RoundingDiameter = 0.5f;
+    [Export] public float RoundingDistance = 1.5f;
+    [Export] public float RoundingToleranceDegrees = 8f;
 
     [Export] public bool GenerateTerrainButton
     {
@@ -73,6 +74,8 @@ public partial class NewTerrainTesting : Node3D
         var terrainChunk = (TerrainChunk)terrainScene.Instantiate();
         AddChild(terrainChunk);
         terrainChunk.SubdivideLevels = SubdivideLevels;
+        terrainChunk.RoundingDistance = RoundingDistance;
+        terrainChunk.RoundingToleranceDegrees = RoundingToleranceDegrees;
         terrainChunk.Position = new Vector3(norm.Position.X, norm.Position.Y, 0);
         terrainChunk.SetPolygon(norm);
 

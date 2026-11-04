@@ -4,7 +4,7 @@
 code = "// NOTE: Shader automatically converted from Goddot Engine 4.4.1.stable.mono's StandardMaterial3D.
 
 shader_type spatial;
-render_mode wireframe, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+render_mode depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
 
 group_uniforms debug;
 uniform bool UseFragNormals = false;
@@ -198,7 +198,7 @@ noise = SubResource("FastNoiseLite_rylqs")
 [resource]
 render_priority = 0
 shader = SubResource("Shader_3hu5b")
-shader_parameter/UseFragNormals = true
+shader_parameter/UseFragNormals = false
 shader_parameter/ColorWithNormals = false
 shader_parameter/large_cell_noise = SubResource("NoiseTexture2D_rylqs")
 shader_parameter/large_cell_color = Color(0.4454, 0.343349, 0.0760418, 1)

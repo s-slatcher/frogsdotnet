@@ -1,4 +1,5 @@
 using Godot;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -112,7 +113,12 @@ public partial class GeometryUtils : GodotObject
         var dirA = a-b;
         var dirB = c-b;
         return dirA.AngleTo(dirB);
+    }
 
+    public static Vector3 GetTriNormal(Vector3[] triangle)
+    {
+        var normal = (triangle[2]-triangle[0]).Cross(triangle[1]-triangle[0]).Normalized();
+        return normal;
     }
 
     public static Vector2? GetLineIntersectOrNull(Vector2 pA, Vector2 dirA, Vector2 pB, Vector2 dirB)
@@ -568,7 +574,7 @@ public partial class GeometryUtils : GodotObject
     // Curve2D transformations and conversion from polygon
     //-----------------------------------------------------------------
 
-    public static Vector2[] RoundPolygon(Vector2[] poly, float targetCurveDist, float angleThreshold)
+    public static Vector2[] RoundPolygon(Vector2[] poly, float targetCurveDist, float toleranceDegrees, float angleThreshold = 3f)
     {
         List<Vector2> newPoly = new();
         foreach(LinkedPoint p in GetPolygonIterator(poly))
@@ -578,13 +584,13 @@ public partial class GeometryUtils : GodotObject
 
             var curveDist = float.Min(targetCurveDist, minHalfDist);
 
-            if (cornerAng > angleThreshold)
+            if (Math.Abs(cornerAng) > angleThreshold)
             {
                 newPoly.Add(p.current);
             }
             else
             {
-                newPoly.AddRange(RoundCorner(p.prev, p.current, p.next, curveDist));
+                newPoly.AddRange(RoundCorner(p.prev, p.current, p.next, curveDist, toleranceDegrees));
             }
 
         }
@@ -592,7 +598,7 @@ public partial class GeometryUtils : GodotObject
         
     }
 
-    public static List<Vector2> RoundCorner(Vector2 a, Vector2 b, Vector2 c, float dist)
+    public static List<Vector2> RoundCorner(Vector2 a, Vector2 b, Vector2 c, float dist, float toleranceDegrees)
     {
         var distIn = a.DistanceTo(b);
         var distOut = b.DistanceTo(c);
@@ -620,7 +626,7 @@ public partial class GeometryUtils : GodotObject
         curve.AddPoint(cornerA, null, handleAB);
         curve.AddPoint(cornerB, handleCB, null);
 
-        var curvePoly = curve.Tessellate(4, 16).ToList();
+        var curvePoly = curve.Tessellate(5, toleranceDegrees).ToList();
 
         return curvePoly;
     }
@@ -790,6 +796,48 @@ public partial class GeometryUtils : GodotObject
 
         return (Math.Abs(area), center3D);
 
+    }
+
+    public static List<int[]> TriangulateFace3D(List<Vector3> points)
+    {
+        Debug.Assert(points.Count > 2);
+
+        // make tri with first 3 points (assumes any 3 points are representative, not true if all edges aren't coplanar)
+        var tri3D = new Vector3[]
+        {
+          points[0], points[1], points[2]  
+        };
+        
+        // find axis with highest absolute value
+        var norm = GetTriNormal(tri3D);
+        var indexedNormVector = new List<float>(){norm.X, norm.Y, norm.Z};
+        var maxNormAxisIndex = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            if (float.Abs(indexedNormVector[i]) > float.Abs(indexedNormVector[maxNormAxisIndex]))
+            {
+                maxNormAxisIndex = i;
+            }
+        }
+        
+        // chatgpt solution for checking if winding order was reversed by the 2d-3d projection 
+        bool projectionIsNegative =
+        indexedNormVector[maxNormAxisIndex] *
+        (maxNormAxisIndex == 1 ? -1 : 1) < 0;
+        
+        var flatFace = new List<Vector2>();
+
+        if (maxNormAxisIndex == 0) foreach(var p in points) flatFace.Add(new Vector2(p.Y, p.Z));
+        else if (maxNormAxisIndex == 1) foreach(var p in points) flatFace.Add(new Vector2(p.X, p.Z));
+        else foreach(var p in points) flatFace.Add(new Vector2(p.X, p.Y));
+
+        var trianglesArr = Geometry2D.TriangulatePolygon(flatFace.ToArray());
+        
+        // make sure winding order is accurate
+        if (projectionIsNegative) trianglesArr = trianglesArr.Reverse().ToArray();
+
+        return trianglesArr.Chunk(3).ToList();
+        
     }
 
     public static Transform3D GetFaceTransformToXY(Vector3 p0, Vector3 p1, Vector3 p2)

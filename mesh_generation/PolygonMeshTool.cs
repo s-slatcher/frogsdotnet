@@ -120,6 +120,7 @@ public partial class PolygonMeshTool : GodotObject
             vertIndexMap[vert] = verts.Count - 1;
             return verts.Count - 1;
         }
+
         // index triangle and calculate normal (quad can have 2 normals after triangulating)
         void IndexTriangle(PolyVertex a, PolyVertex b, PolyVertex c)
         {
@@ -139,14 +140,23 @@ public partial class PolygonMeshTool : GodotObject
         foreach (var face in faces)
         {
             
-            var faceVerts = face.GetVerts();
-            if (faceVerts.Count > 4)
-            {
-                // project roughly into 2d 
+            // var faceVerts = face.GetVerts();
+            // if (faceVerts.Count > 4)
+            // {
+            //     // project roughly into 2d 
 
+            // }
+            // IndexTriangle(faceVerts[0], faceVerts[3], faceVerts[1]);
+            // IndexTriangle(faceVerts[1], faceVerts[3], faceVerts[2]);
+            var faceVerts = face.GetVerts();
+            var facePositions = face.GetVertPositions();
+            var triangles = GeometryUtils.TriangulateFace3D(facePositions);
+            foreach (var intArr in triangles)
+            {
+                IndexTriangle(faceVerts[intArr[0]], faceVerts[intArr[1]], faceVerts[intArr[2]]);
             }
-            IndexTriangle(faceVerts[0], faceVerts[3], faceVerts[1]);
-            IndexTriangle(faceVerts[1], faceVerts[3], faceVerts[2]);
+
+
         }
 
         foreach (var vert in verts)
@@ -274,37 +284,6 @@ public partial class PolygonMeshTool : GodotObject
         
     }
 
-    private Face GenerateFace(HalfEdge EdgeOnFace)
-    {
-        var face = new Face();
-        var curEdge = EdgeOnFace;
-        var count = 0;
-        var limit = 100;
-        do
-        {
-            face.AddEdge(curEdge);
-            
-            curEdge.Face = face;
-            curEdge = curEdge.NextEdge;
-            if (curEdge == null)
-            {
-                GD.Print("edge not part of valid of face");
-                break;
-            }
-            
-            
-            count ++;
-            if (count > limit)
-            {
-                GD.Print("face not found, infinite loop?");
-                break;
-                
-            }
-        } while (curEdge != EdgeOnFace);
-
-        return face;
-    }
-
     private void SplitHalfEdge(HalfEdge hEdge, PolyVertex splitVert)
     {
         var sv = hEdge.StartVert;
@@ -414,7 +393,6 @@ public partial class PolygonMeshTool : GodotObject
 
 
 
-
     }
 
     private void Subdivide(Face face)
@@ -425,20 +403,7 @@ public partial class PolygonMeshTool : GodotObject
         
         var parentEdges = face.GetParentEdges();
         var centerPos = face.WeightedCenter;
-
-        var posSum = new Vector3();
-        foreach(var vert in face.GetVertPositions())
-        {
-            posSum += vert;
-        }
-        posSum /= face.GetVertPositions().Count;
-
-
-        HalfEdge pivotEdge = null;
-
-        GD.Print ("weight center: ", centerPos, " avg pos: ", posSum);
-
-
+        HalfEdge pivotEdge = null;  
 
         for (int i = 0; i < parentEdges.Count; i++)
         {
@@ -510,7 +475,7 @@ public partial class PolygonMeshTool : GodotObject
     private List<List<PolyVertex>> TriangulateNonQuadFace(Face face)
     {
         var triList = new List<List<PolyVertex>>();
-
+        
 
 
         return triList;

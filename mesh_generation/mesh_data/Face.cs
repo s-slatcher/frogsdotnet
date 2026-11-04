@@ -17,6 +17,7 @@ public partial class Face : GodotObject
     
     public Vector3 WeightedCenter = new Vector3();
     public float Area = -1f;
+    public Vector3 Normal = Vector3.Zero;
 
     public Rect2 BoundingRect; 
 

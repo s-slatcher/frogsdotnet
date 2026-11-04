@@ -16,6 +16,9 @@ public partial class TerrainChunk : Node3D
     public int SubdivideLevels = 1;
     
     public int terrainDepth = 5;
+
+    public float RoundingDistance = 1.5f;
+    public float RoundingToleranceDegrees = 8;
     
     // set 
     public override void _Ready()
@@ -39,7 +42,7 @@ public partial class TerrainChunk : Node3D
             new(0,terrainDepth)
         };
 
-        var rounded = GeometryUtils.RoundPolygon(points2d.ToArray(), 1, 3);
+        var rounded = GeometryUtils.RoundPolygon(points2d.ToArray(), RoundingDistance, RoundingToleranceDegrees);
         var points3d_bottom = rounded.Select(p => new Vector3(p.X, 0, p.Y));
         var points3d_top = rounded.Select(p => new Vector3(p.X, height, p.Y));
 
@@ -73,7 +76,7 @@ public partial class TerrainChunk : Node3D
         meshInst.Mesh = mesh;
         meshInst.MaterialOverride = material;
 
-        TestAreaAndCenter();
+        // TestAreaAndCenter();
 
      
     }
