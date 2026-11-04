@@ -12,15 +12,15 @@ public partial class Face : GodotObject
 {
     
     
-    // subdivided faces are passed this hashset to properly map faces together by edge connection
     public List<HalfEdge> EdgeList = new();
     public bool IsValid = false;
-    private (PolyVertex, PolyVertex) EdgeExtremes;
-
+    
+    public Vector3 WeightedCenter = new Vector3();
+    public float Area = -1f;
 
     public Rect2 BoundingRect; 
 
-    public static Face FaceFromInitalEdge(HalfEdge edge)
+    public static Face FaceFromInitialEdge(HalfEdge edge)
     {
         var face = new Face();
         face.EdgeList.Add(edge);
@@ -96,16 +96,22 @@ public partial class Face : GodotObject
         Debug.Assert(!IsValid, "tried adding edges to already valid face");
         var startVert = EdgeList[0].StartVert;
         var endVert = EdgeList[^1].EndVert;
-        EdgeExtremes = (startVert, endVert);
 
         if (startVert == endVert)
         {
             IsValid = true;
+            SetAreaAndCenter();
             Debug.Assert(EdgeList.Count > 2, "tried completing face loop with just 2 edges");
         }
 
     }
 
+    private void SetAreaAndCenter()
+    {
+        var areaAndCenter = GeometryUtils.AreaAndCenterOf3DPolyFace(GetVertPositions());
+        Area = areaAndCenter.Item1;
+        WeightedCenter = areaAndCenter.Item2;
+    }
 
     public List<HalfEdge> GetParentEdges()
     {

@@ -73,7 +73,29 @@ public partial class TerrainChunk : Node3D
         meshInst.Mesh = mesh;
         meshInst.MaterialOverride = material;
 
+        TestAreaAndCenter();
+
      
+    }
+    
+    public void TestAreaAndCenter()
+    {
+        var faces = meshTool.GetFaces();
+        foreach (var face in faces )
+        {
+            var pos = face.WeightedCenter;
+            var area = face.Area;
+            var sphere = new SphereMesh();
+            sphere.Radius = area / 100;
+            sphere.Height = sphere.Radius * 2; 
+            var inst = new MeshInstance3D
+            {
+                Mesh = sphere,
+                Position = pos
+            };
+            AddChild(inst);
+
+        }
     }
 
     List<Face> FacesFromPointList(List<Vector3> points)

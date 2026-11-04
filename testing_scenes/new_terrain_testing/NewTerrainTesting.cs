@@ -1,5 +1,6 @@
     using Godot;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 public partial class NewTerrainTesting : Node3D
 {
@@ -59,8 +60,12 @@ public partial class NewTerrainTesting : Node3D
             // meshInst.MaterialOverride = material;
             currentPos += new Vector2(rect.Size.X *  (1- GD.Randf() /3), 0);
         }
+
+
         
     }
+
+
 
     public void GeneratePolyTerrainChunk(NormalPoly norm)
     {

@@ -198,12 +198,12 @@ noise = SubResource("FastNoiseLite_rylqs")
 [resource]
 render_priority = 0
 shader = SubResource("Shader_3hu5b")
-shader_parameter/UseFragNormals = false
+shader_parameter/UseFragNormals = true
 shader_parameter/ColorWithNormals = false
 shader_parameter/large_cell_noise = SubResource("NoiseTexture2D_rylqs")
 shader_parameter/large_cell_color = Color(0.4454, 0.343349, 0.0760418, 1)
 shader_parameter/wavey_distort_noise = SubResource("NoiseTexture2D_aargb")
-shader_parameter/wave_scale = 1.0
+shader_parameter/wave_scale = 0.0
 shader_parameter/wave_height_ratio = 0.05
 shader_parameter/wave_quantize_step = 0.5
 shader_parameter/side_wave_factor = 0.0

@@ -100,12 +100,27 @@ public partial class GeometryUtils : GodotObject
     }
 
   
-
+    /// <summary>
+    /// Gets angle between lines ba and bc 
+    /// </summary>
+    /// <param name="a"></param>
+    /// <param name="b"></param>
+    /// <param name="c"></param>
+    /// <returns></returns>
     public static float GetCornerAngle(Vector2 a, Vector2 b, Vector2 c)
     {
         var dirA = a-b;
         var dirB = c-b;
         return dirA.AngleTo(dirB);
+
+    }
+
+    public static Vector2? GetLineIntersectOrNull(Vector2 pA, Vector2 dirA, Vector2 pB, Vector2 dirB)
+    {
+        float dotProd = (dirA.Normalized()).Dot(dirB.Normalized());
+        bool isParallelApprox = Math.Abs(dotProd) > 0.999f;
+        if (isParallelApprox) return null;
+        return (Vector2)Geometry2D.LineIntersectsLine(pA, dirA, pB, dirB);
 
     }
 
@@ -609,6 +624,7 @@ public partial class GeometryUtils : GodotObject
 
         return curvePoly;
     }
+
     public Curve2D PointsToCurve(Vector2[] points, float smoothingFactor = 0, bool curveIsClosed = true)
     {
 
@@ -741,8 +757,6 @@ public partial class GeometryUtils : GodotObject
 
     public static (float, Vector3) AreaAndCenterOf3DPolyFace(List<Vector3> points, Transform3D? ZFlattenTransform = null)
     {
-       
-
         var transform = ZFlattenTransform ?? GetFaceTransformToXY(points[0], points[1], points[2]);
         
 
@@ -768,7 +782,7 @@ public partial class GeometryUtils : GodotObject
         }
 
         float area = area2 * 0.5f;
-        centroid /= (3.0f * area2);
+        centroid /= 3.0f * area2;
         Vector3 center3D =
             transform.Origin +
             transform.Basis.X * centroid.X +
