@@ -28,7 +28,7 @@ group_uniforms;
 group_uniforms grass;
 uniform bool grass_enabled = true;
 uniform vec4 grass_color: source_color;
-uniform float grass_start_y : hint_range(0.0, 0.5, 0.1) = 0.1; 
+uniform float grass_start_y : hint_range(0.0, 0.5, 0.1) = 0.1;
 uniform float grass_full_y_min : hint_range(0.5, 1.0, 0.1) = 0.5;
 group_uniforms;
 
@@ -146,8 +146,8 @@ void fragment() {
 	{
 		NORMAL = (VIEW_MATRIX * vec4(get_flat_normal(vertex_pos), 0.0)).xyz;
 	}
-	
-	
+
+
 	float grass_lvl = smoothstep(grass_start_y, grass_full_y_min, vertex_normal.y);
 	if (!grass_enabled) grass_lvl = 0.;
 	ALBEDO = mix(ALBEDO, grass_color.rgb, grass_lvl);

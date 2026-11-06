@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
@@ -19,6 +20,7 @@ public partial class TerrainChunk : Node3D
 
     public float RoundingDistance = 1.5f;
     public float RoundingToleranceDegrees = 8;
+    public float TargetSubdivideArea {get; set;} = 1;
     
     // set 
     public override void _Ready()
@@ -71,7 +73,7 @@ public partial class TerrainChunk : Node3D
         
 
         // should produce two faces -- the front and back of the mesh
-        meshTool.SubdivideAll(SubdivideLevels);
+        meshTool.SubdivideMesh(TargetSubdivideArea);
         var mesh = meshTool.GetMesh();
         meshInst.Mesh = mesh;
         meshInst.MaterialOverride = material;

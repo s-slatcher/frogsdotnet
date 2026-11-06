@@ -240,39 +240,22 @@ public partial class PolygonMeshTool : GodotObject
 
     }
 
-    public void SubdivideAll(int levels = 1)
-    {
-        _Subdivide(0.1f);   
-
-        
-        var faceList = faces.ToList();
-
-        // for (int i = 0; i < levels; i++)
-        // {
-        //     faceList = faces.ToList();
-        //     foreach (var face in faceList) 
-        //     {
-        //         if (face.Normal.Y > 0.5) Subdivide(face);
-        //     }
-        // }
-
-        // for (int i = 0; i < 2; i++)
-        // {
-        //     faceList = faces.ToList();
-        //     foreach (var face in faceList) 
-        //     {
-        //         if (face.Normal.Y < 0.5) Subdivide(face);
-        //     }
-        // }
-        
-        
-
-        
-    }
 
     // new subdivide call 
-    public void _Subdivide(float maxArea)
+    public void SubdivideMesh(float maxArea)
     {
+
+
+        
+        // for (int i = 0; i < 6; i++)
+        // {
+        //     var faceList = faces.ToList();
+        //     foreach(var face in faceList)
+        //     {
+        //         SubdivideFace(face);
+        //     }
+            
+        // }
         // setup queue of faces to subdivide (SD), fill with all current faces 
         var subdivideQueue = faces.ToList();  
 
@@ -283,7 +266,7 @@ public partial class PolygonMeshTool : GodotObject
             var face = subdivideQueue[qPos];
             qPos++;
 
-            if (face.Area > maxArea) subdivideQueue.AddRange(Subdivide(face));
+            if (face.Area > maxArea) subdivideQueue.AddRange(SubdivideFace(face));
         } 
         
         
@@ -332,122 +315,108 @@ public partial class PolygonMeshTool : GodotObject
         
     }
 
-    private void SubdivideFace(Face face)
-    {
-        // new subdivide that uses new SetNextEdge and ConnectEdge 
-        // has rules for limiting subdivision along smaller edges
-        
-        var edges = face.EdgeList.ToList();
-        var edgeCount = edges.Count;
-        // add up perimeter, find longest edge and find centroid
-        // use avg line length to decide which edges will get subdivided  
-        var longEdge = edges[0];
-        float perim = 0;
-        Vector3 totalPos = new();
-        var posList = new List<Vector3>();
-        foreach (var edge in edges)
-        {
-            var len = edge.GetLen();
-            perim += len;
-            posList.Add(edge.StartVert.Position);
-            totalPos += edge.StartVert.Position;
-            longEdge = longEdge.GetLen() < len ? edge : longEdge; 
-        }
 
-        var areaAndCenter = GeometryUtils.AreaAndCenterOf3DPolyFace(posList);
-        
-        var avgLen = perim / edgeCount;
-        var centroid = areaAndCenter.Item2;
-        var targetLen = avgLen * 0.65f; 
-        
-        var subdivideEdges = new List<HalfEdge>(){longEdge};
-        var curEdge =  longEdge;
-
-        // set a buffer +- PI rads from initial subdivide, where split is forced and only
-        // two splits are made total. the two edges are direct connected without middle vert
-        var bufferRads = 0.65;
-
-        for (int i = 0; i < edgeCount - 1; i++)
-        {
-            curEdge = curEdge.NextEdge;
-
-            var lastSplitVec = subdivideEdges[^1].GetCenter() - centroid;
-            var curSplitVec = curEdge.GetCenter() - centroid;
-            var ang = lastSplitVec.AngleTo(curSplitVec);
-
-            bool isTargetLen = curEdge.GetLen() >= targetLen;
-
-            // check if candidate for special divide rules
-            if (subdivideEdges.Count == 1 && isTargetLen) 
-            {
-                if (float.Abs(ang - float.Pi) < bufferRads)  // within buffer +- range
-                {
-                    subdivideEdges.Add(curEdge);
-                    break;  
-                }
-            }
-
-            if (ang < float.Pi)
-            {
-                if (isTargetLen) 
-                {
-                    subdivideEdges.Add(curEdge);
-                }
-            }
-            else
-            {
-                subdivideEdges.Add(curEdge.PrevEdge);
-            }
-
-        }
-
-        // split and connect edges 
-        // special case if only two edges split
-        if (subdivideEdges.Count == 2)
-        {
-            var e1 = subdivideEdges[0];
-            var e2 = subdivideEdges[1];
-            SplitEdgeMiddle(e1);
-            SplitEdgeMiddle(e2);
-
-            ConnectEdges(e1, e2, false);
-            
-        }
-
-
-
-    }
-
-    private List<Face> Subdivide(Face face)
+    private List<Face> SubdivideFace(Face face)
     {
         
-         
-        RemoveFace(face);
         
-        var edges = face.GetEdges();
-        var centerPos = face.WeightedCenter;
-        var centerSum = new Vector3();
-        foreach(var edge in edges) centerSum+= edge.StartVert.Position;
-        centerSum/= edges.Count;
-
-        HalfEdge pivotEdge = null;  
-
-        for (int i = 0; i < edges.Count; i++)
+        RemoveFace(face);   
+        
+        var lengthSortedEdges = face.GetEdges().OrderBy(e => -e.GetLen()).ToList();
+       
+        var longest = lengthSortedEdges[0];
+        HalfEdge nextLongest;
+        if (longest.EdgeIsConnected(lengthSortedEdges[1]))
         {
-            var edge = edges[i];  
-            SplitEdgeMiddle(edge);
-
-            if (i == 0) pivotEdge = CreateNextEdge(edge.childEdge1, centerSum);
-            else
+            if (longest.EdgeIsConnected(lengthSortedEdges[2]))
             {
-                ConnectEdges(pivotEdge, edge.childEdge2, false);
+                if (lengthSortedEdges.Count > 3) nextLongest = lengthSortedEdges[3];
+                else nextLongest = lengthSortedEdges[2];
             }
-
+            else nextLongest = lengthSortedEdges[2];
         }
+        else nextLongest = lengthSortedEdges[1];
+
+        
+        SplitEdgeMiddle(longest);
+        SplitEdgeMiddle(nextLongest);
+
+        var newEdge = ConnectEdges(longest.childEdge1, nextLongest.childEdge2, false);
 
         ResolveFaces();
-        var childFaces = edges.Select(e => e.childEdge1.Face ).ToList();
-        return childFaces;
+        return
+        [
+            newEdge.Face,
+            newEdge.TwinEdge.Face
+        ];
+        // var centerPos = face.WeightedCentser;
+
+    
+
+
+
+        // var parallelAllowanceAngle = float.DegreesToRadians(15);
+
+        // roughly deciding what edge is "too short" to split in middle based on area
+        // var targetLen = Math.Sqrt(face.Area) * 0.75f; 
+
+        //find longest edge to initiate as first subdivide point 
+        
+        // List<HalfEdge> SubdivideEdges = new();
+        // int longestIdx = 0;
+        // for (int i = 0; i < edges.Count; i++)
+        // {
+        //     if (edges[i].GetLen() > edges[longestIdx].GetLen()) longestIdx = i;
+        // }
+        
+        // reorder edge list to put longest edge first
+        // var longestFirstEdges = Enumerable.Range(0, edges.Count)
+        //     .Select(i => edges[(longestIdx + i) % edges.Count])
+        //     .ToList();
+        // var longEdge = longestFirstEdges[0];
+
+        // // if the longest edge is still too short to split in middle, its end point used as the sole subdivide point
+        // // otherwise: search for any other edges meeting length req, split them and add split point to subdivide list
+        // if (longEdge.GetLen() < targetLen) 
+        // {
+        //     SubdivideEdges.Add(longEdge);
+        // }
+        // else
+        // {
+        //     for (int i = 0; i < longestFirstEdges.Count; i++)
+        //     {
+        //         var edge = longestFirstEdges[i];
+        //         if (edge.GetLen() > targetLen)
+        //         {
+        //             SplitEdgeMiddle(edge);
+        //             SubdivideEdges.Add(edge.childEdge1);
+        //         }
+                
+        //     }
+        // }
+
+        // look at angle formed between lines formed from subdivide points -> center point
+        // check for an >180 gap that must be fixed by inserting an extra point
+
+        // in case of a sole subdivide point, auto triggers an over 180 check
+
+        // var subEdgeCount = SubdivideEdges.Count;
+        // for (int i = 0; i < subEdgeCount; i++)
+        // {
+        //     var edge = SubdivideEdges[i];
+        //     var nextEdge = i == subEdgeCount - 1 ? SubdivideEdges[0] : SubdivideEdges[i+1];
+
+        //     var edgeToCenter = edge.EndVert.Position - centerPos;
+        //     var nextEdgeToCenter = nextEdge.EndVert.Position - centerPos;
+
+        //     var angle = edgeToCenter.AngleTo(nextEdgeToCenter);
+
+        //     bool nearlyParallel = float.Abs(angle - float.Pi) < parallelAllowanceAngle;
+            
+        //     if (nearlyParallel) break;
+        //     else if (angle < )
+
+        // }
         
 
     }

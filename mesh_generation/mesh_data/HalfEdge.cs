@@ -87,6 +87,11 @@ public partial class HalfEdge : GodotObject
         return accumList;
     }
 
+    public bool EdgeIsConnected(HalfEdge edge)
+    {
+        return edge == NextEdge || edge == PrevEdge;
+    }  
+
     
     
     
