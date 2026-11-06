@@ -29,9 +29,10 @@ script = ExtResource("1_3hu5b")
 material = ExtResource("4_y6l8p")
 terrainScene = ExtResource("3_pvmqo")
 MaxTerrainHeight = 20.0
-SubdivideLevels = 4
+SubdivideLevels = 1
 RoundingDistance = 2.0
-RoundingToleranceDegrees = 5.0
+RoundingToleranceDegrees = 10.0
+GenerateTerrainButton = true
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.882947, 0.40029, -0.245298, 0, 0.522498, 0.85264, 0.469471, -0.752836, 0.461339, 0, 0, 0)

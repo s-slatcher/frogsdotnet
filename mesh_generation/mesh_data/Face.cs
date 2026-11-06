@@ -100,12 +100,21 @@ public partial class Face : GodotObject
 
         if (startVert == endVert)
         {
+            Debug.Assert(EdgeList.Count > 2, "tried completing face loop with just 2 edges");
             IsValid = true;
             SetAreaAndCenter();
-            Debug.Assert(EdgeList.Count > 2, "tried completing face loop with just 2 edges");
+            Normal = GeometryUtils.GetTriNormal(
+                [
+                    EdgeList[0].StartVert.Position,
+                    EdgeList[0].EndVert.Position,
+                    EdgeList[1].EndVert.Position
+                ]
+            );
         }
 
     }
+
+    
 
     private void SetAreaAndCenter()
     {
@@ -114,39 +123,28 @@ public partial class Face : GodotObject
         WeightedCenter = areaAndCenter.Item2;
     }
 
-    public List<HalfEdge> GetParentEdges()
+
+    public List<HalfEdge> GetEdges()
     {
         return EdgeList.ToList();
     }
-
-    public List<HalfEdge> GetFullDetailEdgeList(HalfEdge edge)
-    {
-        return RecursiveDecomposeEdgeToChildren(new(), edge);
-    }
-
-    private List<HalfEdge> RecursiveDecomposeEdgeToChildren(List<HalfEdge> accumList, HalfEdge curEdge)
-    {
-        if (curEdge.HasChildren())
-        {
-            RecursiveDecomposeEdgeToChildren(accumList, curEdge.childEdge1);
-            RecursiveDecomposeEdgeToChildren(accumList, curEdge.childEdge2);
-        }
-        else
-        {
-            accumList.Add(curEdge);
-        }
-        return accumList;
-    }
-
-
     public List<PolyVertex> GetVerts()
     {
         return EdgeList.Select(edge => edge.StartVert).ToList();
+        
     }
+
     public List<Vector3> GetVertPositions()
     {
         return EdgeList.Select(edge => edge.StartVert.Position).ToList();
+
     }
+    
+
+
+
+    
+    
 
 
 

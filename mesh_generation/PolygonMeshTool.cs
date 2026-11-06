@@ -18,7 +18,8 @@ using System.Runtime.CompilerServices;
 public partial class PolygonMeshTool : GodotObject
 {
     HashSet<Face> faces = new();
-    Dictionary<Face, Basis> FaceBasisMap = new();
+
+    Dictionary<Face, List<Face>> SubdividedFacesMap = new();
 
     List<Face> initFrontFaces = new();
     List<Face> initBackFaces = new();
@@ -90,10 +91,6 @@ public partial class PolygonMeshTool : GodotObject
   
     public ArrayMesh GetMesh()
     {
-        // 0 = vertex
-        // 1 = normal
-        // 3 = color
-        // 12 = index
         var meshArray = new Godot.Collections.Array();
         meshArray.Resize((int)Mesh.ArrayType.Max);
 
@@ -108,7 +105,7 @@ public partial class PolygonMeshTool : GodotObject
         // for each face:
         // tries to index each vert in master list
         // adds the face normal to that verts list of normals (to avergage in next loop)
-        // add triangulation to index list using values of vertIndexMap (ASSUMES EACH FACE IS QUAD)
+        // add triangulation to index list using values of vertIndexMap 
         
         // helper func for indexing verts and their positions
         int GetVertIndex(PolyVertex vert)
@@ -132,30 +129,35 @@ public partial class PolygonMeshTool : GodotObject
             normalsMap[c].Add(norm);
         }
 
-        
-
-        // loop each face indexing verts, triangles positions, and normals
-        //SKIP FACES WITH 5+ POINTS UNTIL ITS SET TO HANDLE
         GD.Print("face count at GETMESH: ", faces.Count);
         foreach (var face in faces)
         {
-            
-            // var faceVerts = face.GetVerts();
-            // if (faceVerts.Count > 4)
-            // {
-            //     // project roughly into 2d 
+            // start by getting all edges including children
+            var faceEdges = face.GetEdges();
+            var faceVerts = new List<PolyVertex>();
+            foreach(var edge in faceEdges)
+            {
+                if (edge.HasTwin() && edge.TwinEdge.HasChildren())
+                {
+                    // stitch in vertices of twin edge if it has been subdivide more
+                    var allTwinChildVerts = edge.TwinEdge.GetChildVerticesRecursive();
+                    allTwinChildVerts.Reverse();
+                    allTwinChildVerts.RemoveAt(allTwinChildVerts.Count - 1);
+                    faceVerts.AddRange(allTwinChildVerts);
+                }
+                else
+                {
+                    faceVerts.Add(edge.StartVert);
+                }
+            }
 
-            // }
-            // IndexTriangle(faceVerts[0], faceVerts[3], faceVerts[1]);
-            // IndexTriangle(faceVerts[1], faceVerts[3], faceVerts[2]);
-            var faceVerts = face.GetVerts();
-            var facePositions = face.GetVertPositions();
+            var facePositions = faceVerts.Select(v => v.Position).ToList();
+
             var triangles = GeometryUtils.TriangulateFace3D(facePositions);
             foreach (var intArr in triangles)
             {
                 IndexTriangle(faceVerts[intArr[0]], faceVerts[intArr[1]], faceVerts[intArr[2]]);
             }
-
 
         }
 
@@ -197,9 +199,7 @@ public partial class PolygonMeshTool : GodotObject
 
     public void RemoveFace(Face face)
     {
-        faces.Remove(face);
-        foreach (var edge in face.EdgeList) edge.Face = null;
-        
+        if (faces.Remove(face)) foreach (var edge in face.EdgeList) edge.Face = null;
     }
 
     public void ResolveFaces()
@@ -242,16 +242,36 @@ public partial class PolygonMeshTool : GodotObject
 
     public void SubdivideAll(int levels = 1)
     {
-        for (int i = 0; i < levels; i++)
-        {
-            var faceList = faces.ToList();
-            foreach (var face in faceList) Subdivide(face);
-        }
+        _Subdivide(0.1f);   
+
+        
+        var faceList = faces.ToList();
+
+        // for (int i = 0; i < levels; i++)
+        // {
+        //     faceList = faces.ToList();
+        //     foreach (var face in faceList) 
+        //     {
+        //         if (face.Normal.Y > 0.5) Subdivide(face);
+        //     }
+        // }
+
+        // for (int i = 0; i < 2; i++)
+        // {
+        //     faceList = faces.ToList();
+        //     foreach (var face in faceList) 
+        //     {
+        //         if (face.Normal.Y < 0.5) Subdivide(face);
+        //     }
+        // }
+        
+        
+
         
     }
 
     // new subdivide call 
-    public void _Subdivide()
+    public void _Subdivide(float maxArea)
     {
         // setup queue of faces to subdivide (SD), fill with all current faces 
         var subdivideQueue = faces.ToList();  
@@ -259,9 +279,12 @@ public partial class PolygonMeshTool : GodotObject
         int qPos = 0;
         while (qPos < subdivideQueue.Count)
         {
+            
             var face = subdivideQueue[qPos];
-            // face.GetArea();
-        }
+            qPos++;
+
+            if (face.Area > maxArea) subdivideQueue.AddRange(Subdivide(face));
+        } 
         
         
     }
@@ -269,18 +292,28 @@ public partial class PolygonMeshTool : GodotObject
 
     private void SplitEdgeMiddle(HalfEdge hEdge)
     {
-        if (hEdge.HasChildren()) return;
-
-        var twin = hEdge.TwinEdge;
-        var midPos = (hEdge.EndVert.Position - hEdge.StartVert.Position) / 2 + hEdge.StartVert.Position;
-        var mv = new PolyVertex(){Position = midPos};
-
+        Debug.Assert(!hEdge.HasChildren(), "Edge already split in middle");
+        
+        PolyVertex mv;
+        bool hasSplitTwin = hEdge.HasTwin() && hEdge.TwinEdge.HasChildren();
+        if (hasSplitTwin)
+        {
+            mv = hEdge.TwinEdge.childEdge1.EndVert;
+        }
+        else
+        {
+            var midPos = (hEdge.EndVert.Position - hEdge.StartVert.Position) / 2 + hEdge.StartVert.Position;
+            mv = new PolyVertex(){Position = midPos};
+        }
 
         SplitHalfEdge(hEdge, mv);
-        SplitHalfEdge(twin, mv);
 
-        hEdge.childEdge1.SetAsTwinEdge(twin.childEdge2);
-        hEdge.childEdge2.SetAsTwinEdge(twin.childEdge1);
+        if (hasSplitTwin)
+        {
+            hEdge.childEdge1.SetAsTwinEdge(hEdge.TwinEdge.childEdge2);
+            hEdge.childEdge2.SetAsTwinEdge(hEdge.TwinEdge.childEdge1);
+        }        
+        
         
     }
 
@@ -294,18 +327,8 @@ public partial class PolygonMeshTool : GodotObject
         hEdge.childEdge2 = new HalfEdge(){StartVert = mv, EndVert = ev};
 
         hEdge.PrevEdge.SetNextEdge(hEdge.childEdge1);
-        hEdge.childEdge2.SetNextEdge(hEdge.NextEdge);
         hEdge.childEdge1.SetNextEdge(hEdge.childEdge2);
-
-        // if (hEdge.Face != null)
-        // {
-        //     var face = hEdge.Face;
-        //     var eList = face.EdgeList;
-        //     var idx = eList.IndexOf(hEdge);
-        //     eList.RemoveAt(idx);
-        //     eList.InsertRange(idx, [hEdge.childEdge1, hEdge.childEdge2]);
-        // }
-
+        hEdge.childEdge2.SetNextEdge(hEdge.NextEdge);
         
     }
 
@@ -340,7 +363,7 @@ public partial class PolygonMeshTool : GodotObject
         var subdivideEdges = new List<HalfEdge>(){longEdge};
         var curEdge =  longEdge;
 
-        // set a buffer +- PI rads from initial subsivide, where split is forced and only
+        // set a buffer +- PI rads from initial subdivide, where split is forced and only
         // two splits are made total. the two edges are direct connected without middle vert
         var bufferRads = 0.65;
 
@@ -354,7 +377,7 @@ public partial class PolygonMeshTool : GodotObject
 
             bool isTargetLen = curEdge.GetLen() >= targetLen;
 
-            // check if candiate for special divide rules
+            // check if candidate for special divide rules
             if (subdivideEdges.Count == 1 && isTargetLen) 
             {
                 if (float.Abs(ang - float.Pi) < bufferRads)  // within buffer +- range
@@ -395,22 +418,26 @@ public partial class PolygonMeshTool : GodotObject
 
     }
 
-    private void Subdivide(Face face)
+    private List<Face> Subdivide(Face face)
     {
         
          
         RemoveFace(face);
         
-        var parentEdges = face.GetParentEdges();
+        var edges = face.GetEdges();
         var centerPos = face.WeightedCenter;
+        var centerSum = new Vector3();
+        foreach(var edge in edges) centerSum+= edge.StartVert.Position;
+        centerSum/= edges.Count;
+
         HalfEdge pivotEdge = null;  
 
-        for (int i = 0; i < parentEdges.Count; i++)
+        for (int i = 0; i < edges.Count; i++)
         {
-            var edge = parentEdges[i];  
+            var edge = edges[i];  
             SplitEdgeMiddle(edge);
 
-            if (i == 0) pivotEdge = CreateNextEdge(edge.childEdge1, centerPos);
+            if (i == 0) pivotEdge = CreateNextEdge(edge.childEdge1, centerSum);
             else
             {
                 ConnectEdges(pivotEdge, edge.childEdge2, false);
@@ -419,53 +446,17 @@ public partial class PolygonMeshTool : GodotObject
         }
 
         ResolveFaces();
-
-    }
-
-
-
-
-
-    // assumes edges are passed in winding order
-    // connects edges through a new edge
-    // sets twin edges connected as well
-    HalfEdge GenerateConnectingEdge(HalfEdge edgeA, HalfEdge edgeB)
-    {
-        var conEdge = new HalfEdge(edgeA.EndVert, edgeB.StartVert);
-        conEdge.SetTwinEdge();
-
-        conEdge.SetNextEdge(edgeB);
-        edgeA.SetNextEdge(conEdge);
-        edgeB.TwinEdge.SetNextEdge(conEdge.TwinEdge);
-        conEdge.TwinEdge.SetNextEdge(edgeA.TwinEdge);
-
-        return conEdge;
-    }
-
-    void ShortenAndSeparateConnectedEdges(HalfEdge edge, float dist)
-    {
-        var eOut = edge.NextEdge;
-        var eIn = edge.PrevEdge;
-
-        var outStart = new PolyVertex(eOut.GetDirection() * dist + eOut.StartVert.Position);
-        eOut.StartVert = outStart;
-        eOut.TwinEdge.EndVert = outStart;
-
-        var inEnd = new PolyVertex(eIn.GetDirection() * dist * -1 + eIn.EndVert.Position);
-        eIn.EndVert = inEnd;
-        eIn.TwinEdge.StartVert = inEnd;
+        var childFaces = edges.Select(e => e.childEdge1.Face ).ToList();
+        return childFaces;
         
+
     }
 
-    
 
 
-    private static void PairTwinEdges(HalfEdge a, HalfEdge b)
-    {
-        a.TwinEdge = b;
-        b.TwinEdge = a;
-    }
 
+
+  
     public List<Face> GetFaces()
     {
         return faces.ToList();
@@ -497,29 +488,6 @@ public partial class PolygonMeshTool : GodotObject
         };
         return GetNormal(tri);
     }
-
-    private static Vector3 GetOutwardVector(HalfEdge edge)
-    {
-        var tri = new Vector3[]
-        {
-            edge.StartVert.Position, edge.EndVert.Position, edge.NextEdge.EndVert.Position, 
-        };
-        var norm = GetNormal(tri);
-
-        return edge.GetDirection().Cross(norm);
-
-    }
-
-
-    private HalfEdge ContinueEdgeToVertex(HalfEdge edge, PolyVertex newVert)
-    {
-        var newHalfEdge = new HalfEdge(edge.EndVert, newVert);
-        edge.NextEdge = newHalfEdge;
-        newHalfEdge.PrevEdge = edge;
-        return newHalfEdge;
-    }
-   
-
 
 
 

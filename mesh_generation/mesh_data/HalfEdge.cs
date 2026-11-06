@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography.X509Certificates;
 
@@ -62,6 +63,32 @@ public partial class HalfEdge : GodotObject
     {
         TwinEdge = new HalfEdge(EndVert, StartVert){TwinEdge = this};
     }
+
+    public List<PolyVertex> GetChildVerticesRecursive()
+    {
+        
+        var vertList = RecursiveDecomposeEdgeToChildren(this).Select(e => e.StartVert).ToList();
+        vertList.Add(EndVert);
+        return vertList;
+    }
+
+    private List<HalfEdge> RecursiveDecomposeEdgeToChildren(HalfEdge curEdge, List<HalfEdge> accumList = null)
+    {
+        accumList ??= [];
+        if (curEdge.HasChildren())
+        {
+            RecursiveDecomposeEdgeToChildren(curEdge.childEdge1, accumList);
+            RecursiveDecomposeEdgeToChildren(curEdge.childEdge2, accumList);
+        }
+        else
+        {
+            accumList.Add(curEdge);
+        }
+        return accumList;
+    }
+
+    
+    
     
     
     // pass the intersecting half edge, 
