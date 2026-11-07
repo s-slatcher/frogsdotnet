@@ -77,7 +77,10 @@ public partial class NewTerrainTesting : Node3D
         terrainChunk.RoundingDistance = RoundingDistance;
         terrainChunk.RoundingToleranceDegrees = RoundingToleranceDegrees;
         terrainChunk.Position = new Vector3(norm.Position.X, norm.Position.Y, 0);
+
+        var time = Time.GetTicksMsec();
         terrainChunk.SetPolygon(norm);
+        GD.Print(Time.GetTicksMsec() - time);
 
     }
 

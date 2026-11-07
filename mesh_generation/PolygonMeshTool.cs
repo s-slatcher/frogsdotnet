@@ -245,17 +245,6 @@ public partial class PolygonMeshTool : GodotObject
     public void SubdivideMesh(float maxArea)
     {
 
-
-        
-        // for (int i = 0; i < 6; i++)
-        // {
-        //     var faceList = faces.ToList();
-        //     foreach(var face in faceList)
-        //     {
-        //         SubdivideFace(face);
-        //     }
-            
-        // }
         // setup queue of faces to subdivide (SD), fill with all current faces 
         var subdivideQueue = faces.ToList();  
 
@@ -266,7 +255,8 @@ public partial class PolygonMeshTool : GodotObject
             var face = subdivideQueue[qPos];
             qPos++;
 
-            if (face.Area > maxArea) subdivideQueue.AddRange(SubdivideFace(face));
+            var customMaxArea = maxArea;
+            if (face.Area > customMaxArea) subdivideQueue.AddRange(SubdivideFace(face));
         } 
         
         

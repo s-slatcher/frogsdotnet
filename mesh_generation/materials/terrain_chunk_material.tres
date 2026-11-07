@@ -4,7 +4,7 @@
 code = "// NOTE: Shader automatically converted from Goddot Engine 4.4.1.stable.mono's StandardMaterial3D.
 
 shader_type spatial;
-render_mode depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+render_mode wireframe, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
 
 group_uniforms debug;
 uniform bool UseFragNormals = false;
