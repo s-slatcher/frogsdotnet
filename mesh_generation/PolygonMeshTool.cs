@@ -256,7 +256,10 @@ public partial class PolygonMeshTool : GodotObject
             qPos++;
 
             var customMaxArea = maxArea;
-            if (face.Area > customMaxArea) subdivideQueue.AddRange(SubdivideFace(face));
+            float areaMult = 1;
+            areaMult = face.Normal.Dot(Vector3.Forward) / 2 + 0.5f;
+            if (areaMult < 0.25) areaMult = 0.25f;
+            if (face.Area * areaMult > customMaxArea) subdivideQueue.AddRange(SubdivideFace(face));
         } 
         
         
