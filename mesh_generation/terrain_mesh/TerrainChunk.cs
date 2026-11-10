@@ -55,6 +55,34 @@ public partial class TerrainChunk : Node3D
         //run connection between opposite normal faces to make produce the shape
         var topEdges = topFaces[0].EdgeList.ToList();
         var botEdges = botFaces[1].EdgeList.ToList();
+        
+        var center = botFaces[0].WeightedCenter;
+        foreach (var edge in topEdges)
+        {
+            var center2d = new Vector2(center.X, center.Z);
+            var vert = edge.EndVert;
+            var vertPos2d = new Vector2(vert.Position.X, vert.Position.Z);
+            var vec2d = vertPos2d - center2d;
+            var ang = float.Atan2(vec2d.Y, vec2d.X);
+
+            vert.UV = new Vector2((ang + float.Pi) / (2*float.Pi), 1f - (vert.Position.Y / height ));
+
+        }
+        foreach (var edge in botEdges)
+        {
+            var center2d = new Vector2(center.X, center.Z);
+            var vert = edge.EndVert;
+            var vertPos2d = new Vector2(vert.Position.X, vert.Position.Z);
+            var vec2d = vertPos2d - center2d;
+            var ang = float.Atan2(vec2d.Y, vec2d.X);
+
+            vert.UV = new Vector2((ang + float.Pi) / (2*float.Pi), 1f - (vert.Position.Y / height ));
+
+            
+        }
+
+        
+
        
         // reverse and shift edge lists to connect edges starts-to-ends
         var firstTop = topEdges[0];

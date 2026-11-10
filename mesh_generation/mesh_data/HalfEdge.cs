@@ -20,6 +20,7 @@ public partial class HalfEdge : GodotObject
     public HalfEdge childEdge1;
     public HalfEdge childEdge2;
 
+
     public HalfEdge(){}
     public HalfEdge(PolyVertex start, PolyVertex end)
     {

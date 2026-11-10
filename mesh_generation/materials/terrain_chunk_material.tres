@@ -1,14 +1,18 @@
-[gd_resource type="ShaderMaterial" load_steps=7 format=3 uid="uid://cbxwu4aghr558"]
+[gd_resource type="ShaderMaterial" load_steps=8 format=3 uid="uid://cbxwu4aghr558"]
+
+[ext_resource type="Texture2D" uid="uid://dbvtgpi1chj65" path="res://GiYjTk2WMAAnxvd.jpg" id="1_rylqs"]
 
 [sub_resource type="Shader" id="Shader_3hu5b"]
 code = "// NOTE: Shader automatically converted from Goddot Engine 4.4.1.stable.mono's StandardMaterial3D.
 
 shader_type spatial;
-render_mode wireframe, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+render_mode depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
 
 group_uniforms debug;
 uniform bool UseFragNormals = false;
 uniform bool ColorWithNormals = false;
+uniform bool TestUVWithTexture = false;
+uniform sampler2D UVTestImage;
 group_uniforms;
 
 group_uniforms large_cell_noise;
@@ -59,7 +63,6 @@ uniform vec3 uv2_offset;
 
 varying vec3 vertex_pos;
 varying vec3 vertex_normal;
-
 vec4 color_from_normal(vec3 normal)
 {
 	return vec4 ( ( normal + vec3(1.)) / 2., 1);
@@ -144,7 +147,7 @@ void fragment() {
 	// using flat normals for debug
 	if (UseFragNormals)
 	{
-		NORMAL = (VIEW_MATRIX * vec4(get_flat_normal(vertex_pos), 0.0)).xyz;
+		NORMAL = (VIEW_MATRIX * vec4(get_flat_normal(vertex_pos), 0.0)).xyz;	
 	}
 
 
@@ -155,6 +158,10 @@ void fragment() {
 	if (ColorWithNormals)
 	{
 		ALBEDO = color_from_normal(NORMAL).rgb;
+	}
+	else if (TestUVWithTexture)
+	{
+		ALBEDO = texture(UVTestImage, UV).rgb;
 	}
 
 	float metallic_tex = dot(triplanar_texture(texture_metallic, uv1_power_normal, uv1_triplanar_pos), metallic_texture_channel);
@@ -200,6 +207,8 @@ render_priority = 0
 shader = SubResource("Shader_3hu5b")
 shader_parameter/UseFragNormals = false
 shader_parameter/ColorWithNormals = false
+shader_parameter/TestUVWithTexture = true
+shader_parameter/UVTestImage = ExtResource("1_rylqs")
 shader_parameter/large_cell_noise = SubResource("NoiseTexture2D_rylqs")
 shader_parameter/large_cell_color = Color(0.4454, 0.343349, 0.0760418, 1)
 shader_parameter/wavey_distort_noise = SubResource("NoiseTexture2D_aargb")

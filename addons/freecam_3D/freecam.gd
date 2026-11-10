@@ -93,13 +93,18 @@ func _input(event: InputEvent) -> void:
 			pivot.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 			rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
 			rotation.x = clamp(rotation.x, -PI/2, PI/2)
+		# relative speed change
+		var speedChange := 0.05;
+		
+		
 		
 		var speed_up = func():
-			target_speed = clamp(target_speed + 0.15, MIN_SPEED, MAX_SPEED)
+			target_speed = clamp(target_speed + speedChange, 0.01, MAX_SPEED)
 			display_message("[Speed up] " + str(target_speed))
 			
 		var slow_down = func():
-			target_speed = clamp(target_speed - 0.15, MIN_SPEED, MAX_SPEED)
+			
+			target_speed = clamp(target_speed - speedChange, 0.01, MAX_SPEED)
 			display_message("[Slow down] " + str(target_speed))
 		
 		# Speed up and down with the mouse wheel

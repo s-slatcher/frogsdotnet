@@ -172,6 +172,7 @@ public partial class PolygonMeshTool : GodotObject
         meshArray[(int)Mesh.ArrayType.Vertex] = mesh_verts.ToArray();
         meshArray[(int)Mesh.ArrayType.Normal] = mesh_norms.ToArray();
         meshArray[(int)Mesh.ArrayType.Index] = mesh_indices.ToArray();
+        meshArray[(int)Mesh.ArrayType.TexUV] = verts.Select(v => v.UV).ToArray();
 
         var arrMesh = new ArrayMesh();
         arrMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, meshArray);
@@ -254,17 +255,74 @@ public partial class PolygonMeshTool : GodotObject
             
             var face = subdivideQueue[qPos];
             qPos++;
-
             var customMaxArea = maxArea;
-            float areaMult = 1;
-            areaMult = face.Normal.Dot(Vector3.Forward) / 2 + 0.5f;
-            if (areaMult < 0.25) areaMult = 0.25f;
-            if (face.Area * areaMult > customMaxArea) subdivideQueue.AddRange(SubdivideFace(face));
+            var absNormY = float.Abs(face.Normal.Y);
+            if (absNormY > 0.5) customMaxArea *= 5;
+            if (face.Normal.Z > 0.5) customMaxArea *= 5;
+            
+            if (face.Area > customMaxArea) subdivideQueue.AddRange(SubdivideFace(face));
         } 
         
         
     }
 
+    private List<Face> SubdivideFace(Face face)
+    {
+        RemoveFace(face);   
+
+        var edges = face.GetEdges();
+        var lens = new Dictionary<HalfEdge, float>();
+        foreach ( var edge in edges) lens[edge] = edge.GetLen();
+        var edgesByLen = face.GetEdges().OrderBy(e => -lens[e]).ToList();
+
+        var bestNextSubEdge = edgesByLen[0];
+        var highScore = 0f;
+        for (int i = 1; i < edgesByLen.Count; i++)
+        {
+            // edges compete to edge that is connected to the longest edge with score 
+            // 1 point can be earned by being close in length, dot product presents a 2-point swing from -1, to 1
+            //TODO (MAYBE) construct the dot product test with an avg of two edges if the edge picked is too small to split down middle
+            var edge = edgesByLen[i];
+            var dotScore = edge.GetVector().Normalized().Dot(edgesByLen[0].GetVector().Normalized()) * -1;
+            var lengthScore = lens[edge] / lens[edgesByLen[0]];
+            var score = lengthScore + dotScore;
+
+            if (score > highScore) 
+            {
+                bestNextSubEdge = edge;
+                highScore = score;
+            }
+
+            // call it when a score is high enough to not likely be beat
+            // if (score > 1.5f) break;
+            
+        }
+
+        SplitEdgeMiddle(edgesByLen[0]);
+        var subEdge1 = edgesByLen[0].childEdge1;
+        var subEdge2 = bestNextSubEdge;          
+        // if the smaller subdivide edge is large enough, split first and snap to child edge 
+        if (lens[bestNextSubEdge] > lens[edgesByLen[0]] / 2)
+        {
+            SplitEdgeMiddle(bestNextSubEdge);
+            subEdge2 = bestNextSubEdge.childEdge2;
+        }
+        
+        // special case where the chosen subdivide edge is already the next edge
+        if (subEdge1.NextEdge == subEdge2)
+        {
+            subEdge2 = subEdge2.NextEdge;
+        }
+
+        var newEdge = ConnectEdges(subEdge1, subEdge2, true);
+        return
+        [
+            newEdge.Face,
+            newEdge.TwinEdge.Face
+        ];
+
+        
+    }
 
     private void SplitEdgeMiddle(HalfEdge hEdge)
     {
@@ -282,7 +340,7 @@ public partial class PolygonMeshTool : GodotObject
             mv = new PolyVertex(){Position = midPos};
         }
 
-        SplitHalfEdge(hEdge, mv);
+        SplitHalfEdge(hEdge, mv);       
 
         if (hasSplitTwin)
         {
@@ -299,6 +357,13 @@ public partial class PolygonMeshTool : GodotObject
         var ev = hEdge.EndVert;
         var mv = splitVert;
 
+        var svUV = sv.UV;
+        var evUV = ev.UV;
+        if (evUV.X == 1) evUV = new Vector2(0, evUV.Y);
+
+        
+        mv.UV = (evUV + svUV) / 2;
+
         hEdge.childEdge1 = new HalfEdge(){StartVert = sv, EndVert = mv};
         hEdge.childEdge2 = new HalfEdge(){StartVert = mv, EndVert = ev};
 
@@ -309,110 +374,7 @@ public partial class PolygonMeshTool : GodotObject
     }
 
 
-    private List<Face> SubdivideFace(Face face)
-    {
-        
-        
-        RemoveFace(face);   
-        
-        var lengthSortedEdges = face.GetEdges().OrderBy(e => -e.GetLen()).ToList();
-       
-        var longest = lengthSortedEdges[0];
-        HalfEdge nextLongest;
-        if (longest.EdgeIsConnected(lengthSortedEdges[1]))
-        {
-            if (longest.EdgeIsConnected(lengthSortedEdges[2]))
-            {
-                if (lengthSortedEdges.Count > 3) nextLongest = lengthSortedEdges[3];
-                else nextLongest = lengthSortedEdges[2];
-            }
-            else nextLongest = lengthSortedEdges[2];
-        }
-        else nextLongest = lengthSortedEdges[1];
-
-        
-        SplitEdgeMiddle(longest);
-        SplitEdgeMiddle(nextLongest);
-
-        var newEdge = ConnectEdges(longest.childEdge1, nextLongest.childEdge2, false);
-
-        ResolveFaces();
-        return
-        [
-            newEdge.Face,
-            newEdge.TwinEdge.Face
-        ];
-        // var centerPos = face.WeightedCentser;
-
     
-
-
-
-        // var parallelAllowanceAngle = float.DegreesToRadians(15);
-
-        // roughly deciding what edge is "too short" to split in middle based on area
-        // var targetLen = Math.Sqrt(face.Area) * 0.75f; 
-
-        //find longest edge to initiate as first subdivide point 
-        
-        // List<HalfEdge> SubdivideEdges = new();
-        // int longestIdx = 0;
-        // for (int i = 0; i < edges.Count; i++)
-        // {
-        //     if (edges[i].GetLen() > edges[longestIdx].GetLen()) longestIdx = i;
-        // }
-        
-        // reorder edge list to put longest edge first
-        // var longestFirstEdges = Enumerable.Range(0, edges.Count)
-        //     .Select(i => edges[(longestIdx + i) % edges.Count])
-        //     .ToList();
-        // var longEdge = longestFirstEdges[0];
-
-        // // if the longest edge is still too short to split in middle, its end point used as the sole subdivide point
-        // // otherwise: search for any other edges meeting length req, split them and add split point to subdivide list
-        // if (longEdge.GetLen() < targetLen) 
-        // {
-        //     SubdivideEdges.Add(longEdge);
-        // }
-        // else
-        // {
-        //     for (int i = 0; i < longestFirstEdges.Count; i++)
-        //     {
-        //         var edge = longestFirstEdges[i];
-        //         if (edge.GetLen() > targetLen)
-        //         {
-        //             SplitEdgeMiddle(edge);
-        //             SubdivideEdges.Add(edge.childEdge1);
-        //         }
-                
-        //     }
-        // }
-
-        // look at angle formed between lines formed from subdivide points -> center point
-        // check for an >180 gap that must be fixed by inserting an extra point
-
-        // in case of a sole subdivide point, auto triggers an over 180 check
-
-        // var subEdgeCount = SubdivideEdges.Count;
-        // for (int i = 0; i < subEdgeCount; i++)
-        // {
-        //     var edge = SubdivideEdges[i];
-        //     var nextEdge = i == subEdgeCount - 1 ? SubdivideEdges[0] : SubdivideEdges[i+1];
-
-        //     var edgeToCenter = edge.EndVert.Position - centerPos;
-        //     var nextEdgeToCenter = nextEdge.EndVert.Position - centerPos;
-
-        //     var angle = edgeToCenter.AngleTo(nextEdgeToCenter);
-
-        //     bool nearlyParallel = float.Abs(angle - float.Pi) < parallelAllowanceAngle;
-            
-        //     if (nearlyParallel) break;
-        //     else if (angle < )
-
-        // }
-        
-
-    }
 
 
 

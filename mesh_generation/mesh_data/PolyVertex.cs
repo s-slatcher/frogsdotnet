@@ -13,10 +13,7 @@ public partial class PolyVertex : GodotObject
         Position = Pos;
     }
     public Vector3 Position = new();
-    /// <summary>
-    /// All the edges where this vertex is the 'startVert'
-    /// </summary>
-    public HashSet<HalfEdge> LeadingHalfEdges = new();
+    public Vector2 UV = new();
 
     public Vector3 GetAveragedNormal()
     {
