@@ -14,37 +14,25 @@ using System.Diagnostics;
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.CompilerServices;
+using System.Net;
 
 public partial class PolygonMeshTool : GodotObject
 {
     HashSet<Face> faces = new();
 
-    Dictionary<Face, List<Face>> SubdividedFacesMap = new();
-
-    List<Face> initFrontFaces = new();
-    List<Face> initBackFaces = new();
-
-    List<HalfEdge> frontOutline = new();
-    List<HalfEdge> backOutline = new();
-
-    public HalfEdge OriginalEdgeSample;
+    Dictionary<HalfEdge, (Vector2, Vector2)> halfEdgeUVRangeMap = new();
     
-    private bool hasExtruded = false;
+    Dictionary<int, HashSet<Face>> smoothingGroups = new();
+    Dictionary<Face, int> faceSmoothGroupMap = new();
 
-    NormalPoly normPoly;
+    private NormalPoly normPoly;
 
-    Aabb aabb;
-
-    // new system for face validation
     private List<HalfEdge> unresolvedEdgeList = new();
     
     static Vector2 RoundVector2(Vector2 vec)
     {
         return new Vector2(float.Floor(vec.X * 1000), float.Floor(vec.Y * 1000)) / 1000;
     }
-
-    public Aabb GetAabb() => aabb;
-
 
     public HalfEdge GetStandaloneEdge(Vector3 posStart, Vector3 posEnd)
     {
@@ -54,6 +42,9 @@ public partial class PolygonMeshTool : GodotObject
             EndVert = new PolyVertex(posEnd)
         };
         newEdge.SetTwinEdge();
+
+        newEdge.Face = Face.FaceFromInitialEdge(newEdge);  
+        newEdge.TwinEdge.Face = Face.FaceFromInitialEdge(newEdge.TwinEdge);  
 
         return newEdge;
     }
@@ -66,10 +57,12 @@ public partial class PolygonMeshTool : GodotObject
 
         SetEdgeAsNext(prevEdge, nextEdge);
 
+
+
         return nextEdge;
     }
 
-    public HalfEdge ConnectEdges(HalfEdge edgeA, HalfEdge edgeB, bool forceFaceResolve = true)
+    public HalfEdge ConnectEdges(HalfEdge edgeA, HalfEdge edgeB)
     {
         var connectEdge = new HalfEdge(edgeA.EndVert, edgeB.StartVert);
         connectEdge.SetTwinEdge();
@@ -78,16 +71,84 @@ public partial class PolygonMeshTool : GodotObject
         SetEdgeAsNext(edgeA, connectEdge);
         SetEdgeAsNext(connectEdge, edgeB);
 
+        // new face resolve will set a new face for each set of edges
 
-        unresolvedEdgeList.Add(connectEdge); 
-        unresolvedEdgeList.Add(connectEdge.TwinEdge); 
+        ResolveConnectEdgeFace(connectEdge);
+        ResolveConnectEdgeFace(connectEdge.TwinEdge);
 
+
+        // unresolvedEdgeList.Add(connectEdge); 
+        // unresolvedEdgeList.Add(connectEdge.TwinEdge); 
         // call the face generator after each connection
-        if (forceFaceResolve) ResolveFaces();
+        // if (forceFaceResolve) ResolveFaces();
 
 
         return connectEdge;
-    } 
+    }
+
+    private bool ResolveConnectEdgeFace(HalfEdge edge)
+    {
+        var prevFace = edge.PrevEdge.Face;
+        var nextFace = edge.PrevEdge.Face;
+        bool sharedFace = prevFace == nextFace && prevFace != null;
+        
+
+        // first check if shared -- if so, a face resolve will be run 
+        if (sharedFace)
+        {
+            
+            var face = ResolveFaceFromEdge(edge);
+            if (faceSmoothGroupMap.TryGetValue(face, out int smoothingGroup));
+            IndexFace(face, smoothingGroup);
+            return true;
+        }
+        // if not same, set the three immediately connected edges the same face so the next connection that completes will recognize them as resolvable 
+        else
+        {
+            // face is temp and won't be indexed
+            var face = Face.FaceFromInitialEdge(edge.PrevEdge);
+            face.AddEdgeToEnd(edge);
+            face.AddEdgeToEnd(edge.NextEdge);
+            return false;
+            
+        }
+
+
+    }
+
+    private void IndexFace(Face face, int smoothingGroup = 0)
+    {
+        faces.Add(face);
+        SetFaceSmoothingGroup(face, smoothingGroup);
+        
+    }
+
+
+    private Face ResolveFaceFromEdge(HalfEdge edge)
+    {
+        var face = Face.FaceFromInitialEdge(edge);
+        var cur = edge.NextEdge;
+        while (cur != edge)
+        {
+            face.AddEdgeToEnd(cur);
+            cur = cur.NextEdge;
+        }
+        return face;
+    }
+
+    // public HalfEdge ConnectEdge(HalfEdge connectEdge)
+    // {
+
+    // }
+
+
+
+    public void SetFaceSmoothingGroup(Face face, int group)
+    {
+        if (smoothingGroups.TryGetValue(group, out var faceSet)) faceSet.Add(face);
+        else smoothingGroups[group] = [face];
+        faceSmoothGroupMap[face] = group;
+    }
   
     public ArrayMesh GetMesh()
     {
@@ -188,20 +249,34 @@ public partial class PolygonMeshTool : GodotObject
         var prevNextOrTwin = prevEdge.NextEdge ?? prevEdge.TwinEdge;
         var nextPrevOrTwin = nextEdge.PrevEdge ?? nextEdge.TwinEdge;
 
+        
 
-        if (nextEdge.Face != null ) RemoveFace(nextEdge.Face);
-        if (prevEdge.Face != null) RemoveFace(prevEdge.Face);
+        // if (nextEdge.Face != null ) RemoveFace(nextEdge.Face);
+        // if (prevEdge.Face != null) RemoveFace(prevEdge.Face);
 
 
         prevEdge.SetNextEdge(nextEdge);
         nextPrevOrTwin.SetNextEdge(prevNextOrTwin);
+
+        if (prevEdge.Face != null && prevEdge.Face.IsValid)
+        {
+            
+        }
+    
     }
 
 
-    public void RemoveFace(Face face)
+    // public void RemoveFace(Face face)
+    // {
+    //     if (faces.Remove(face)) foreach (var edge in face.EdgeList) edge.Face = null;
+    // }
+
+    public void DeIndexFace(Face face)
     {
-        if (faces.Remove(face)) foreach (var edge in face.EdgeList) edge.Face = null;
+        faces.Remove(face);
+        smoothingGroups[faceSmoothGroupMap[face]].Remove(face);
     }
+
 
     public void ResolveFaces()
     {
@@ -268,7 +343,7 @@ public partial class PolygonMeshTool : GodotObject
 
     private List<Face> SubdivideFace(Face face)
     {
-        RemoveFace(face);   
+        DeIndexFace(face); 
 
         var edges = face.GetEdges();
         var lens = new Dictionary<HalfEdge, float>();
@@ -314,12 +389,12 @@ public partial class PolygonMeshTool : GodotObject
             subEdge2 = subEdge2.NextEdge;
         }
 
-        var newEdge = ConnectEdges(subEdge1, subEdge2, true);
-        return
-        [
-            newEdge.Face,
-            newEdge.TwinEdge.Face
-        ];
+        var newEdge = ConnectEdges(subEdge1, subEdge2);
+        var newFaces = new List<Face>(){newEdge.Face, newEdge.TwinEdge.Face};
+
+        
+
+        return newFaces;
 
         
     }

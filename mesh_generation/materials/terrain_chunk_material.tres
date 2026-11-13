@@ -147,7 +147,7 @@ void fragment() {
 	// using flat normals for debug
 	if (UseFragNormals)
 	{
-		NORMAL = (VIEW_MATRIX * vec4(get_flat_normal(vertex_pos), 0.0)).xyz;	
+		NORMAL = (VIEW_MATRIX * vec4(get_flat_normal(vertex_pos), 0.0)).xyz;
 	}
 
 

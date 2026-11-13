@@ -21,6 +21,8 @@ public partial class HalfEdge : GodotObject
     public HalfEdge childEdge2;
 
 
+    
+
     public HalfEdge(){}
     public HalfEdge(PolyVertex start, PolyVertex end)
     {
@@ -28,9 +30,9 @@ public partial class HalfEdge : GodotObject
         EndVert = end;
     }
 
-    public HalfEdge SetTwinEdge()
+    public HalfEdge SetTwinEdge(bool ShareVertexReferences = true)
     {
-        TwinEdge = new HalfEdge(EndVert, StartVert){TwinEdge = this};
+        if (ShareVertexReferences) TwinEdge = new HalfEdge(EndVert, StartVert){TwinEdge = this};
         return TwinEdge;    
     }
 

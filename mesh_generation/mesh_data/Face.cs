@@ -28,42 +28,42 @@ public partial class Face : GodotObject
 
         return face;
     }
-    public void AddEdge(HalfEdge hEdge)
-    {
-        if (IsValid)
-        {
-           GD.Print("Tried adding edge to already enclosed face");
-           return;
-        }
-        if (EdgeList.Count == 0) 
-        {
-            EdgeList.Add(hEdge);
-        }
-        else
-        {
-            var last = EdgeList[^1];
-            var first = EdgeList[0];
-            if (hEdge.StartVert != last.EndVert)    
-            {
-                GD.Print("tried adding unlinked edge to poly");
-                return;
-            }
-            else
-            {
-                EdgeList.Add(hEdge);
-                hEdge.PrevEdge = last;
-                last.NextEdge = hEdge;
-            }
+    // public void AddEdge(HalfEdge hEdge)
+    // {
+    //     if (IsValid)
+    //     {
+    //        GD.Print("Tried adding edge to already enclosed face");
+    //        return;
+    //     }
+    //     if (EdgeList.Count == 0) 
+    //     {
+    //         EdgeList.Add(hEdge);
+    //     }
+    //     else
+    //     {
+    //         var last = EdgeList[^1];
+    //         var first = EdgeList[0];
+    //         if (hEdge.StartVert != last.EndVert)    
+    //         {
+    //             GD.Print("tried adding unlinked edge to poly");
+    //             return;
+    //         }
+    //         else
+    //         {
+    //             EdgeList.Add(hEdge);
+    //             hEdge.PrevEdge = last;
+    //             last.NextEdge = hEdge;
+    //         }
 
-            if (hEdge.EndVert == first.StartVert)
-            {
-                IsValid = true;
-                first.PrevEdge = hEdge;
-                hEdge.NextEdge = first;
-            }
-        }
-        hEdge.Face = this;
-    }
+    //         if (hEdge.EndVert == first.StartVert)
+    //         {
+    //             IsValid = true;
+    //             first.PrevEdge = hEdge;
+    //             hEdge.NextEdge = first;
+    //         }
+    //     }
+    //     hEdge.Face = this;
+    // }
 
     public void AddEdgeToEnd(HalfEdge edge)
     {

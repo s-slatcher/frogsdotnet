@@ -94,10 +94,9 @@ public partial class TerrainChunk : Node3D
         {
             var botEdge = botEdges[i];
             var topEdge = topEdges[i];
-            meshTool.ConnectEdges(botEdge, topEdge, false);
+            meshTool.ConnectEdges(botEdge, topEdge);
         }
         // resolve only after all connections made t
-        meshTool.ResolveFaces();
         
 
         // should produce two faces -- the front and back of the mesh
